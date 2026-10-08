@@ -771,6 +771,12 @@
                 </div>
 
                 <div class="header-actions">
+                    <!-- Tombol Cepat Khusus Admin: Manajemen Pengguna -->
+                    <a href="users.html" class="btn-secondary" id="btnAdminManageUsersLink" style="display: none; align-items: center; gap: 7px; text-decoration: none; padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 0.86rem; color: #1685f8; border: 1.5px solid #d6e9fc; background: #ffffff;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <span>Manajemen Pengguna</span>
+                    </a>
+
                     <!-- Dropdown Khusus Role Admin: Lihat / Kelola Pegawai Lain -->
                     <div class="admin-pegawai-selector" id="adminPegawaiSelector" style="display: none;">
                         <span>Kelola Pegawai:</span>
@@ -1470,12 +1476,17 @@
                 window.APASidebar.renderUser(loggedInUser);
             }
 
-            // Jika Admin, tampilkan pemilih pegawai
-            if (loggedInUser.role === 'admin') {
+            // Jika Admin, tampilkan pemilih pegawai dan tombol manajemen pengguna
+            const isAdmin = loggedInUser.role === 'admin' || (Array.isArray(loggedInUser.roles) && loggedInUser.roles.includes('admin'));
+            if (isAdmin) {
                 const adminSelector = document.getElementById('adminPegawaiSelector');
                 if (adminSelector) {
                     adminSelector.style.display = 'flex';
                     populateEmployeeDropdown();
+                }
+                const btnManage = document.getElementById('btnAdminManageUsersLink');
+                if (btnManage) {
+                    btnManage.style.display = 'inline-flex';
                 }
             }
         }

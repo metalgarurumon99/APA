@@ -1348,6 +1348,7 @@
                                 username: foundUser.username,
                                 full_name: foundUser.full_name,
                                 role: foundUser.role,
+                                roles: foundUser.role === 'admin' ? ['admin', 'user'] : ['user'],
                                 must_change_password: foundUser.must_change_password
                             }
                         };

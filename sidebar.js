@@ -74,11 +74,60 @@
         // Deteksi halaman saat ini
         detectActivePage: function () {
             const path = window.location.pathname.toLowerCase();
-            if (path.includes('profile')) {
+            if (path.includes('users') || path.includes('user-management')) {
+                this.activeMenuKey = 'users';
+            } else if (path.includes('profile')) {
                 this.activeMenuKey = 'profile';
             } else if (path.includes('login')) {
                 this.activeMenuKey = 'password';
             }
+        },
+
+        // Ambil Daftar Menu (Khusus Admin mendapat menu Manajemen Pengguna)
+        getNavItems: function () {
+            const items = [
+                {
+                    key: 'profile',
+                    label: 'Profil Pegawai',
+                    url: 'profile.html',
+                    icon: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>`
+                }
+            ];
+
+            const isAdmin = this.currentUser && (
+                this.currentUser.role === 'admin' || 
+                (Array.isArray(this.currentUser.roles) && this.currentUser.roles.includes('admin'))
+            );
+
+            if (isAdmin) {
+                items.push({
+                    key: 'users',
+                    label: 'Manajemen Pengguna',
+                    url: 'users.html',
+                    icon: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>`
+                });
+            }
+
+            items.push({
+                key: 'password',
+                label: 'Ganti Password',
+                url: '#',
+                action: 'openChangePasswordModal',
+                icon: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>`
+            });
+
+            return items;
         },
 
         // Ambil sesi user saat ini
@@ -167,8 +216,9 @@
             sidebarEl.classList.add('apa-sidebar');
 
             // Render Struktur Konten Sidebar: Tombol Sembunyikan sejajar dengan Menu Pertama
-            const firstItem = this.navItems[0];
-            const otherItems = this.navItems.slice(1);
+            const navList = this.getNavItems();
+            const firstItem = navList[0];
+            const otherItems = navList.slice(1);
 
             sidebarEl.innerHTML = `
                 <nav class="side-nav" id="apaSideNav">
@@ -203,10 +253,16 @@
             this.mountPasswordModal();
         },
 
-        // Render Data Pengguna (Sekarang ditampilkan di Topbar Global)
+        // Render Data Pengguna (Sekarang ditampilkan di Topbar Global & sesuaikan menu admin)
         renderUser: function (user) {
             if (user) {
+                const prevAdmin = this.currentUser && (this.currentUser.role === 'admin' || (Array.isArray(this.currentUser.roles) && this.currentUser.roles.includes('admin')));
+                const newAdmin = user.role === 'admin' || (Array.isArray(user.roles) && user.roles.includes('admin'));
                 this.currentUser = user;
+                if (Boolean(prevAdmin) !== Boolean(newAdmin)) {
+                    this.mountComponents();
+                    this.attachEventListeners();
+                }
             }
         },
 
