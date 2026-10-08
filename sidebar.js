@@ -9,6 +9,7 @@
  *   2. Panggil script ini:  <script src="sidebar.js"></script>
  *
  * Fitur:
+ *   - Sembunyikan & Tampilkan Sidebar (Collapse/Hide) dengan tombol & shortcut Ctrl+B
  *   - Auto-mount & Active menu highlighting
  *   - Auto-sinkronisasi data profil pengguna dari window.APA_AUTH
  *   - Responsive mobile drawer dengan backdrop overlay
@@ -20,6 +21,7 @@
     const APASidebar = {
         currentUser: null,
         activeMenuKey: 'profile', // 'profile' | 'password'
+        isHidden: false,
 
         // Daftar Menu Default
         navItems: [
@@ -48,10 +50,25 @@
         init: function (options = {}) {
             this.detectActivePage();
             this.loadUserSession();
+            this.loadHiddenState();
             this.mountComponents();
             this.attachEventListeners();
             this.renderUser();
             document.body.classList.add('has-apa-sidebar');
+
+            // Terapkan preferensi sembunyikan jika tersimpan
+            if (this.isHidden && window.innerWidth > 992) {
+                document.body.classList.add('sidebar-hidden');
+            }
+        },
+
+        // Ambil status tersimpan dari localStorage
+        loadHiddenState: function () {
+            try {
+                this.isHidden = localStorage.getItem('apa_sidebar_hidden') === 'true';
+            } catch {
+                this.isHidden = false;
+            }
         },
 
         // Deteksi halaman saat ini
@@ -116,7 +133,24 @@
                 document.body.appendChild(backdrop);
             }
 
-            // 3. Render / Update Elemen Sidebar
+            // 3. Tombol Mengambang untuk Memunculkan Sidebar saat tersembunyi
+            if (!document.getElementById('apaFloatingToggleBtn')) {
+                const floatBtn = document.createElement('button');
+                floatBtn.className = 'apa-floating-toggle-btn';
+                floatBtn.id = 'apaFloatingToggleBtn';
+                floatBtn.title = 'Tampilkan Sidebar (Ctrl+B)';
+                floatBtn.setAttribute('aria-label', 'Tampilkan Sidebar');
+                floatBtn.innerHTML = `
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                        <polyline points="14 9 17 12 14 15"></polyline>
+                    </svg>
+                `;
+                document.body.appendChild(floatBtn);
+            }
+
+            // 4. Render / Update Elemen Sidebar
             let sidebarEl = document.getElementById('appSidebar') || document.querySelector('.sidebar') || document.querySelector('.apa-sidebar');
 
             if (!sidebarEl) {
@@ -133,21 +167,28 @@
             // Pastikan class CSS terpasang
             sidebarEl.classList.add('apa-sidebar');
 
-            // Render Struktur Konten Sidebar
+            // Render Struktur Konten Sidebar dengan Tombol Sembunyikan
             sidebarEl.innerHTML = `
-                <a href="profile.html" class="brand">
-                    <div class="brand-mark">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                <div class="sidebar-header-row">
+                    <a href="profile.html" class="brand">
+                        <div class="brand-mark">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                            </svg>
+                        </div>
+                        <div class="brand-text">
+                            <span class="brand-title">APA Portal</span>
+                            <span class="brand-sub">BPS Kab. Raja Ampat</span>
+                        </div>
+                    </a>
+                    <button class="apa-sidebar-hide-btn" id="apaSidebarHideBtn" title="Sembunyikan Sidebar (Ctrl+B)" aria-label="Sembunyikan Sidebar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
-                    </div>
-                    <div class="brand-text">
-                        <span class="brand-title">APA Portal</span>
-                        <span class="brand-sub">BPS Kab. Raja Ampat</span>
-                    </div>
-                </a>
+                    </button>
+                </div>
 
                 <nav class="side-nav" id="apaSideNav">
                     ${this.navItems.map(item => `
@@ -177,7 +218,7 @@
                 </div>
             `;
 
-            // 4. Modal Global Ganti Password
+            // 5. Modal Global Ganti Password
             this.mountPasswordModal();
         },
 
@@ -276,12 +317,27 @@
 
         // Pasang Event Listeners
         attachEventListeners: function () {
+            // Tombol Sembunyikan Sidebar
+            const hideBtn = document.getElementById('apaSidebarHideBtn');
+            if (hideBtn) {
+                hideBtn.addEventListener('click', () => {
+                    this.hide();
+                });
+            }
+
+            // Tombol Mengambang Tampilkan Kembali
+            const floatBtn = document.getElementById('apaFloatingToggleBtn');
+            if (floatBtn) {
+                floatBtn.addEventListener('click', () => {
+                    this.show();
+                });
+            }
+
             // Hamburger Mobile Toggle
             const hamburgerBtn = document.getElementById('apaHamburgerBtn');
             const backdrop = document.getElementById('apaSidebarBackdrop');
-            const sidebar = document.getElementById('appSidebar');
 
-            if (hamburgerBtn && sidebar) {
+            if (hamburgerBtn) {
                 hamburgerBtn.addEventListener('click', () => {
                     this.toggleMobileMenu();
                 });
@@ -337,6 +393,53 @@
                     this.submitPasswordChange();
                 });
             }
+
+            // Shortcut Keyboard: Ctrl+B atau Cmd+B untuk toggle sidebar
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+                    e.preventDefault();
+                    this.toggleHide();
+                }
+            });
+        },
+
+        // Fungsi Sembunyikan Sidebar
+        hide: function () {
+            if (window.innerWidth <= 992) {
+                this.closeMobileMenu();
+            } else {
+                document.body.classList.add('sidebar-hidden');
+                this.isHidden = true;
+                try {
+                    localStorage.setItem('apa_sidebar_hidden', 'true');
+                } catch {}
+            }
+        },
+
+        // Fungsi Tampilkan Sidebar
+        show: function () {
+            if (window.innerWidth <= 992) {
+                this.openMobileMenu();
+            } else {
+                document.body.classList.remove('sidebar-hidden');
+                this.isHidden = false;
+                try {
+                    localStorage.setItem('apa_sidebar_hidden', 'false');
+                } catch {}
+            }
+        },
+
+        // Toggle Sembunyi / Tampil
+        toggleHide: function () {
+            if (window.innerWidth <= 992) {
+                this.toggleMobileMenu();
+            } else {
+                if (document.body.classList.contains('sidebar-hidden')) {
+                    this.show();
+                } else {
+                    this.hide();
+                }
+            }
         },
 
         // Toggle Drawer Mobile
@@ -351,6 +454,13 @@
                     backdrop.classList.remove('show');
                 }
             }
+        },
+
+        openMobileMenu: function () {
+            const sidebar = document.getElementById('appSidebar');
+            const backdrop = document.getElementById('apaSidebarBackdrop');
+            if (sidebar) sidebar.classList.add('open');
+            if (backdrop) backdrop.classList.add('show');
         },
 
         closeMobileMenu: function () {

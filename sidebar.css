@@ -26,7 +26,7 @@
     width: var(--sb-width);
     background: var(--sb-bg);
     border-right: 1px solid var(--sb-border);
-    padding: 28px 20px 24px;
+    padding: 24px 18px 20px;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -39,7 +39,15 @@
     box-sizing: border-box;
 }
 
-/* Header Brand */
+/* Header Row & Tombol Sembunyikan */
+.apa-sidebar .sidebar-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
 .apa-sidebar .brand {
     display: flex;
     align-items: center;
@@ -49,11 +57,12 @@
     font-size: 1.15rem;
     font-weight: 800;
     letter-spacing: -0.03em;
+    min-width: 0;
 }
 
 .apa-sidebar .brand-mark {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 12px;
     background: linear-gradient(135deg, var(--sb-blue), #0d9488);
     display: grid;
@@ -67,12 +76,14 @@
     display: flex;
     flex-direction: column;
     line-height: 1.2;
+    min-width: 0;
 }
 
 .apa-sidebar .brand-title {
     font-size: 1.05rem;
     font-weight: 800;
     color: var(--sb-blue-dark);
+    white-space: nowrap;
 }
 
 .apa-sidebar .brand-sub {
@@ -81,6 +92,86 @@
     color: var(--sb-muted);
     letter-spacing: 0.02em;
     margin-top: 2px;
+    white-space: nowrap;
+}
+
+/* Tombol Sembunyikan Sidebar */
+.apa-sidebar-hide-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--sb-border);
+    color: var(--sb-muted);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.apa-sidebar-hide-btn:hover {
+    background: var(--sb-blue-soft);
+    color: var(--sb-blue);
+    border-color: var(--sb-blue);
+}
+
+/* Tombol Mengambang (Floating Toggle Button) untuk Memunculkan Sidebar Kembali */
+.apa-floating-toggle-btn {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 950;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1.5px solid var(--sb-border);
+    color: var(--sb-blue-dark);
+    box-shadow: 0 4px 16px rgba(16, 56, 106, 0.12);
+    cursor: pointer;
+    place-items: center;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apa-floating-toggle-btn:hover {
+    background: var(--sb-blue-soft);
+    color: var(--sb-blue);
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(22, 133, 248, 0.25);
+}
+
+/* Animasi Konten Utama saat Sidebar Tersembunyi */
+.main-content {
+    transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1), padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Kondisi Sidebar Disembunyikan (Desktop / Tablet) */
+body.sidebar-hidden .apa-sidebar {
+    transform: translateX(-100%) !important;
+    box-shadow: none !important;
+}
+
+body.sidebar-hidden .main-content {
+    margin-left: 0 !important;
+    padding-left: max(5%, 72px) !important;
+}
+
+body.sidebar-hidden .apa-floating-toggle-btn {
+    display: grid;
+    animation: apaPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes apaPopIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* Menu Navigasi */
@@ -88,7 +179,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-top: 36px;
     flex: 1;
 }
 
@@ -390,6 +480,11 @@
         display: flex;
     }
 
+    /* Di layar mobile, tombol floating tidak diperlukan karena sudah ada hamburger */
+    .apa-floating-toggle-btn {
+        display: none !important;
+    }
+
     /* Padding top untuk halaman jika mobile topbar aktif */
     body.has-apa-sidebar {
         padding-top: 60px;
@@ -397,5 +492,6 @@
 
     .app-shell .main-content {
         margin-left: 0 !important;
+        padding-left: 18px !important;
     }
 }
