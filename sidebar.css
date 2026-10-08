@@ -43,56 +43,9 @@
 .apa-sidebar .sidebar-header-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 8px;
-    margin-bottom: 24px;
-}
-
-.apa-sidebar .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-    color: var(--sb-blue-dark);
-    font-size: 1.15rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    min-width: 0;
-}
-
-.apa-sidebar .brand-mark {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, var(--sb-blue), #0d9488);
-    display: grid;
-    place-items: center;
-    color: #ffffff;
-    box-shadow: 0 6px 16px rgba(22, 133, 248, 0.35);
-    flex-shrink: 0;
-}
-
-.apa-sidebar .brand-text {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.2;
-    min-width: 0;
-}
-
-.apa-sidebar .brand-title {
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: var(--sb-blue-dark);
-    white-space: nowrap;
-}
-
-.apa-sidebar .brand-sub {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: var(--sb-muted);
-    letter-spacing: 0.02em;
-    margin-top: 2px;
-    white-space: nowrap;
+    margin-bottom: 16px;
 }
 
 /* Tombol Sembunyikan Sidebar */
@@ -242,82 +195,7 @@ body.sidebar-hidden .apa-floating-toggle-btn {
     color: var(--sb-blue);
 }
 
-/* User Card Bawah */
-.apa-sidebar .sidebar-user-card {
-    margin-top: auto;
-    padding: 14px;
-    border-radius: 16px;
-    background: var(--sb-blue-soft);
-    border: 1px solid var(--sb-border);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
 
-.apa-sidebar .user-avatar-sm {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, var(--sb-blue), #0d9488);
-    color: #ffffff;
-    display: grid;
-    place-items: center;
-    font-weight: 800;
-    font-size: 0.88rem;
-    flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(22, 133, 248, 0.25);
-}
-
-.apa-sidebar .user-info-sm {
-    flex: 1;
-    min-width: 0;
-}
-
-.apa-sidebar .user-name-sm {
-    font-size: 0.84rem;
-    font-weight: 700;
-    color: var(--sb-blue-dark);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.apa-sidebar .user-role-badge {
-    display: inline-block;
-    font-size: 0.65rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    padding: 2px 7px;
-    border-radius: 6px;
-    margin-top: 2px;
-}
-
-.apa-sidebar .user-role-badge.admin {
-    background: #ede9fe;
-    color: #6d28d9;
-}
-
-.apa-sidebar .user-role-badge.user {
-    background: #dbeafe;
-    color: #1d4ed8;
-}
-
-.apa-sidebar .btn-logout-icon {
-    background: none;
-    border: none;
-    color: var(--sb-muted);
-    cursor: pointer;
-    padding: 7px;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    display: grid;
-    place-items: center;
-}
-
-.apa-sidebar .btn-logout-icon:hover {
-    color: var(--sb-red);
-    background: var(--sb-red-soft);
-}
 
 /* Mobile Bar Header */
 .apa-mobile-topbar {

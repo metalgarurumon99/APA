@@ -97,16 +97,10 @@ body.has-apa-topbar .apa-floating-toggle-btn {
 }
 
 .apa-topbar .topbar-brand-meaning {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #cbd5e1;
     letter-spacing: 0.02em;
-}
-
-.apa-topbar .topbar-brand-sub {
-    font-size: 0.65rem;
-    color: var(--tb-muted);
-    font-weight: 500;
 }
 
 /* Bagian Kanan: Tanggal, Notifikasi, User Info, Dropdown */
@@ -125,6 +119,13 @@ body.has-apa-topbar .apa-floating-toggle-btn {
     display: flex;
     align-items: center;
     gap: 6px;
+}
+
+/* Wrapper Notifikasi */
+.topbar-notif-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
 }
 
 /* Ikon Notifikasi */
@@ -168,44 +169,170 @@ body.has-apa-topbar .apa-floating-toggle-btn {
     box-shadow: 0 0 6px #f59e0b;
 }
 
-/* Popover Notifikasi */
+/* Popover Notifikasi (Tepat di Bawah Ikon Notifikasi) */
 .apa-topbar-notif-popover {
     display: none;
     position: absolute;
     top: calc(100% + 12px);
-    right: 210px;
-    width: 290px;
+    right: -10px;
+    width: 350px;
+    max-height: 480px;
     background: #ffffff;
-    border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+    box-shadow: 0 18px 45px rgba(12, 31, 56, 0.25);
     border: 1px solid #e2e8f0;
-    padding: 16px;
+    padding: 20px 18px;
     z-index: 1010;
     color: #1e293b;
     font-size: 0.85rem;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.apa-topbar-notif-popover::-webkit-scrollbar {
+    width: 6px;
+}
+.apa-topbar-notif-popover::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
 }
 
 .apa-topbar-notif-popover.show {
     display: block;
-    animation: apaPopIn 0.2s ease;
+    animation: apaPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.apa-topbar-notif-header {
+.notif-popover-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
-    font-weight: 700;
-    color: #0f172a;
-    border-bottom: 1px solid #f1f5f9;
-    padding-bottom: 8px;
+    margin-bottom: 14px;
 }
 
-.apa-topbar-notif-item {
-    padding: 8px 0;
-    border-bottom: 1px solid #f8fafc;
-    font-size: 0.8rem;
+.notif-popover-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+
+.notif-mark-read-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: none;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
     color: #475569;
+    transition: all 0.2s ease;
+}
+
+.notif-mark-read-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.notif-tabs-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.notif-tab-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.notif-tab-pill.active {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.notif-tab-pill.inactive {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.notif-tab-pill.inactive:hover {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.notif-section-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 10px;
+}
+
+.notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.notif-item-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 12px;
+    transition: background 0.15s ease;
+    cursor: pointer;
+}
+
+.notif-item-card:hover {
+    background: #f8fafc;
+}
+
+.notif-badge-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.notif-badge-icon.gold {
+    background: #fef9c3;
+    color: #ca8a04;
+}
+
+.notif-badge-icon.blue {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.notif-item-content {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.35;
+}
+
+.notif-item-text {
+    font-size: 0.8rem;
+    color: #334155;
+    word-break: break-word;
+}
+
+.notif-item-text strong {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.notif-item-time {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 4px;
+    font-weight: 500;
 }
 
 /* Wrapper User & Dropdown */
@@ -388,9 +515,6 @@ body.has-apa-topbar .apa-floating-toggle-btn {
     .apa-topbar {
         padding: 0 16px;
     }
-    .apa-topbar-notif-popover {
-        right: 140px;
-    }
 }
 
 @media (max-width: 640px) {
@@ -404,7 +528,7 @@ body.has-apa-topbar .apa-floating-toggle-btn {
         display: none;
     }
     .apa-topbar-notif-popover {
-        right: 10px;
-        width: 250px;
+        right: -60px;
+        width: 300px;
     }
 }

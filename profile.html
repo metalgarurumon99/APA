@@ -889,32 +889,25 @@
     <div class="app-shell">
 
         <!-- ================= SIDEBAR NAVIGASI ================= -->
-        <aside class="sidebar" id="appSidebar">
-            <a href="profile.html" class="brand">
-                <div class="brand-mark">
-                    <!-- Icon Database / Folder -->
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-                        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+        <aside class="sidebar apa-sidebar" id="appSidebar">
+            <div class="sidebar-header-row" style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+                <button class="apa-sidebar-hide-btn" id="apaSidebarHideBtn" title="Sembunyikan Sidebar (Ctrl+B)" aria-label="Sembunyikan Sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
                     </svg>
-                </div>
-                <div class="brand-text">
-                    <span>APA Portal</span>
-                    <span class="brand-sub">BPS Kab. Raja Ampat</span>
-                </div>
-            </a>
+                </button>
+            </div>
 
             <!-- Menu Sidebar -->
-            <nav class="side-nav">
-                <a href="profile.html" class="nav-item active">
+            <nav class="side-nav" id="apaSideNav">
+                <a href="profile.html" class="nav-item active" data-key="profile">
                     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>
                     <span>Profil Pegawai</span>
                 </a>
-                <a href="login.html" class="nav-item">
+                <a href="#" class="nav-item" data-key="password" data-action="openChangePasswordModal">
                     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -922,15 +915,6 @@
                     <span>Ganti Password</span>
                 </a>
             </nav>
-
-            <!-- Card Profil Pengguna yang Sedang Login -->
-            <div class="sidebar-user-card">
-                <div class="user-avatar-sm" id="sbAvatar">US</div>
-                <div class="user-info-sm">
-                    <div class="user-name-sm" id="sbFullName">Nama User</div>
-                    <span class="user-role-badge user" id="sbRoleBadge">User</span>
-                </div>
-            </div>
         </aside>
 
         <!-- ================= KONTEN UTAMA ================= -->
@@ -966,15 +950,15 @@
             <section class="profile-hero">
                 <div class="profile-hero-left">
                     <div class="profile-avatar-wrap">
-                        <span id="heroAvatarInitial">FI</span>
+                        <span id="heroAvatarInitial">--</span>
                         <div class="profile-avatar-badge" title="Status Aktif"></div>
                     </div>
                     <div class="profile-meta">
-                        <h1 id="heroNamaLengkap">Frida Irian S. Ompusunggu</h1>
+                        <h1 id="heroNamaLengkap">Memuat Profil...</h1>
                         <div class="profile-meta-sub">
-                            <span>NIP: <strong id="heroNip">198604072009022004</strong></span>
+                            <span>NIP: <strong id="heroNip">-</strong></span>
                             <span>•</span>
-                            <span>NIP Lama: <span id="heroNipLama">340050100</span></span>
+                            <span>NIP Lama: <span id="heroNipLama">-</span></span>
                             <span>•</span>
                             <span class="status-pill aktif" id="heroStatusPill">Aktif</span>
                             <span class="user-role-badge user" id="heroRolePill">Pegawai</span>
@@ -1445,8 +1429,8 @@
         // =====================================================================
         // DATA STORE LOKAL (Fallback Otomatis dari 5 CSV jika Supabase Offline)
         // =====================================================================
-        let currentViewingUsername = "frida";
-        let currentViewingNip = "198604072009022004";
+        let currentViewingUsername = "";
+        let currentViewingNip = "";
         let loggedInUser = null;
 
         // Data 25 Pegawai
@@ -1596,7 +1580,9 @@
         // =====================================================================
         window.addEventListener('DOMContentLoaded', async () => {
             initAuthSession();
-            await loadProfileData(currentViewingUsername);
+            if (currentViewingUsername) {
+                await loadProfileData(currentViewingUsername);
+            }
         });
 
         function initAuthSession() {
@@ -1604,37 +1590,50 @@
             loggedInUser = window.APA_AUTH ? window.APA_AUTH.getCurrentUser() : null;
 
             if (!loggedInUser) {
-                // Default ke user 'frida' atau admin 'rizal.akbar' jika sesi belum ada
-                loggedInUser = {
-                    username: "frida",
-                    full_name: "Frida Irian S. Ompusunggu",
-                    role: "user"
-                };
+                try {
+                    loggedInUser = JSON.parse(localStorage.getItem('apa_user') || sessionStorage.getItem('apa_user') || 'null');
+                } catch {
+                    loggedInUser = null;
+                }
+            }
+
+            if (!loggedInUser) {
+                // Alihkan ke login jika belum ada sesi aktif
+                window.location.href = 'login.html';
+                return;
             }
 
             // Atur username yang sedang ditampilkan
             currentViewingUsername = loggedInUser.username;
 
-            // Render Info Sidebar & Topbar
+            // Segera render nama & inisial user aktif ke Hero secara instan (0 milidetik tanpa jeda/flicker)
+            const words = (loggedInUser.full_name || loggedInUser.username).trim().split(/\s+/);
+            const initial = words.map(w => w[0]).slice(0, 2).join('').toUpperCase() || '--';
+            const heroNamaEl = document.getElementById('heroNamaLengkap');
+            const heroInitialEl = document.getElementById('heroAvatarInitial');
+            const heroRoleEl = document.getElementById('heroRolePill');
+            if (heroNamaEl) heroNamaEl.textContent = loggedInUser.full_name || loggedInUser.username;
+            if (heroInitialEl) heroInitialEl.textContent = initial;
+            if (heroRoleEl) {
+                heroRoleEl.textContent = loggedInUser.role === 'admin' ? 'Admin' : 'Pegawai';
+                heroRoleEl.className = 'user-role-badge ' + (loggedInUser.role === 'admin' ? 'admin' : 'user');
+            }
+
+            // Render Info Topbar & Sidebar Global
             if (window.APATopbar) {
                 window.APATopbar.renderUser(loggedInUser);
             }
             if (window.APASidebar) {
                 window.APASidebar.renderUser(loggedInUser);
-            } else {
-                document.getElementById('sbFullName').textContent = loggedInUser.full_name;
-                const initials = loggedInUser.full_name.split(' ').map(n => n[0]).slice(0, 2).join('');
-                document.getElementById('sbAvatar').textContent = initials;
-                const roleBadge = document.getElementById('sbRoleBadge');
-                roleBadge.textContent = loggedInUser.role === 'admin' ? 'Admin' : 'Pegawai';
-                roleBadge.className = 'user-role-badge ' + (loggedInUser.role === 'admin' ? 'admin' : 'user');
             }
 
             // Jika Admin, tampilkan pemilih pegawai
             if (loggedInUser.role === 'admin') {
                 const adminSelector = document.getElementById('adminPegawaiSelector');
-                adminSelector.style.display = 'flex';
-                populateEmployeeDropdown();
+                if (adminSelector) {
+                    adminSelector.style.display = 'flex';
+                    populateEmployeeDropdown();
+                }
             }
         }
 

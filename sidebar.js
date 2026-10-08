@@ -87,12 +87,11 @@
                 this.currentUser = window.APA_AUTH.getCurrentUser();
             }
             if (!this.currentUser) {
-                // Fallback default
-                this.currentUser = {
-                    username: 'frida',
-                    full_name: 'Frida Irian S. Ompusunggu',
-                    role: 'user'
-                };
+                try {
+                    this.currentUser = JSON.parse(localStorage.getItem('apa_user') || sessionStorage.getItem('apa_user') || 'null');
+                } catch {
+                    this.currentUser = null;
+                }
             }
         },
 
@@ -169,20 +168,7 @@
 
             // Render Struktur Konten Sidebar dengan Tombol Sembunyikan
             sidebarEl.innerHTML = `
-                <div class="sidebar-header-row">
-                    <a href="profile.html" class="brand">
-                        <div class="brand-mark">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-                            </svg>
-                        </div>
-                        <div class="brand-text">
-                            <span class="brand-title">APA Portal</span>
-                            <span class="brand-sub">BPS Kab. Raja Ampat</span>
-                        </div>
-                    </a>
+                <div class="sidebar-header-row" style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
                     <button class="apa-sidebar-hide-btn" id="apaSidebarHideBtn" title="Sembunyikan Sidebar (Ctrl+B)" aria-label="Sembunyikan Sidebar">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="15 18 9 12 15 6"></polyline>
@@ -201,46 +187,16 @@
                         </a>
                     `).join('')}
                 </nav>
-
-                <div class="sidebar-user-card" id="apaSidebarUserCard">
-                    <div class="user-avatar-sm" id="sbAvatar">US</div>
-                    <div class="user-info-sm">
-                        <div class="user-name-sm" id="sbFullName">Memuat...</div>
-                        <span class="user-role-badge user" id="sbRoleBadge">Pegawai</span>
-                    </div>
-                </div>
             `;
 
             // 5. Modal Global Ganti Password
             this.mountPasswordModal();
         },
 
-        // Render Data Pengguna
+        // Render Data Pengguna (Sekarang ditampilkan di Topbar Global)
         renderUser: function (user) {
             if (user) {
                 this.currentUser = user;
-            }
-
-            if (!this.currentUser) return;
-
-            const nameEl = document.getElementById('sbFullName');
-            const avatarEl = document.getElementById('sbAvatar');
-            const roleBadgeEl = document.getElementById('sbRoleBadge');
-
-            if (nameEl) {
-                nameEl.textContent = this.currentUser.full_name || this.currentUser.username || 'Pengguna';
-            }
-
-            if (avatarEl) {
-                const names = (this.currentUser.full_name || this.currentUser.username || 'US').split(' ');
-                const initials = names.map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
-                avatarEl.textContent = initials || 'US';
-            }
-
-            if (roleBadgeEl) {
-                const isAdmin = this.currentUser.role === 'admin';
-                roleBadgeEl.textContent = isAdmin ? 'Admin' : 'Pegawai';
-                roleBadgeEl.className = 'user-role-badge ' + (isAdmin ? 'admin' : 'user');
             }
         },
 

@@ -7,11 +7,6 @@
  * Cara Penggunaan:
  *   1. Panggil stylesheet: <link rel="stylesheet" href="topbar.css">
  *   2. Panggil script ini:  <script src="topbar.js"></script>
- *
- * Fitur:
- *   - Pojok kiri: Logo website, nama "APA", arti "Automasi Pekerjaan Administrasi", & favicon otomatis
- *   - Pojok kanan: Tanggal hari ini real-time, icon notifikasi, foto profil, role badge, dan dropdown logout
- *   - Terintegrasi penuh dengan window.APA_AUTH
  */
 
 (function () {
@@ -46,22 +41,21 @@
             }
         },
 
-        // 2. Ambil sesi pengguna saat ini
+        // 2. Ambil sesi pengguna saat ini secara akurat
         loadUserSession: function () {
             if (window.APA_AUTH && typeof window.APA_AUTH.getCurrentUser === 'function') {
                 this.currentUser = window.APA_AUTH.getCurrentUser();
             }
             if (!this.currentUser) {
-                this.currentUser = {
-                    username: 'frida',
-                    full_name: 'Frida Irian S. Ompusunggu',
-                    role: 'user',
-                    foto_url: null
-                };
+                try {
+                    this.currentUser = JSON.parse(localStorage.getItem('apa_user') || sessionStorage.getItem('apa_user') || 'null');
+                } catch {
+                    this.currentUser = null;
+                }
             }
         },
 
-        // 3. Format Tanggal Bahasa Indonesia (contoh: Kamis, 8 Oktober 2026 pukul 15.05)
+        // 3. Format Tanggal Bahasa Indonesia (contoh: Kamis, 8 Oktober 2026 pukul 15.23)
         formatIndonesianDateTime: function () {
             const now = new Date();
             const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -91,7 +85,7 @@
             if (this.dateTimer) clearInterval(this.dateTimer);
             this.dateTimer = setInterval(() => {
                 this.updateCurrentDate();
-            }, 30000); // Perbarui setiap 30 detik
+            }, 30000);
         },
 
         // 4. Mount Elemen Topbar ke DOM
@@ -110,7 +104,6 @@
                         <div class="topbar-brand-text">
                             <div class="topbar-brand-title">APA</div>
                             <div class="topbar-brand-meaning">Automasi Pekerjaan Administrasi</div>
-                            <div class="topbar-brand-sub">BPS Kabupaten Raja Ampat</div>
                         </div>
                     </a>
                 </div>
@@ -122,24 +115,95 @@
                         ${this.formatIndonesianDateTime()}
                     </div>
 
-                    <!-- Icon Notifikasi -->
-                    <div style="position: relative;">
+                    <!-- Icon Notifikasi dengan Popover Tepat di Bawahnya -->
+                    <div class="topbar-notif-wrapper">
                         <button class="topbar-notif-btn" id="topbarNotifBtn" title="Notifikasi" aria-label="Notifikasi">
                             <img src="Assets/notification.png" alt="Notifikasi" class="topbar-notif-icon" />
                             <span class="topbar-notif-badge"></span>
                         </button>
+
+                        <!-- Popover Notifikasi -->
                         <div class="apa-topbar-notif-popover" id="topbarNotifPopover">
-                            <div class="apa-topbar-notif-header">
-                                <span>Pemberitahuan</span>
-                                <span style="font-size: 0.72rem; color: #1685f8; font-weight: 600;">Tandai terbaca</span>
+                            <div class="notif-popover-header">
+                                <h3 class="notif-popover-title">Notifikasi</h3>
+                                <button class="notif-mark-read-btn" id="notifMarkReadBtn" title="Tandai semua dibaca" aria-label="Tandai dibaca">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </button>
                             </div>
-                            <div class="apa-topbar-notif-item">
-                                <strong>Selamat Datang di Portal APA</strong>
-                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Sistem automasi kepegawaian BPS Kab. Raja Ampat aktif.</div>
+
+                            <div class="notif-tabs-row">
+                                <button class="notif-tab-pill active" id="tabNotifSemua">Semua</button>
+                                <button class="notif-tab-pill inactive" id="tabNotifBelum">Belum Dibaca</button>
                             </div>
-                            <div class="apa-topbar-notif-item" style="border: none;">
-                                <strong>Sinkronisasi Supabase</strong>
-                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Koneksi cloud database terhubung dengan aman.</div>
+
+                            <div class="notif-section-label">Lebih lama</div>
+
+                            <div class="notif-list" id="notifListContainer">
+                                <div class="notif-item-card">
+                                    <div class="notif-badge-icon gold">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                        </svg>
+                                    </div>
+                                    <div class="notif-item-content">
+                                        <div class="notif-item-text">
+                                            <strong>Elok Agustina</strong> mengajukan PAK No. 002/2026 (AK: 191.375).
+                                        </div>
+                                        <div class="notif-item-time">12 Agu</div>
+                                    </div>
+                                </div>
+
+                                <div class="notif-item-card">
+                                    <div class="notif-badge-icon gold">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                        </svg>
+                                    </div>
+                                    <div class="notif-item-content">
+                                        <div class="notif-item-text">
+                                            <strong>Rizal Akbar Komarudin</strong> mengajukan PAK No. 001/2026 (AK: 39.667).
+                                        </div>
+                                        <div class="notif-item-time">22 Jun</div>
+                                    </div>
+                                </div>
+
+                                <div class="notif-item-card">
+                                    <div class="notif-badge-icon blue">
+                                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                            <polyline points="10 9 9 9 8 9"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="notif-item-content">
+                                        <div class="notif-item-text">
+                                            <strong>Rizal Akbar Komarudin</strong> mengajukan Surat Tugas baru (No. 391) — Melakukan pengawasan pencacahan Survei Angkatan Kerja Nasional (Sakernas) Bulan
+                                        </div>
+                                        <div class="notif-item-time">2 Jun</div>
+                                    </div>
+                                </div>
+
+                                <div class="notif-item-card">
+                                    <div class="notif-badge-icon blue">
+                                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                            <polyline points="10 9 9 9 8 9"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="notif-item-content">
+                                        <div class="notif-item-text">
+                                            <strong>Rizal Akbar Komarudin</strong> mengajukan Surat Tugas baru (No. 390) — Melakukan pengawasan pencacahan Survei Angkatan Kerja Nasional (Sakernas) Bulan
+                                        </div>
+                                        <div class="notif-item-time">2 Jun</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -248,6 +312,9 @@
             const notifPopover = document.getElementById('topbarNotifPopover');
             const logoutBtn = document.getElementById('topbarLogoutBtn');
             const changePwdBtn = document.getElementById('topbarChangePwdBtn');
+            const notifMarkReadBtn = document.getElementById('notifMarkReadBtn');
+            const tabSemua = document.getElementById('tabNotifSemua');
+            const tabBelum = document.getElementById('tabNotifBelum');
 
             // Toggle Dropdown Menu User
             if (userBtn && menu) {
@@ -260,7 +327,7 @@
                 });
             }
 
-            // Toggle Notifikasi Popover
+            // Toggle Notifikasi Popover (Tepat di bawah icon)
             if (notifBtn && notifPopover) {
                 notifBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -272,7 +339,26 @@
                 });
             }
 
-            // Tutup dropdown jika klik di luar
+            // Tab Filter Notifikasi
+            if (tabSemua && tabBelum) {
+                tabSemua.addEventListener('click', () => {
+                    tabSemua.className = 'notif-tab-pill active';
+                    tabBelum.className = 'notif-tab-pill inactive';
+                });
+                tabBelum.addEventListener('click', () => {
+                    tabBelum.className = 'notif-tab-pill active';
+                    tabSemua.className = 'notif-tab-pill inactive';
+                });
+            }
+
+            if (notifMarkReadBtn) {
+                notifMarkReadBtn.addEventListener('click', () => {
+                    const badge = document.querySelector('.topbar-notif-badge');
+                    if (badge) badge.style.display = 'none';
+                });
+            }
+
+            // Tutup dropdown/popover jika klik di luar
             document.addEventListener('click', (e) => {
                 if (menu && !menu.contains(e.target) && !userBtn?.contains(e.target)) {
                     menu.classList.remove('show');
