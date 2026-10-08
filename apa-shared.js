@@ -1,13 +1,14 @@
 /**
- * 9201 SHARED & COMPATIBILITY — utilitas umum untuk Sistem Automasi Pekerjaan Administrasi (APA)
- * ─────────────────────────────────────────────────────────────────────────────
- * Menjaga fungsionalitas dan desain sesuai spesifikasi Portal 9201 BPS Kabupaten Raja Ampat.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * APA SHARED UTILITIES — Sistem Automasi Pekerjaan Administrasi (APA)
+ * BPS Kabupaten Raja Ampat
+ * ═══════════════════════════════════════════════════════════════════════════════
  */
 (function () {
   'use strict';
 
-  // ─── CSS Injection: Custom checkbox & radio (rendering full lewat CSS) ─
-  if (!document.getElementById('9201-controls-css')) {
+  // ─── CSS Injection: Custom Checkbox & Form Controls ───────────
+  if (!document.getElementById('apa-controls-css')) {
     var ctrlCSS = `
     /* ── Custom checkbox (global) ──────────────────────────────── */
     input[type="checkbox"]{
@@ -39,7 +40,7 @@
     }
     input[type="checkbox"]:focus-visible{
       outline:none;
-      box-shadow:0 0 0 3px rgba(200,168,75,.35);
+      box-shadow:0 0 0 3px rgba(22,133,248,.25);
     }
     input[type="checkbox"]:checked{
       background-color:var(--ck-accent);
@@ -71,7 +72,7 @@
     input[type="checkbox"].ck-lg{ width:20px;height:20px;border-radius:6px }
     `;
     var ctrlStyle = document.createElement('style');
-    ctrlStyle.id = '9201-controls-css';
+    ctrlStyle.id = 'apa-controls-css';
     ctrlStyle.textContent = ctrlCSS;
     if (document.head.firstChild) {
       document.head.insertBefore(ctrlStyle, document.head.firstChild);
@@ -114,7 +115,7 @@
   }
   window.jsArg = jsArg;
 
-  // ─── data_pegawai column helpers (aktif dipakai) ─────────────────
+  // ─── data_pegawai column helpers ───────────────────────────────
   function pegawaiNama(row) {
     return row ? (row.nama ?? row.NAMA ?? '') : '';
   }
@@ -131,14 +132,13 @@
     } else {
       localStorage.removeItem('apa_user');
       sessionStorage.removeItem('apa_user');
-      localStorage.removeItem('nova_user');
       window.location.replace('login.html');
     }
   }
   window.logout = logout;
 
-  // ─── novaCheckSession ──────────────────────────────────────────
-  function novaCheckSession(opts) {
+  // ─── apaCheckSession ───────────────────────────────────────────
+  function apaCheckSession(opts) {
     opts = opts || {};
     const requireAdmin = !!opts.requireAdmin;
 
@@ -148,7 +148,7 @@
     }
     if (!s) {
       try {
-        s = JSON.parse(localStorage.getItem('apa_user') || sessionStorage.getItem('apa_user') || localStorage.getItem('nova_user') || 'null');
+        s = JSON.parse(localStorage.getItem('apa_user') || sessionStorage.getItem('apa_user') || 'null');
       } catch (e) {
         s = null;
       }
@@ -159,15 +159,14 @@
       s = {
         id: '00000000-0000-0000-0000-000000000001',
         username: 'admin',
-        full_name: 'Administrator BPS',
-        nama: 'Administrator BPS',
+        full_name: 'Administrator APA',
+        nama: 'Administrator APA',
         role: 'admin',
         roles: ['admin', 'user'],
         active_role: 'admin'
       };
       try {
         localStorage.setItem('apa_user', JSON.stringify(s));
-        localStorage.setItem('nova_user', JSON.stringify(s));
       } catch (_) {}
     }
 
@@ -185,23 +184,18 @@
       return null;
     }
 
-    // Simpan sync ke nova_user juga untuk kompatibilitas key localStorage
-    try {
-      localStorage.setItem('nova_user', JSON.stringify(s));
-    } catch (_) {}
-
     return s;
   }
-  window.novaCheckSession = novaCheckSession;
+  window.apaCheckSession = apaCheckSession;
 
-  async function novaVerifyAdminSession(session) {
+  async function apaVerifyAdminSession(session) {
     if (!session) return null;
     return session;
   }
-  window.novaVerifyAdminSession = novaVerifyAdminSession;
+  window.apaVerifyAdminSession = apaVerifyAdminSession;
 
-  // ─── novaRpc ───────────────────────────────────────────────────
-  async function novaRpc(fnName, params) {
+  // ─── apaRpc ────────────────────────────────────────────────────
+  async function apaRpc(fnName, params) {
     const res = await fetch(`${window.SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
       method:  'POST',
       headers: window.SUPABASE_HEADERS,
@@ -219,7 +213,7 @@
     if (!text) return null;
     try { return JSON.parse(text); } catch (_) { return text; }
   }
-  window.novaRpc = novaRpc;
+  window.apaRpc = apaRpc;
 
   // ─── Konstanta: nama bulan Indonesia ───────────────────────────
   window.BULAN = [
@@ -229,20 +223,5 @@
   window.BULAN_ABBR = [
     'jan','feb','mar','apr','mei','jun','jul','agu','sep','okt','nov','des'
   ];
-
-  // ─── Shims untuk komponen UI ──────────────────────────────────
-  window.Topbar9201 = {
-    setUser: function (user) {
-      if (window.APATopbar && typeof window.APATopbar.renderUser === 'function') {
-        window.APATopbar.renderUser(user);
-      }
-      if (window.APASidebar && typeof window.APASidebar.renderUser === 'function') {
-        window.APASidebar.renderUser(user);
-      }
-    }
-  };
-  window.initRoleSwitcher = function () {};
-  window.toggleUserDropdown = function () {};
-  window.switchViewRole = function () {};
 
 })();

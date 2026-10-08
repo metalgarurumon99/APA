@@ -491,14 +491,14 @@
 </div>
 
 <script src="config.js"></script>
-<script src="9201-shared.js"></script>
+<script src="apa-shared.js"></script>
 
 
 
 
 <script>
-// `esc`, `logout`, `novaCheckSession`, `novaRpc`, `BULAN`, dan `SUPABASE_HEADERS`
-// di-load dari 9201-shared.js — tidak lagi dideklarasi ulang di sini.
+// `esc`, `logout`, `apaCheckSession`, `apaRpc`, `BULAN`, dan `SUPABASE_HEADERS`
+// di-load dari apa-shared.js — tidak lagi dideklarasi ulang di sini.
 const H = SUPABASE_HEADERS; // alias singkat untuk dipakai di file ini
 let SESSION=null;let allPegawai=[];let allSurat=[];const suratMap={};let suratOrderMap={};
 let suratSortState={col:'no',dir:'desc'};
@@ -512,7 +512,7 @@ let suratSortState={col:'no',dir:'desc'};
 function getTabStorageKey(){
   let uid = 'anon';
   try {
-    const s = (SESSION && SESSION.id) ? SESSION : JSON.parse(localStorage.getItem('apa_user') || localStorage.getItem('nova_user') || 'null');
+    const s = (SESSION && SESSION.id) ? SESSION : JSON.parse(localStorage.getItem('apa_user') || 'null');
     if (s && s.id) uid = String(s.id);
   } catch(_) {}
   return `apa_active_tab_st_${uid}`;
@@ -528,8 +528,7 @@ function restoreActiveTab(){
   let tab = 'bulk';
   try {
     const key = getTabStorageKey();
-    const legacyKey = key.replace('apa_', 'nova_');
-    const saved = sessionStorage.getItem(key) || sessionStorage.getItem(legacyKey);
+    const saved = sessionStorage.getItem(key);
     if (saved === 'list' || saved === 'bulk') tab = saved;
   } catch(_) {}
   switchTab(tab);
@@ -686,7 +685,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDetailM
    Di-port dari admin-surat-tugas.js, disesuaikan untuk input draft.
 ═══════════════════════════════════════════════════════════════════ */
 
-// `BULAN` & `escAttr` di-load dari 9201-shared.js
+// di-load dari apa-shared.js
 const BULAN_ABBR = ['jan','feb','mar','apr','mei','jun','jul','agu','sep','okt','nov','des'];
 
 function parseISODate(str){
@@ -1464,7 +1463,7 @@ function renderRowHTML(id){
 function getDraftStorageKey(){
   let uid = 'anon';
   try {
-    const s = (SESSION && SESSION.id) ? SESSION : JSON.parse(localStorage.getItem('apa_user') || localStorage.getItem('nova_user') || 'null');
+    const s = (SESSION && SESSION.id) ? SESSION : JSON.parse(localStorage.getItem('apa_user') || 'null');
     if (s && s.id) uid = String(s.id);
   } catch(_) {}
   return `apa_st_draft_${uid}`;
@@ -1511,7 +1510,7 @@ function snapshotDraft(){
 function loadDraft(){
   try{
     const key = getDraftStorageKey();
-    const raw = localStorage.getItem(key) || localStorage.getItem(key.replace("apa_", "nova_"));
+    const raw = localStorage.getItem(key);
     if(!raw)return null;
     const obj=JSON.parse(raw);
     if(!obj||!Array.isArray(obj.rows)||!obj.rows.length)return null;
@@ -1519,7 +1518,7 @@ function loadDraft(){
   }catch(_){return null;}
 }
 function clearDraft(){
-  try{ const key = getDraftStorageKey(); localStorage.removeItem(key); localStorage.removeItem(key.replace("apa_", "nova_")); }catch(_){}
+  try{ const key = getDraftStorageKey(); localStorage.removeItem(key); }catch(_){}
 }
 /* Restore draft ke #bulk-tbody. Dipanggil di init() — setelah addRows(1)
    default (yang akan langsung di-replace kalau ada draft). */
@@ -1883,10 +1882,11 @@ function showBulkAlert(msg,type='error'){
 }
 
 async function init(){
-  SESSION = novaCheckSession({ requireAdmin: false });
+  SESSION = apaCheckSession({ requireAdmin: false });
   if(!SESSION)return;
-  Topbar9201.setUser(SESSION);
-  initRoleSwitcher(SESSION,false);
+  if (window.APATopbar && typeof window.APATopbar.renderUser === 'function') window.APATopbar.renderUser(SESSION);
+  if (window.APASidebar && typeof window.APASidebar.renderUser === 'function') window.APASidebar.renderUser(SESSION);
+  
   // #7: Restore tab terakhir yang user buka sebelum refresh.
   // Dipanggil sebelum loadSurat() supaya UI panel langsung tampil benar.
   restoreActiveTab();

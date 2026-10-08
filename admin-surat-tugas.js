@@ -1,19 +1,18 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   PORTAL 9201 — Admin Surat Tugas (Excel-like, multi-kolom)
+   SISTEM AUTOMASI PEKERJAAN ADMINISTRASI (APA) — Admin Surat Tugas
+   BPS Kabupaten Raja Ampat
    ─────────────────────────────────────────────────────────────────────
    Ketergantungan global:
      - SUPABASE_URL, SUPABASE_ANON_KEY (config.js)
      - getUserRoles, ADMIN_USERS (config.js)
-     - SUPABASE_HEADERS, esc, novaCheckSession, novaRpc, BULAN, logout
-       (9201-shared.js)
-     - initRoleSwitcher, toggleUserDropdown, switchViewRole
-       (9201-role-switcher.js)
+     - SUPABASE_HEADERS, esc, apaCheckSession, apaRpc, BULAN, logout
+       (apa-shared.js)
      - window.docxPreview, saveAs, docxtemplater, PizZip (libs eksternal)
 ═══════════════════════════════════════════════════════════════════════ */
 
 const ADMIN_SURAT_TUGAS_BUILD = '2026-06-17.1';
 window.ADMIN_SURAT_TUGAS_BUILD = ADMIN_SURAT_TUGAS_BUILD;
-console.info('[9201] admin-surat-tugas build', ADMIN_SURAT_TUGAS_BUILD);
+console.info('[APA] admin-surat-tugas build', ADMIN_SURAT_TUGAS_BUILD);
 
 const H = SUPABASE_HEADERS;
 
@@ -206,7 +205,7 @@ const FACTORY_DEFAULTS = {
 };
 function loadApproveDefaults() {
   try {
-    const raw = localStorage.getItem(APPROVE_DEFAULTS_KEY) || localStorage.getItem('nova_approve_defaults_v3');
+    const raw = localStorage.getItem(APPROVE_DEFAULTS_KEY);
     if (!raw) return { ...FACTORY_DEFAULTS };
     return { ...FACTORY_DEFAULTS, ...JSON.parse(raw) };
   } catch(e) { return { ...FACTORY_DEFAULTS }; }
@@ -218,16 +217,16 @@ function saveApproveDefaults(d) {
 /* ════════════════════════════════════════════════════════════════════
    SESSION & TOPBAR
 ═══════════════════════════════════════════════════════════════════════ */
-// `checkSession`, `logout`, `esc`, dan `BULAN` di-load dari 9201-shared.js.
-// Halaman ini admin-only — pakai novaCheckSession({ requireAdmin: true })
+// `checkSession`, `logout`, `esc`, dan `BULAN` di-load dari apa-shared.js.
+// Halaman ini admin-only — pakai apaCheckSession({ requireAdmin: true })
 // di init().
-// Topbar (clock + user info) di-handle oleh 9201-topbar.js.
-// Panggil Topbar9201.setUser(SESSION) saat init untuk set avatar+username.
+// Topbar dan Sidebar di-handle secara terpadu oleh topbar.js dan sidebar.js.
+// Sesi pengguna otomatis disinkronkan saat init.
 
 /* ════════════════════════════════════════════════════════════════════
    HELPERS — escape, format tanggal, badge
 ═══════════════════════════════════════════════════════════════════════ */
-// `esc` dari 9201-shared.js. `escAttr` adalah alias `esc` (juga shared).
+// `esc` dari apa-shared.js. `escAttr` adalah alias `esc` (juga shared).
 
 function fmtTgl(str) {
   if (!str) return '';
@@ -430,7 +429,7 @@ async function loadMitra() {
     if (!res.ok) {
       // Tabel mitra mungkin belum dibuat — fallback ke array kosong, jangan
       // hard-fail. Picker tetap berfungsi untuk pegawai biasa.
-      console.warn('[9201] loadMitra: HTTP', res.status, '— skip (tabel mungkin belum ada)');
+      console.warn('[APA] loadMitra: HTTP', res.status, '— skip (tabel mungkin belum ada)');
       return;
     }
     mitraList = await res.json();
@@ -846,7 +845,7 @@ function renderRowHTML(s) {
   //   - Baris 'selesai'  → bulk-dl-check  (untuk bulk download, navy default)
   //   - Baris 'menunggu' → bulk-approve-check (untuk bulk approve, hijau via .ck-success)
   // Keduanya pakai kolom yang sama supaya layout konsisten.
-  // Styling visual checkbox di-handle global oleh 9201-shared.js — di sini
+  // Styling visual checkbox di-handle global oleh apa-shared.js — di sini
   // cukup tambahkan class .ck-success untuk varian hijau.
   const checkCell = isSelesai
     ? `<td class="col-check"><input type="checkbox" class="bulk-dl-check" data-surat-id="${s.id}" onchange="updateBulkDownloadCounter()"></td>`
@@ -914,7 +913,7 @@ function attachEditableListeners(scope) {
    #8: ADMIN DRAFT PERSIST
    ─────────────────────────────────────────────────────────────────────
    Strategi:
-     - Per-row: key = nova_st_admin_draft_{userId}_{suratId}
+     - Per-row: key = apa_st_admin_draft_{userId}_{suratId}
      - Snapshot tiap blur field
      - Restore dipanggil setelah loadSurat() selesai render
      - Cleanup: setelah save row sukses (saveRowEdit / submitApprove) atau
@@ -923,7 +922,7 @@ function attachEditableListeners(scope) {
 function getAdminDraftKey(suratId) {
   let uid = 'anon';
   try {
-    const s = (typeof SESSION !== 'undefined' && SESSION && SESSION.id) ? SESSION : JSON.parse(localStorage.getItem('apa_user') || localStorage.getItem('nova_user') || 'null');
+    const s = (typeof SESSION !== 'undefined' && SESSION && SESSION.id) ? SESSION : JSON.parse(localStorage.getItem('apa_user') || 'null');
     if (s && s.id) uid = String(s.id);
   } catch (_) {}
   return `apa_st_admin_draft_${uid}_${suratId}`;
@@ -977,13 +976,12 @@ function clearAdminDraft(suratId) {
   try {
     const key = getAdminDraftKey(suratId);
     localStorage.removeItem(key);
-    localStorage.removeItem(key.replace('apa_', 'nova_'));
   } catch (_) {}
 }
 function loadAdminDraft(suratId) {
   try {
     const key = getAdminDraftKey(suratId);
-    const raw = localStorage.getItem(key) || localStorage.getItem(key.replace("apa_", "nova_"));
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const obj = JSON.parse(raw);
     if (!obj || !obj.values) return null;
@@ -2138,7 +2136,7 @@ async function loadMAKSuggestions() {
       const url = `${SUPABASE_URL}/rest/v1/surat_tugas?select=pembebanan&pembebanan=not.is.null`;
       const res = await fetch(url, { headers: H });
       if (!res.ok) {
-        console.warn(`[9201] loadMAKSuggestions HTTP ${res.status}`);
+        console.warn(`[APA] loadMAKSuggestions HTTP ${res.status}`);
         return;
       }
       rows = await res.json();
@@ -2154,9 +2152,9 @@ async function loadMAKSuggestions() {
       .sort((a, b) => b.count - a.count);
     // Bangun ringkasan (deskripsi gabungan) — load kamus_pok kalau ada
     await enrichMakSuggestionsWithDeskripsi();
-    console.log(`[9201] loadMAKSuggestions: ${makSuggestions.length} unique MAK`);
+    console.log(`[APA] loadMAKSuggestions: ${makSuggestions.length} unique MAK`);
   } catch (e) {
-    console.warn('[9201] loadMAKSuggestions error:', e);
+    console.warn('[APA] loadMAKSuggestions error:', e);
   }
 }
 
@@ -3457,7 +3455,7 @@ async function submitEditBertugas() {
     _editBertugasSuratId = null;
     showPageAlert('✅ Role pegawai berhasil disimpan.', 'success');
   } catch(e) {
-    console.error('[9201] submitEditBertugas:', e);
+    console.error('[APA] submitEditBertugas:', e);
     showPageAlert(`Gagal menyimpan: ${e.message}`, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.classList.remove('loading'); }
@@ -3821,7 +3819,7 @@ async function saveRowEdit(id) {
                       || oldNips.some((n, i) => String(n).trim() !== String(newNips[i] || '').trim());
   if (nipsChanged && Array.isArray(sBefore && sBefore.bertugas_sebagai) && sBefore.bertugas_sebagai.length) {
     payload.bertugas_sebagai = null;
-    console.log('[9201] saveRowEdit: pegawai_list berubah → bertugas_sebagai di-reset ke NULL');
+    console.log('[APA] saveRowEdit: pegawai_list berubah → bertugas_sebagai di-reset ke NULL');
   }
 
   const row = document.querySelector(`tr[data-surat-id="${id}"]`);
@@ -4094,7 +4092,7 @@ async function deletePreviewFile(filename) {
       method: 'DELETE',
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
     });
-  } catch (e) { console.warn('[9201] Cleanup preview file gagal:', e); }
+  } catch (e) { console.warn('[APA] Cleanup preview file gagal:', e); }
 }
 
 function clearPreviewCleanupTimer(filename) {
@@ -4254,7 +4252,7 @@ async function exportSuratToExcel() {
     XLSX.writeFile(wb, filename);
     showPageAlert(`✅ Berhasil export ${allSurat.length} surat ke ${filename}.`, 'success');
   } catch (e) {
-    console.error('[9201] export gagal:', e);
+    console.error('[APA] export gagal:', e);
     showPageAlert(`Gagal export: ${e.message}`, 'error');
   }
 }
@@ -4624,7 +4622,7 @@ async function importSuratFromExcel(inputEl) {
     openModal('modal-import-surat');
     showPageAlert(`Preview import siap: ${payloads.length} baris dibaca.`, 'success');
   } catch (e) {
-    console.error('[9201] preview import gagal:', e);
+    console.error('[APA] preview import gagal:', e);
     showPageAlert(`Gagal membaca import: ${e.message}`, 'error');
   }
 }
@@ -4657,7 +4655,7 @@ async function submitSuratImport() {
     showPageAlert(`Berhasil import ${count} surat tugas dengan status menunggu.`, 'success');
     await loadSurat({ resetPage: true });
   } catch (e) {
-    console.error('[9201] import gagal:', e);
+    console.error('[APA] import gagal:', e);
     showPageAlert(`Gagal import: ${e.message}`, 'error');
     if (btn) {
       btn.disabled = false;
@@ -4854,12 +4852,12 @@ async function importSuratFromExcelLegacy(inputEl) {
 
     showPageAlert(`✅ Berhasil import ${payloads.length} surat (status menunggu).${warnings.length ? ` ${warnings.length} warning di console.` : ''}`, 'success');
     if (warnings.length) {
-      console.warn('[9201 Import] Warnings:\n' + warnings.join('\n'));
+      console.warn('[APA Import] Warnings:\n' + warnings.join('\n'));
     }
     // Reload data untuk tampilkan row baru
     await loadSurat({ resetPage: true });
   } catch (e) {
-    console.error('[9201] import gagal:', e);
+    console.error('[APA] import gagal:', e);
     showPageAlert(`Gagal import: ${e.message}`, 'error');
   }
 }
@@ -5258,7 +5256,7 @@ async function submitBulkApprove() {
     showPageAlert(`✅ ${success} surat berhasil disetujui.`, 'success');
   } else {
     showPageAlert(`⚠️ ${success} berhasil, ${failures.length} gagal: ${failures.slice(0,2).join('; ')}${failures.length > 2 ? '…' : ''}`, 'error');
-    console.warn('[9201 Bulk Approve] failures:', failures);
+    console.warn('[APA Bulk Approve] failures:', failures);
   }
 
   // Unceklis semua approve checkbox
@@ -5337,7 +5335,7 @@ async function bulkDownloadSelected() {
         await new Promise(r => setTimeout(r, 400));
       }
     } catch(e) {
-      console.error(`[9201] bulk download gagal id=${id}:`, e);
+      console.error(`[APA] bulk download gagal id=${id}:`, e);
       failures.push(`${surat.perihal || 'surat #' + id}: ${e.message}`);
     }
   }
@@ -5445,7 +5443,7 @@ async function openInWordForPrint() {
     setTimeout(() => closeModal('modal-preview'), 1000);
 
   } catch (e) {
-    console.error('[9201] openInWordForPrint error:', e);
+    console.error('[APA] openInWordForPrint error:', e);
     showPageAlert(`Gagal menyiapkan dokumen untuk Word: ${e.message}`, 'error');
   } finally {
     if (btn) {
@@ -5551,7 +5549,7 @@ async function loadKamusPok(tahun) {
 
   const res = await fetch(url, { headers: { ...H } });
   if (!res.ok) {
-    console.warn(`[9201] Gagal load kamus_pok (HTTP ${res.status}). Deskripsi POK akan kosong.`);
+    console.warn(`[APA] Gagal load kamus_pok (HTTP ${res.status}). Deskripsi POK akan kosong.`);
     _kamusPokCache = {};
     _kamusPokYear  = tahun;
     return _kamusPokCache;
@@ -5573,7 +5571,7 @@ async function loadKamusPok(tahun) {
 
   _kamusPokCache = map;
   _kamusPokYear  = tahun;
-  console.log(`[9201] Kamus POK loaded: ${rows.length} rows untuk tahun ${tahun}`);
+  console.log(`[APA] Kamus POK loaded: ${rows.length} rows untuk tahun ${tahun}`);
   return map;
 }
 
@@ -5590,7 +5588,7 @@ function invalidateKamusPokCache() {
   _kamusPokYear  = null;
 }
 window.addEventListener('storage', e => {
-  if (e.key === 'apa_kamus_pok_invalidate' || e.key === 'nova_kamus_pok_invalidate') invalidateKamusPokCache();
+  if (e.key === 'apa_kamus_pok_invalidate') invalidateKamusPokCache();
 });
 
 /**
@@ -5687,7 +5685,7 @@ function loadScript(src) {
     const s = document.createElement('script');
     s.src = src;
     s.async = false;
-    s.onload = () => { console.log('[9201] Loaded:', src); resolve(); };
+    s.onload = () => { console.log('[APA] Loaded:', src); resolve(); };
     s.onerror = () => reject(new Error(`Gagal load ${src}`));
     document.head.appendChild(s);
   });
@@ -5715,7 +5713,7 @@ async function ensureDocxtemplaterLoaded() {
         return true;
       }
     } catch(e) {
-      console.warn('[9201] CDN gagal, coba berikutnya:', e.message);
+      console.warn('[APA] CDN gagal, coba berikutnya:', e.message);
     }
   }
   return false;
@@ -5747,7 +5745,7 @@ async function loadTemplateBuffer(tipe) {
   }
   if (_templateBufferCache[url]) return _templateBufferCache[url];
 
-  console.log('[9201] Memuat template (tipe=' + tipe + ') dari:', url);
+  console.log('[APA] Memuat template (tipe=' + tipe + ') dari:', url);
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(
@@ -5757,7 +5755,7 @@ async function loadTemplateBuffer(tipe) {
   }
   const buf = await res.arrayBuffer();
   _templateBufferCache[url] = buf;
-  console.log('[9201] Template loaded:', buf.byteLength, 'bytes');
+  console.log('[APA] Template loaded:', buf.byteLength, 'bytes');
   return buf;
 }
 
@@ -6218,7 +6216,7 @@ function dropTrailingEmptyParagraphs(doc) {
   const xmlPath = 'word/document.xml';
   const file = zip.file(xmlPath);
   if (!file) {
-    console.warn('[9201] dropTrailingEmpty: word/document.xml not found');
+    console.warn('[APA] dropTrailingEmpty: word/document.xml not found');
     return;
   }
 
@@ -6236,20 +6234,20 @@ function dropTrailingEmptyParagraphs(doc) {
   try {
     xmlDoc = new DOMParser().parseFromString(xml, 'application/xml');
   } catch(e) {
-    console.warn('[9201] dropTrailingEmpty: parse failed', e);
+    console.warn('[APA] dropTrailingEmpty: parse failed', e);
     return;
   }
 
   // Cek error parse (browser inject <parsererror>)
   if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
-    console.warn('[9201] dropTrailingEmpty: parsererror found, skip');
+    console.warn('[APA] dropTrailingEmpty: parsererror found, skip');
     return;
   }
 
   // Cari <w:body> (namespace-agnostic via localName)
   const body = xmlDoc.getElementsByTagNameNS('*', 'body')[0];
   if (!body) {
-    console.warn('[9201] dropTrailingEmpty: <w:body> not found');
+    console.warn('[APA] dropTrailingEmpty: <w:body> not found');
     return;
   }
 
@@ -6316,7 +6314,7 @@ function dropTrailingEmptyParagraphs(doc) {
   try {
     newXml = new XMLSerializer().serializeToString(xmlDoc);
   } catch(e) {
-    console.warn('[9201] dropTrailingEmpty: serialize failed', e);
+    console.warn('[APA] dropTrailingEmpty: serialize failed', e);
     return;
   }
 
@@ -6328,9 +6326,9 @@ function dropTrailingEmptyParagraphs(doc) {
   // Write back ke zip
   try {
     zip.file(xmlPath, newXml);
-    console.log(`[9201] dropTrailingEmpty: removed ${removed} empty trailing paragraph(s)`);
+    console.log(`[APA] dropTrailingEmpty: removed ${removed} empty trailing paragraph(s)`);
   } catch(e) {
-    console.warn('[9201] dropTrailingEmpty: zip update failed', e);
+    console.warn('[APA] dropTrailingEmpty: zip update failed', e);
   }
 }
 
@@ -6338,7 +6336,7 @@ async function buildSuratTugasDoc(data, opts) {
   // opts: { jumlahResponden?: number|string|null }
   // jumlahResponden tidak disimpan ke DB — di-pass per-call dari UI
   // (modal Approve / dialog input saat preview/download).
-  console.log('[9201] buildSuratTugasDoc() dipanggil', { suratId: data.id, opts });
+  console.log('[APA] buildSuratTugasDoc() dipanggil', { suratId: data.id, opts });
 
   // Pastikan docxtemplater sudah ter-load (dengan fallback dynamic loading)
   await ensureDocxtemplaterLoaded();
@@ -6353,7 +6351,7 @@ async function buildSuratTugasDoc(data, opts) {
    || (window.pizzip  && (window.pizzip.default  || window.pizzip));
 
   if (!DocxtemplaterCtor || !PizZipCtor) {
-    console.error('[9201] Docxtemplater / PizZip belum dimuat.',
+    console.error('[APA] Docxtemplater / PizZip belum dimuat.',
       'window.docxtemplater =', typeof window.docxtemplater,
       'window.Docxtemplater =', typeof window.Docxtemplater,
       'window.PizZip =', typeof window.PizZip,
@@ -6363,7 +6361,7 @@ async function buildSuratTugasDoc(data, opts) {
       'Periksa koneksi internet/firewall, lalu refresh halaman.'
     );
   }
-  console.log('[9201] Docxtemplater OK — akan pakai template-based rendering');
+  console.log('[APA] Docxtemplater OK — akan pakai template-based rendering');
 
   // Tentukan template berdasarkan `data.tipe`. Validasi sudah dilakukan
   // di sisi UI (admin wajib pilih tipe sebelum approve), tapi defensive
@@ -6399,7 +6397,7 @@ async function buildSuratTugasDoc(data, opts) {
   try {
     dropTrailingEmptyParagraphs(doc);
   } catch (e) {
-    console.warn('[9201] dropTrailingEmptyParagraphs error (non-fatal):', e);
+    console.warn('[APA] dropTrailingEmptyParagraphs error (non-fatal):', e);
   }
 
   const out = doc.getZip().generate({
@@ -6414,12 +6412,13 @@ async function buildSuratTugasDoc(data, opts) {
    INIT
 ═══════════════════════════════════════════════════════════════════════ */
 async function init() {
-  SESSION = novaCheckSession({ requireAdmin: true });
+  SESSION = apaCheckSession({ requireAdmin: true });
   if (!SESSION) return;
-  SESSION = await novaVerifyAdminSession(SESSION);
+  SESSION = await apaVerifyAdminSession(SESSION);
   if (!SESSION) return;
-  Topbar9201.setUser(SESSION);
-  initRoleSwitcher(SESSION, true);
+  if (window.APATopbar && typeof window.APATopbar.renderUser === 'function') window.APATopbar.renderUser(SESSION);
+  if (window.APASidebar && typeof window.APASidebar.renderUser === 'function') window.APASidebar.renderUser(SESSION);
+  
   await Promise.all([loadPegawai(), loadMitra(), loadRiwayatJabatan(), loadRiwayatPangkatGolongan(), loadRiwayatGelar(), loadUsers(), loadSurat()]);
 
   // Panaskan library saja. Template .docx tidak diambil saat halaman dibuka
