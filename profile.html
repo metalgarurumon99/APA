@@ -13,6 +13,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Konfigurasi Global Supabase -->
     <script src="supabase-config.js"></script>
+    <!-- Sidebar Global Component (CSS & JS) -->
+    <link rel="stylesheet" href="sidebar.css">
+    <script src="sidebar.js"></script>
     <style>
         /* === TEMA & VARIABEL DESAIN (Inspirasi: Referensi Desain) === */
         :root {
@@ -1615,12 +1618,16 @@
             currentViewingUsername = loggedInUser.username;
 
             // Render Info Sidebar
-            document.getElementById('sbFullName').textContent = loggedInUser.full_name;
-            const initials = loggedInUser.full_name.split(' ').map(n => n[0]).slice(0, 2).join('');
-            document.getElementById('sbAvatar').textContent = initials;
-            const roleBadge = document.getElementById('sbRoleBadge');
-            roleBadge.textContent = loggedInUser.role === 'admin' ? 'Admin' : 'Pegawai';
-            roleBadge.className = 'user-role-badge ' + (loggedInUser.role === 'admin' ? 'admin' : 'user');
+            if (window.APASidebar) {
+                window.APASidebar.renderUser(loggedInUser);
+            } else {
+                document.getElementById('sbFullName').textContent = loggedInUser.full_name;
+                const initials = loggedInUser.full_name.split(' ').map(n => n[0]).slice(0, 2).join('');
+                document.getElementById('sbAvatar').textContent = initials;
+                const roleBadge = document.getElementById('sbRoleBadge');
+                roleBadge.textContent = loggedInUser.role === 'admin' ? 'Admin' : 'Pegawai';
+                roleBadge.className = 'user-role-badge ' + (loggedInUser.role === 'admin' ? 'admin' : 'user');
+            }
 
             // Jika Admin, tampilkan pemilih pegawai
             if (loggedInUser.role === 'admin') {

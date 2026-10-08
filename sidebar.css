@@ -1,0 +1,401 @@
+/**
+ * ==============================================================================
+ * SIDEBAR GLOBAL CSS - SISTEM AUTOMASI PEKERJAAN ADMINISTRASI (APA)
+ * BPS KABUPATEN RAJA AMPAT
+ * ==============================================================================
+ */
+
+:root {
+    --sb-width: 264px;
+    --sb-bg: #ffffff;
+    --sb-border: #d6e9fc;
+    --sb-blue: #1685f8;
+    --sb-blue-hover: #0878eb;
+    --sb-blue-dark: #0a2a62;
+    --sb-blue-soft: #edf6ff;
+    --sb-muted: #64748b;
+    --sb-ink: #13233f;
+    --sb-red: #ef4444;
+    --sb-red-soft: #fee2e2;
+    --sb-shadow: 0 10px 30px rgba(16, 56, 106, 0.07);
+    --sb-font: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Sidebar Shell */
+.apa-sidebar {
+    width: var(--sb-width);
+    background: var(--sb-bg);
+    border-right: 1px solid var(--sb-border);
+    padding: 28px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 990;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+    font-family: var(--sb-font);
+    box-sizing: border-box;
+}
+
+/* Header Brand */
+.apa-sidebar .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--sb-blue-dark);
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.apa-sidebar .brand-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--sb-blue), #0d9488);
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(22, 133, 248, 0.35);
+    flex-shrink: 0;
+}
+
+.apa-sidebar .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.apa-sidebar .brand-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--sb-blue-dark);
+}
+
+.apa-sidebar .brand-sub {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--sb-muted);
+    letter-spacing: 0.02em;
+    margin-top: 2px;
+}
+
+/* Menu Navigasi */
+.apa-sidebar .side-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 36px;
+    flex: 1;
+}
+
+.apa-sidebar .nav-section-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    padding: 0 14px;
+    margin: 12px 0 4px;
+}
+
+.apa-sidebar .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    color: var(--sb-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+.apa-sidebar .nav-item svg {
+    flex-shrink: 0;
+    color: currentColor;
+    transition: transform 0.2s ease;
+}
+
+.apa-sidebar .nav-item:hover {
+    color: var(--sb-blue);
+    background: var(--sb-blue-soft);
+}
+
+.apa-sidebar .nav-item:hover svg {
+    transform: translateX(2px);
+}
+
+.apa-sidebar .nav-item.active {
+    color: var(--sb-blue);
+    background: var(--sb-blue-soft);
+    font-weight: 700;
+}
+
+.apa-sidebar .nav-badge {
+    margin-left: auto;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #dbeafe;
+    color: var(--sb-blue);
+}
+
+/* User Card Bawah */
+.apa-sidebar .sidebar-user-card {
+    margin-top: auto;
+    padding: 14px;
+    border-radius: 16px;
+    background: var(--sb-blue-soft);
+    border: 1px solid var(--sb-border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.apa-sidebar .user-avatar-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--sb-blue), #0d9488);
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 0.88rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(22, 133, 248, 0.25);
+}
+
+.apa-sidebar .user-info-sm {
+    flex: 1;
+    min-width: 0;
+}
+
+.apa-sidebar .user-name-sm {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--sb-blue-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.apa-sidebar .user-role-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 6px;
+    margin-top: 2px;
+}
+
+.apa-sidebar .user-role-badge.admin {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.apa-sidebar .user-role-badge.user {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.apa-sidebar .btn-logout-icon {
+    background: none;
+    border: none;
+    color: var(--sb-muted);
+    cursor: pointer;
+    padding: 7px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: grid;
+    place-items: center;
+}
+
+.apa-sidebar .btn-logout-icon:hover {
+    color: var(--sb-red);
+    background: var(--sb-red-soft);
+}
+
+/* Mobile Bar Header */
+.apa-mobile-topbar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--sb-border);
+    padding: 0 16px;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 980;
+    box-shadow: 0 2px 10px rgba(16, 56, 106, 0.05);
+}
+
+.apa-mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--sb-blue-dark);
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.apa-mobile-brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--sb-blue), #0d9488);
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+}
+
+.apa-hamburger-btn {
+    background: none;
+    border: 1px solid var(--sb-border);
+    border-radius: 10px;
+    padding: 7px;
+    color: var(--sb-ink);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.2s ease;
+}
+
+.apa-hamburger-btn:hover {
+    background: var(--sb-blue-soft);
+}
+
+/* Backdrop Overlay Mobile */
+.apa-sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 42, 98, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 985;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.apa-sidebar-backdrop.show {
+    display: block;
+    opacity: 1;
+}
+
+/* Modal Global Ganti Password */
+.apa-modal-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(7, 29, 66, 0.6);
+    backdrop-filter: blur(6px);
+    z-index: 1050;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: apaFadeIn 0.25s ease;
+}
+
+.apa-modal-backdrop.show {
+    display: flex;
+}
+
+.apa-modal-card {
+    background: #ffffff;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 440px;
+    padding: 28px;
+    box-shadow: 0 25px 60px rgba(7, 29, 66, 0.25);
+    border: 1px solid var(--sb-border);
+    position: relative;
+    animation: apaSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apa-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.apa-modal-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--sb-blue-dark);
+}
+
+.apa-modal-close-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.apa-modal-close-btn:hover {
+    color: var(--sb-ink);
+    background: #f1f5f9;
+}
+
+@keyframes apaFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes apaSlideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive Media Queries */
+@media (max-width: 992px) {
+    .apa-sidebar {
+        transform: translateX(-100%);
+        box-shadow: none;
+    }
+
+    .apa-sidebar.open {
+        transform: translateX(0);
+        box-shadow: 0 10px 40px rgba(7, 29, 66, 0.2);
+    }
+
+    .apa-mobile-topbar {
+        display: flex;
+    }
+
+    /* Padding top untuk halaman jika mobile topbar aktif */
+    body.has-apa-sidebar {
+        padding-top: 60px;
+    }
+
+    .app-shell .main-content {
+        margin-left: 0 !important;
+    }
+}
