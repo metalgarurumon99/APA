@@ -18,6 +18,7 @@
             this.setFavicon();
             this.loadUserSession();
             this.mountTopbar();
+            this.mountLogoutModal();
             this.updateCurrentDate();
             this.startDateTimer();
             this.renderUser();
@@ -263,6 +264,40 @@
             document.body.prepend(header);
         },
 
+        // 4b. Mount Modal Konfirmasi Logout Kustom
+        mountLogoutModal: function () {
+            if (document.getElementById('apaLogoutModal')) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'apa-logout-backdrop';
+            modal.id = 'apaLogoutModal';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.setAttribute('aria-labelledby', 'apaLogoutTitle');
+
+            modal.innerHTML = `
+                <div class="apa-logout-card">
+                    <div class="apa-logout-icon-wrap">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </div>
+                    <div class="apa-logout-title" id="apaLogoutTitle">Konfirmasi Keluar</div>
+                    <div class="apa-logout-desc">Apakah Anda yakin ingin keluar dari sistem APA BPS Kabupaten Raja Ampat?</div>
+                    <div class="apa-logout-btn-row">
+                        <button type="button" class="apa-logout-btn-cancel" id="apaLogoutCancelBtn">Batal</button>
+                        <button type="button" class="apa-logout-btn-confirm" id="apaLogoutConfirmBtn">
+                            <span>Ya, Keluar</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        },
+
         // 5. Render Data Pengguna ke Topbar
         renderUser: function (user) {
             if (user) {
@@ -377,6 +412,7 @@
                         if (userBtn) userBtn.classList.remove('active');
                     }
                     if (notifPopover) notifPopover.classList.remove('show');
+                    this.closeLogoutModal();
                 }
             });
 
@@ -398,17 +434,70 @@
                     this.handleLogout();
                 });
             }
+
+            // Event Listeners Modal Logout Kustom
+            const logoutModal = document.getElementById('apaLogoutModal');
+            const logoutCancelBtn = document.getElementById('apaLogoutCancelBtn');
+            const logoutConfirmBtn = document.getElementById('apaLogoutConfirmBtn');
+
+            if (logoutCancelBtn) {
+                logoutCancelBtn.addEventListener('click', () => {
+                    this.closeLogoutModal();
+                });
+            }
+
+            if (logoutConfirmBtn) {
+                logoutConfirmBtn.addEventListener('click', () => {
+                    this.executeLogout();
+                });
+            }
+
+            if (logoutModal) {
+                logoutModal.addEventListener('click', (e) => {
+                    if (e.target === logoutModal) {
+                        this.closeLogoutModal();
+                    }
+                });
+            }
+        },
+
+        openLogoutModal: function () {
+            const menu = document.getElementById('topbarDropdownMenu');
+            const userBtn = document.getElementById('topbarUserBtn');
+            if (menu) menu.classList.remove('show');
+            if (userBtn) userBtn.classList.remove('active');
+
+            const modal = document.getElementById('apaLogoutModal');
+            if (modal) {
+                modal.classList.add('show');
+                const cancelBtn = document.getElementById('apaLogoutCancelBtn');
+                if (cancelBtn) cancelBtn.focus();
+            }
+        },
+
+        closeLogoutModal: function () {
+            const modal = document.getElementById('apaLogoutModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
         },
 
         handleLogout: function () {
-            if (confirm('Apakah Anda yakin ingin keluar dari sistem?')) {
-                if (window.APA_AUTH && typeof window.APA_AUTH.logout === 'function') {
-                    window.APA_AUTH.logout('login.html');
-                } else {
-                    localStorage.removeItem('apa_user');
-                    sessionStorage.removeItem('apa_user');
-                    window.location.href = 'login.html';
-                }
+            this.openLogoutModal();
+        },
+
+        executeLogout: function () {
+            const confirmBtn = document.getElementById('apaLogoutConfirmBtn');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = `<span>Mengeluarkan...</span>`;
+            }
+            if (window.APA_AUTH && typeof window.APA_AUTH.logout === 'function') {
+                window.APA_AUTH.logout('login.html');
+            } else {
+                localStorage.removeItem('apa_user');
+                sessionStorage.removeItem('apa_user');
+                window.location.href = 'login.html';
             }
         }
     };

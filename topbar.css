@@ -532,3 +532,130 @@ body.has-apa-topbar .apa-floating-toggle-btn {
         width: 300px;
     }
 }
+
+/* ==========================================================================
+   MODAL KONFIRMASI LOGOUT GLOBAL SESUAI TEMA WEBSITE (BPS APA)
+   ========================================================================== */
+.apa-logout-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(7, 29, 66, 0.62);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.apa-logout-backdrop.show {
+    display: flex;
+    animation: apaLogoutFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes apaLogoutFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.apa-logout-card {
+    background: #ffffff;
+    border-radius: 22px;
+    width: 100%;
+    max-width: 410px;
+    box-shadow: 0 25px 60px rgba(12, 31, 56, 0.28), 0 0 1px rgba(12, 31, 56, 0.15);
+    border: 1px solid #d6e9fc;
+    padding: 32px 26px 26px;
+    text-align: center;
+    box-sizing: border-box;
+    position: relative;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.apa-logout-icon-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: #fee2e2;
+    color: #ef4444;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 18px;
+    box-shadow: 0 8px 22px rgba(239, 68, 68, 0.22);
+}
+
+.apa-logout-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0a2a62;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+}
+
+.apa-logout-desc {
+    font-size: 0.88rem;
+    color: #64748b;
+    line-height: 1.55;
+    margin-bottom: 26px;
+}
+
+.apa-logout-btn-row {
+    display: flex;
+    gap: 12px;
+}
+
+.apa-logout-btn-cancel {
+    flex: 1;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: 1.5px solid #d6e9fc;
+    background: #ffffff;
+    color: #13233f;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    font-family: inherit;
+}
+
+.apa-logout-btn-cancel:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+}
+
+.apa-logout-btn-confirm {
+    flex: 1;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+    transition: all 0.2s ease;
+    outline: none;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.apa-logout-btn-confirm:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
+    transform: translateY(-1px);
+}
+

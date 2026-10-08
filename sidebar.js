@@ -585,14 +585,21 @@
 
         // Handler Logout Global
         handleLogout: function () {
-            if (confirm('Apakah Anda yakin ingin keluar dari sistem?')) {
-                if (window.APA_AUTH && typeof window.APA_AUTH.logout === 'function') {
-                    window.APA_AUTH.logout('login.html');
-                } else {
-                    localStorage.removeItem('apa_user');
-                    sessionStorage.removeItem('apa_user');
-                    window.location.href = 'login.html';
-                }
+            if (window.APATopbar && typeof window.APATopbar.handleLogout === 'function') {
+                window.APATopbar.handleLogout();
+                return;
+            }
+            const modal = document.getElementById('apaLogoutModal');
+            if (modal) {
+                modal.classList.add('show');
+                return;
+            }
+            if (window.APA_AUTH && typeof window.APA_AUTH.logout === 'function') {
+                window.APA_AUTH.logout('login.html');
+            } else {
+                localStorage.removeItem('apa_user');
+                sessionStorage.removeItem('apa_user');
+                window.location.href = 'login.html';
             }
         }
     };
