@@ -38,52 +38,7 @@
     --sidebar-w:260px;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  html{height:100%}
-  body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;height:100%;display:flex;flex-direction:column;overflow-x:hidden}
-
-  /* TOPBAR di-handle 9201-topbar.js. Sidebar struktur di bawah. */
-  .layout{display:flex;flex:1;min-height:0}
-  .sidebar{
-    width:var(--sidebar-w);background:var(--white);border-right:1px solid var(--border);
-    display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;
-    transition:width .25s ease, opacity .2s ease;
-    position:relative;
-  }
-  /* #3: Sidebar collapsed state — toggle via tombol .sidebar-toggle */
-  body.sidebar-collapsed .sidebar{
-    width:0;opacity:0;border-right-width:0;overflow:hidden;pointer-events:none;
-  }
-  body.sidebar-collapsed .topbar-brand{
-    width:0;padding:0;border-right:none;opacity:0;overflow:hidden;
-    transition:width .25s ease, opacity .2s ease;
-  }
-  /* Tombol toggle — fixed position di pinggir sidebar, melayang di atas
-     border. Saat collapsed, geser ke ujung kiri (x:0). */
-  .sidebar-toggle{
-    position:fixed;top:62px;left:calc(var(--sidebar-w) - 14px);
-    width:28px;height:28px;border-radius:50%;
-    background:var(--white);border:1.5px solid var(--border);
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer;z-index:150;color:var(--navy);
-    transition:left .25s ease, background .15s, transform .15s;
-    box-shadow:0 2px 8px rgba(13,35,64,.08);
-    font-size:13px;font-weight:700;line-height:1;padding:0;
-  }
-  .sidebar-toggle:hover{background:var(--bg);transform:scale(1.05)}
-  body.sidebar-collapsed .sidebar-toggle{left:6px}
-  body.sidebar-collapsed .sidebar-toggle .toggle-icon{transform:rotate(180deg)}
-  .toggle-icon{display:inline-block;transition:transform .25s ease}
-  .sidebar-section-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;padding:20px 20px 8px}
-  .nav-group-label{font-size:10px;font-weight:600;color:var(--border2);letter-spacing:1.2px;text-transform:uppercase;padding:16px 20px 6px;margin-top:4px}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-left:3px solid transparent;text-decoration:none;user-select:none;transition:background .15s,color .15s}
-  .nav-item:hover{background:var(--bg);color:var(--navy)}
-  .nav-item.active{background:var(--gold-light);color:var(--navy);border-left-color:var(--gold);font-weight:600}
-  .nav-item-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--bg);flex-shrink:0;transition:background .15s}
-  .nav-item.active .nav-item-icon{background:rgba(200,168,75,.2)}
-  .nav-item:hover .nav-item-icon{background:var(--border)}
-  .sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.7}
-  .sidebar-footer strong{color:var(--navy);font-weight:600}
-  .admin-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(200,168,75,0.15);border:1px solid rgba(200,168,75,0.35);border-radius:100px;padding:2px 8px;font-size:10px;font-weight:600;color:var(--gold);margin-top:4px;letter-spacing:.3px}
+  body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;overflow-x:hidden}
 
   .main{flex:1;overflow-y:auto;padding:32px 36px}
   .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:24px;flex-wrap:wrap}
@@ -678,10 +633,8 @@
     #modal-preview .preview-container section.docx:last-child { page-break-after:auto; }
   }
 
-  @media(max-width:768px){:root{--sidebar-w:220px}.main{padding:24px 16px}}
+  @media(max-width:768px){.main{padding:24px 16px}}
   @media(max-width:600px){
-    .sidebar{position:fixed;left:-260px;top:52px;bottom:0;z-index:150;transition:left .25s ease;box-shadow:4px 0 20px rgba(13,35,64,.12)}
-    .sidebar.open{left:0}.layout{display:block}
     .detail-grid{grid-template-columns:1fr}.modal{max-width:100%}
   }
 
@@ -727,11 +680,6 @@
   }  
 
   /* Integrasi layout APA Shell */
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-  }
   .app-shell {
     display: flex;
     min-height: 100vh;

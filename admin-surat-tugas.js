@@ -195,7 +195,7 @@ let selectedId = null;
 // v3 — format `pembebanan` berubah menjadi kode MAK terstruktur.
 // Lihat parseMAK() untuk format yang valid. Bumping versi key agar
 // default lama (yang berisi narasi "DIPA BPS...") tidak ter-prefill.
-const APPROVE_DEFAULTS_KEY = 'nova_approve_defaults_v3';
+const APPROVE_DEFAULTS_KEY = 'apa_approve_defaults_v3';
 const FACTORY_DEFAULTS = {
   alat_angkutan:  'Kendaraan Darat',
   // Format wajib: program(3 segmen).kegiatan.kro.ro.komponen.sub_komponen.akun
@@ -206,7 +206,7 @@ const FACTORY_DEFAULTS = {
 };
 function loadApproveDefaults() {
   try {
-    const raw = localStorage.getItem(APPROVE_DEFAULTS_KEY);
+    const raw = localStorage.getItem(APPROVE_DEFAULTS_KEY) || localStorage.getItem('nova_approve_defaults_v3');
     if (!raw) return { ...FACTORY_DEFAULTS };
     return { ...FACTORY_DEFAULTS, ...JSON.parse(raw) };
   } catch(e) { return { ...FACTORY_DEFAULTS }; }
@@ -923,10 +923,10 @@ function attachEditableListeners(scope) {
 function getAdminDraftKey(suratId) {
   let uid = 'anon';
   try {
-    const s = JSON.parse(localStorage.getItem('nova_user') || 'null');
+    const s = (typeof SESSION !== 'undefined' && SESSION && SESSION.id) ? SESSION : JSON.parse(localStorage.getItem('apa_user') || localStorage.getItem('nova_user') || 'null');
     if (s && s.id) uid = String(s.id);
   } catch (_) {}
-  return `nova_st_admin_draft_${uid}_${suratId}`;
+  return `apa_st_admin_draft_${uid}_${suratId}`;
 }
 function snapshotAdminDraft(suratId) {
   const values = collectRowFields(suratId);
@@ -974,11 +974,16 @@ function snapshotAdminDraft(suratId) {
   }
 }
 function clearAdminDraft(suratId) {
-  try { localStorage.removeItem(getAdminDraftKey(suratId)); } catch(_) {}
+  try {
+    const key = getAdminDraftKey(suratId);
+    localStorage.removeItem(key);
+    localStorage.removeItem(key.replace('apa_', 'nova_'));
+  } catch (_) {}
 }
 function loadAdminDraft(suratId) {
   try {
-    const raw = localStorage.getItem(getAdminDraftKey(suratId));
+    const key = getAdminDraftKey(suratId);
+    const raw = localStorage.getItem(key) || localStorage.getItem(key.replace("apa_", "nova_"));
     if (!raw) return null;
     const obj = JSON.parse(raw);
     if (!obj || !obj.values) return null;
@@ -5585,7 +5590,7 @@ function invalidateKamusPokCache() {
   _kamusPokYear  = null;
 }
 window.addEventListener('storage', e => {
-  if (e.key === 'nova_kamus_pok_invalidate') invalidateKamusPokCache();
+  if (e.key === 'apa_kamus_pok_invalidate' || e.key === 'nova_kamus_pok_invalidate') invalidateKamusPokCache();
 });
 
 /**

@@ -80,18 +80,20 @@
     }
   }
 
-  // ─── Headers Supabase ──────────────────────────────────────────
-  const SUP_URL = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || window.SUPABASE_URL || 'https://dxbeernfohpidaaqlnjp.supabase.co';
-  const SUP_KEY = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) || window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4YmVlcm5mb2hwaWRhYXFsbmpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzOTgzNDIsImV4cCI6MjEwNjk3NDM0Mn0.ZE23RO8OvsuFWyq5L6FKp4JhMcSDfKVp_rhIos8aFgw';
+  // ─── Headers Supabase (diambil dari config.js / supabase-config.js) ─
+  const SUP_URL = window.SUPABASE_URL || (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || 'https://dxbeernfohpidaaqlnjp.supabase.co';
+  const SUP_KEY = window.SUPABASE_ANON_KEY || (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4YmVlcm5mb2hwaWRhYXFsbmpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzOTgzNDIsImV4cCI6MjEwNjk3NDM0Mn0.ZE23RO8OvsuFWyq5L6FKp4JhMcSDfKVp_rhIos8aFgw';
 
   window.SUPABASE_URL = SUP_URL;
   window.SUPABASE_ANON_KEY = SUP_KEY;
 
-  window.SUPABASE_HEADERS = {
-    'apikey': SUP_KEY,
-    'Authorization': `Bearer ${SUP_KEY}`,
-    'Content-Type': 'application/json'
-  };
+  if (!window.SUPABASE_HEADERS) {
+    window.SUPABASE_HEADERS = {
+      'apikey': SUP_KEY,
+      'Authorization': `Bearer ${SUP_KEY}`,
+      'Content-Type': 'application/json'
+    };
+  }
 
   // ─── Escape HTML ───────────────────────────────────────────────
   function esc(s) {
@@ -112,39 +114,15 @@
   }
   window.jsArg = jsArg;
 
-  // ─── data_pegawai column helpers ─────────────────────────────────
+  // ─── data_pegawai column helpers (aktif dipakai) ─────────────────
   function pegawaiNama(row) {
     return row ? (row.nama ?? row.NAMA ?? '') : '';
   }
   function pegawaiNip(row) {
     return row ? (row.pegawai_nip ?? row.NIP ?? row.username ?? '') : '';
   }
-  function pegawaiNipLama(row) {
-    return row ? (row.nip_lama ?? row.niplama ?? row['NIP LAMA'] ?? row['Niplama'] ?? '') : '';
-  }
-  function pegawaiKarpeg(row) {
-    return row ? (row.karpeg ?? row['NOMOR SERI KARPEG'] ?? '') : '';
-  }
-  function pegawaiTtl(row) {
-    return row ? (row.ttl ?? row['TEMPAT/TANGGAL LAHIR'] ?? '') : '';
-  }
-  function pegawaiJk(row) {
-    return row ? (row.jk ?? row['JENIS KELAMIN'] ?? '') : '';
-  }
-  function pegawaiUnitKerja(row) {
-    return row ? (row.unit_kerja ?? row['UNIT KERJA'] ?? row.UNIT_KERJA ?? '') : '';
-  }
-  function pegawaiPendidikanTerakhir(row) {
-    return row ? (row.pendidikan_terakhir ?? row['PENDIDIKAN TERAKHIR'] ?? '') : '';
-  }
   window.pegawaiNama = pegawaiNama;
   window.pegawaiNip = pegawaiNip;
-  window.pegawaiNipLama = pegawaiNipLama;
-  window.pegawaiKarpeg = pegawaiKarpeg;
-  window.pegawaiTtl = pegawaiTtl;
-  window.pegawaiJk = pegawaiJk;
-  window.pegawaiUnitKerja = pegawaiUnitKerja;
-  window.pegawaiPendidikanTerakhir = pegawaiPendidikanTerakhir;
 
   // ─── Logout ────────────────────────────────────────────────────
   function logout() {
