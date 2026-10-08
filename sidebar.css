@@ -26,7 +26,7 @@
     width: var(--sb-width);
     background: var(--sb-bg);
     border-right: 1px solid var(--sb-border);
-    padding: 12px 14px 20px;
+    padding: 16px 14px 20px;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -39,20 +39,24 @@
     box-sizing: border-box;
 }
 
-/* Header Row & Tombol Sembunyikan */
-.apa-sidebar .sidebar-header-row {
+/* Baris Menu Pertama: Sejajar Bersebelahan dengan Tombol Sembunyikan */
+.apa-sidebar .sidebar-menu-row-first {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
     gap: 8px;
-    margin-bottom: 8px;
+    width: 100%;
 }
 
-/* Tombol Sembunyikan Sidebar */
+.apa-sidebar .sidebar-menu-row-first .nav-item {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Tombol Sembunyikan Sidebar Sejajar Menu */
 .apa-sidebar-hide-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 38px;
+    height: 42px;
+    border-radius: 12px;
     background: transparent;
     border: 1px solid var(--sb-border);
     color: var(--sb-muted);
