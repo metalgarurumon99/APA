@@ -74,7 +74,11 @@
         // Deteksi halaman saat ini
         detectActivePage: function () {
             const path = window.location.pathname.toLowerCase();
-            if (path.includes('users') || path.includes('user-management')) {
+            if (path.includes('minta-surat-tugas')) {
+                this.activeMenuKey = 'minta-surat-tugas';
+            } else if (path.includes('surat-tugas')) {
+                this.activeMenuKey = 'surat-tugas';
+            } else if (path.includes('users') || path.includes('user-management')) {
                 this.activeMenuKey = 'users';
             } else if (path.includes('profile')) {
                 this.activeMenuKey = 'profile';
@@ -83,7 +87,7 @@
             }
         },
 
-        // Ambil Daftar Menu (Khusus Admin mendapat menu Manajemen Pengguna)
+        // Ambil Daftar Menu (Sesuai Role User & Admin)
         getNavItems: function () {
             const items = [
                 {
@@ -94,6 +98,17 @@
                         <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>`
+                },
+                {
+                    key: 'minta-surat-tugas',
+                    label: 'Minta Surat Tugas',
+                    url: 'minta-surat-tugas.html',
+                    icon: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>`
                 }
             ];
 
@@ -103,6 +118,16 @@
             );
 
             if (isAdmin) {
+                items.push({
+                    key: 'surat-tugas',
+                    label: 'Surat Tugas',
+                    url: 'surat-tugas.html',
+                    icon: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 11l3 3L22 4"></path>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>`
+                });
+
                 items.push({
                     key: 'users',
                     label: 'Manajemen Pengguna',

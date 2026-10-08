@@ -16,15 +16,30 @@ Aplikasi web modern untuk manajemen administrasi dan profil kepegawaian Badan Pu
   - 4 Quick Stat Cards (Jabatan Utama, Pangkat/Golongan, Angka Kredit PAK, Unit Kerja).
   - 5 Tab navigasi terpadu: **Biodata Pegawai**, **Riwayat Jabatan**, **Riwayat Kepangkatan**, **Riwayat Angka Kredit**, dan **Riwayat Gelar**.
   - Modal CRUD responsif untuk penambahan dan pembaharuan data.
+- **Halaman Minta Surat Tugas (`minta-surat-tugas.html`)**:
+  - Stat cards: Total, Menunggu, Selesai.
+  - Form input multi-baris bergaya spreadsheet dengan tombol `+ 1 Baris`, `+ 5 Baris`, `Pilih Semua`, `Kirim yang Dipilih (n)`.
+  - Multi-tag autocomplete pegawai & mitra statistik (`MITRA-{tahun}-{id 3 digit}`).
+  - Penyimpanan draf otomatis di LocalStorage dan pengajuan batch status 'menunggu'.
+  - Riwayat pengajuan dengan filter status, pencarian, modal detail lengkap, dan proteksi hapus hanya untuk status menunggu.
+- **Halaman Surat Tugas Admin (`surat-tugas.html`)**:
+  - Stat cards: Total, Menunggu, Selesai ("Daftar Pengajuan Surat Tugas").
+  - Toolbar komprehensif: Search, Filter Status, Tambah, Export (xlsx), Import (xlsx + preview modal), Download Bulk (zip docx), Setujui Terpilih, dan Muat Ulang.
+  - Tabel grid gaya Excel inline editable dengan header & kolom kiri sticky, double synchronized horizontal scrollbar, navigasi keyboard (panah/Enter/Tab), textarea auto-grow, dan pagination 100 baris.
+  - 10 Tipe Surat Tugas lengkap dengan flags `{has_spd, has_kendaraan, has_menginap, has_lampiran, has_visum}` dan mapping ke 3 template docx.
+  - Modal "Setujui Surat Tugas" dengan validasi error, cek bentrok jadwal & pensiun, pengaturan per-personel "Bertugas Sebagai", dan penomoran otomatis berurutan tahunan:
+    - Surat Tugas: `B-{nomor}/668870-92800/KP-650/{mm}/{yyyy}`
+    - SPD: `B-{nomor}/668870-92800/SPPD-{kode_mak}/{mm}/{yyyy}`
+  - Modal "Preview Surat Tugas" via `docx-preview` dengan opsi "Buka di Word & Print" serta "Download .docx".
 - **Manajemen Hak Akses (Role-Based Access Control)**:
-  - **Admin**: Akses penuh untuk melihat, menambah, mengedit, dan menghapus seluruh tabel, serta dropdown *employee switcher* untuk mengelola 25 pegawai.
-  - **User**: Dapat melihat profilnya sendiri, serta menambah dan memperbarui biodata dan riwayat. Tombol hapus disembunyikan.
-- **Integrasi Supabase Terpusat (`supabase-config.js`)**:
-  - Konfigurasi global client Supabase (`window.supabaseClient` & `window.APA_AUTH`).
-  - Stored procedures / RPC (`login_user`, `change_user_password`, `get_pegawai_profile`).
-- **Skema Database & Seeding Lengkap (`Tabel/setup_supabase.sql`)**:
-  - Relasi berjenjang menggunakan NIP (`users.username` -> `data_pegawai.pegawai_nip` -> tabel riwayat).
-  - Data bawaan lengkap dari ke-6 file CSV.
+  - **Admin**: Akses penuh ke seluruh menu, termasuk Surat Tugas dan Manajemen Pengguna.
+  - **User**: Akses profil dan Minta Surat Tugas.
+- **Integrasi Supabase Terpusat (`supabase-config.js` & `surat-tugas-helper.js`)**:
+  - Single Source of Truth untuk data kepegawaian, riwayat, POK, dan pengajuan surat tugas.
+  - Otomatis fallback ke penyimpanan lokal browser jika tabel cloud belum disetup.
+- **Skema Database & Seeding Lengkap (`Tabel/setup_supabase.sql` & `Tabel/setup_surat_tugas.sql`)**:
+  - Tabel `kamus_pok`, `mitra`, dan `surat_tugas`.
+  - Storage buckets `template` (public) dan `surat-tugas-preview` (private).
 
 ---
 
@@ -41,7 +56,8 @@ Aplikasi ini bersifat statis (HTML, CSS Vanilla, JavaScript Client SDK) sehingga
 ### 2. Setup Supabase
 1. Buka proyek Supabase di dashboard Anda.
 2. Masuk ke menu **SQL Editor**.
-3. Salin seluruh isi file [`Tabel/setup_supabase.sql`](Tabel/setup_supabase.sql) dan jalankan (**Run**).
+3. Jalankan file dasar: [`Tabel/setup_supabase.sql`](Tabel/setup_supabase.sql).
+4. Jalankan file modul surat tugas: [`Tabel/setup_surat_tugas.sql`](Tabel/setup_surat_tugas.sql).
 
 ---
 
@@ -52,15 +68,15 @@ APA/
 ├── index.html                   # Entry point redirect untuk GitHub Pages
 ├── login.html                   # Halaman Login & Ganti Password
 ├── profile.html                 # Halaman Profil Pegawai Lengkap & CRUD
-├── raja-ampat-background.html   # Komponen visual latar belakang Raja Ampat
+├── minta-surat-tugas.html       # Halaman Minta Surat Tugas (User)
+├── surat-tugas.html             # Halaman Surat Tugas Excel-like (Admin)
+├── surat-tugas-helper.js        # Helper logika bisnis & generator docx/xlsx
+├── sidebar.js & sidebar.css     # Komponen navigasi global
+├── topbar.js & topbar.css       # Komponen topbar global
 ├── supabase-config.js           # Konfigurasi Supabase Client & Auth Helper
+├── Buckets/                     # Berkas template Word .docx resmi
 ├── Tabel/                       # Skrip SQL & CSV data awal
 │   ├── setup_supabase.sql
-│   ├── users.csv
-│   ├── data_pegawai.csv
-│   ├── riwayat_jabatan.csv
-│   ├── riwayat_pangkat_golongan.csv
-│   ├── riwayat_angka_kredit.csv
-│   └── riwayat_gelar.csv
-└── Referensi Desain/            # Aset dan referensi desain antarmuka
+│   ├── setup_surat_tugas.sql
+│   └── *.csv
 ```
