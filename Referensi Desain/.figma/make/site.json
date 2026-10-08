@@ -1,0 +1,10 @@
+{
+  "description": "A comprehensive healthcare platform enabling patients to find doctors, book appointments, manage prescriptions, view lab reports, and receive reminders.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
