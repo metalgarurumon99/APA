@@ -1325,26 +1325,11 @@
                     });
 
                     if (error) {
-                        console.warn("RPC login_user di Supabase belum dibuat atau gagal:", error.message);
-                        // Fallback ke data users.csv jika setup_supabase.sql belum dieksekusi di database
-                        const foundUser = LOCAL_USERS_STORE.find(u => u.username.toLowerCase() === username.toLowerCase());
-                        if (foundUser && foundUser.password === password) {
-                            authResult = {
-                                success: true,
-                                user: {
-                                    id: foundUser.id,
-                                    username: foundUser.username,
-                                    full_name: foundUser.full_name,
-                                    role: foundUser.role,
-                                    must_change_password: foundUser.must_change_password
-                                }
-                            };
-                        } else {
-                            authResult = {
-                                success: false,
-                                message: "Username atau password salah"
-                            };
-                        }
+                        console.error("RPC login_user di Supabase error:", error.message);
+                        authResult = {
+                            success: false,
+                            message: "Gagal login ke database: " + error.message
+                        };
                     } else {
                         authResult = data;
                     }
@@ -1532,25 +1517,23 @@
                     });
 
                     if (error) {
-                        console.warn("RPC change_user_password di Supabase belum dibuat atau gagal:", error.message);
-                        const userIdx = LOCAL_USERS_STORE.findIndex(u => u.username.toLowerCase() === currentAuthSession.username.toLowerCase());
-                        if (userIdx !== -1) {
-                            LOCAL_USERS_STORE[userIdx].password = newPwd;
-                            LOCAL_USERS_STORE[userIdx].must_change_password = false;
-                        }
-                        updateResult = { success: true, message: "Password berhasil diperbarui" };
+                        console.error("RPC change_user_password di Supabase gagal:", error.message);
+                        updateResult = { 
+                            success: false, 
+                            message: "Gagal menyimpan ke database Supabase: " + error.message 
+                        };
                     } else {
                         updateResult = data;
                     }
                 } else {
-                    // Fallback Demo Lokal
+                    // Fallback Demo Lokal jika tidak ada koneksi sama sekali
                     await new Promise(r => setTimeout(r, 700));
                     const userIdx = LOCAL_USERS_STORE.findIndex(u => u.username.toLowerCase() === currentAuthSession.username.toLowerCase());
                     if (userIdx !== -1) {
                         LOCAL_USERS_STORE[userIdx].password = newPwd;
                         LOCAL_USERS_STORE[userIdx].must_change_password = false;
                     }
-                    updateResult = { success: true, message: "Password berhasil diperbarui" };
+                    updateResult = { success: true, message: "Password berhasil diperbarui (Mode Offline)" };
                 }
 
                 cpBtn.disabled = false;

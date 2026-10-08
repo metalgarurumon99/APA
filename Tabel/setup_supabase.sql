@@ -143,7 +143,7 @@ CREATE OR REPLACE FUNCTION public.login_user(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_user RECORD;
@@ -160,7 +160,7 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', 'Username atau password salah');
     END IF;
 
-    IF v_user.password_hash = crypt(p_password, v_user.password_hash) THEN
+    IF v_user.password_hash = extensions.crypt(p_password, v_user.password_hash) THEN
         UPDATE public.users SET last_login = now() WHERE id = v_user.id;
 
         -- Ambil NIP yang bersesuaian di data_pegawai
@@ -192,7 +192,7 @@ CREATE OR REPLACE FUNCTION public.change_user_password(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_user RECORD;
@@ -209,12 +209,12 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', 'Pengguna tidak ditemukan');
     END IF;
 
-    IF v_user.password_hash != crypt(p_old_password, v_user.password_hash) THEN
+    IF v_user.password_hash != extensions.crypt(p_old_password, v_user.password_hash) THEN
         RETURN jsonb_build_object('success', false, 'message', 'Password lama tidak sesuai');
     END IF;
 
     UPDATE public.users
-    SET password_hash = crypt(p_new_password, gen_salt('bf', 10)),
+    SET password_hash = extensions.crypt(p_new_password, extensions.gen_salt('bf', 10)),
         must_change_password = FALSE,
         last_login = now()
     WHERE id = v_user.id;
