@@ -1,1877 +1,1133 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Surat Tugas - Sistem Automasi Pekerjaan Administrasi (APA)</title>
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Favicon Website -->
-    <link rel="icon" type="image/svg+xml" href="Assets/ART logo.svg">
-    <!-- Supabase JS Client SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js"></script>
-    <!-- Topbar Global Component (CSS & JS) -->
-    <link rel="stylesheet" href="topbar.css">
-    <script src="topbar.js"></script>
-    <!-- Sidebar Global Component (CSS & JS) -->
-    <link rel="stylesheet" href="sidebar.css">
-    <script src="sidebar.js"></script>
-    <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/pizzip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.49.1/docxtemplater.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Flatpickr for Custom Date Range Picker -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
-    <!-- Surat Tugas Core Helper -->
-    <script src="surat-tugas-helper.js"></script>
-
-    <style>
-        :root {
-            --blue: #1685f8;
-            --blue-hover: #0878eb;
-            --blue-dark: #0a2a62;
-            --blue-deep: #071d42;
-            --blue-soft: #edf6ff;
-            --blue-border: #d6e9fc;
-            --white: #ffffff;
-            --ink: #13233f;
-            --muted: #64748b;
-            --green: #10b981;
-            --green-soft: #dcfced;
-            --green-dark: #07895f;
-            --orange: #f59e0b;
-            --orange-soft: #fef3c7;
-            --red: #ef4444;
-            --red-soft: #fee2e2;
-            --purple: #8b5cf6;
-            --purple-soft: #ede9fe;
-            --bg: #f5f8fc;
-            --shadow-subtle: 0 4px 16px rgba(16, 56, 106, 0.05);
-            --shadow-card: 0 10px 30px rgba(16, 56, 106, 0.07);
-            --shadow-float: 0 20px 48px rgba(16, 56, 106, 0.12);
-            --font-family: 'Inter', sans-serif;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: var(--font-family);
-            background: var(--bg);
-            color: var(--ink);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .app-shell {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .main-content {
-            margin-left: 264px;
-            flex: 1;
-            min-height: 100vh;
-            padding: 32px 3% 80px;
-            max-width: calc(100vw - 264px);
-            overflow-x: hidden;
-            transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        body.sidebar-hidden .main-content {
-            margin-left: 0 !important;
-            max-width: 100vw !important;
-            padding-left: max(4%, 72px) !important;
-        }
-
-        /* Page Header */
-        .page-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 20px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-
-        .eyebrow {
-            font-size: 0.72rem;
-            font-weight: 800;
-            letter-spacing: 0.1em;
-            color: var(--blue);
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-
-        .page-title {
-            font-size: 1.85rem;
-            font-weight: 800;
-            color: var(--blue-dark);
-            letter-spacing: -0.03em;
-        }
-
-        .page-desc {
-            font-size: 0.9rem;
-            color: var(--muted);
-            margin-top: 4px;
-        }
-
-        /* Stat Grid */
-        .stat-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: var(--white);
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid var(--blue-border);
-            box-shadow: var(--shadow-subtle);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-card);
-        }
-
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .stat-icon.total { background: var(--blue-soft); color: var(--blue); }
-        .stat-icon.waiting { background: var(--orange-soft); color: var(--orange); }
-        .stat-icon.done { background: var(--green-soft); color: var(--green-dark); }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--blue-dark);
-            line-height: 1.1;
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin-top: 2px;
-        }
-
-        /* Toolbar Komprehensif */
-        .toolbar-panel {
-            background: var(--white);
-            border-radius: 16px;
-            border: 1px solid var(--blue-border);
-            box-shadow: var(--shadow-subtle);
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-            flex-wrap: wrap;
-        }
-
-        .toolbar-left, .toolbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .search-box {
-            position: relative;
-            min-width: 250px;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 9px 12px 9px 36px;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            font-family: inherit;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--muted);
-            pointer-events: none;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            font-weight: 700;
-            font-size: 0.82rem;
-            padding: 8px 15px;
-            border-radius: 10px;
-            border: 1px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--blue), #0d9488);
-            color: var(--white);
-            box-shadow: 0 4px 12px rgba(22, 133, 248, 0.25);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(22, 133, 248, 0.35);
-        }
-
-        .btn-secondary {
-            background: var(--white);
-            color: var(--ink);
-            border-color: #cbd5e1;
-        }
-
-        .btn-secondary:hover {
-            background: #f8fafc;
-            border-color: var(--blue);
-            color: var(--blue);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: var(--white);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
-        }
-
-        .btn-success:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
-        }
-
-        .btn-danger {
-            background: var(--red-soft);
-            color: var(--red);
-            border-color: #fca5a5;
-        }
-
-        .btn-danger:hover {
-            background: var(--red);
-            color: var(--white);
-        }
-
-        .btn-sm {
-            padding: 6px 11px;
-            font-size: 0.76rem;
-            border-radius: 8px;
-        }
-
-        /* Top Synced Scrollbar */
-        .top-scrollbar-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            overflow-y: hidden;
-            height: 14px;
-            margin-bottom: 2px;
-        }
-
-        .top-scrollbar-inner {
-            height: 1px;
-        }
-
-        /* Excel Table Container */
-        .excel-table-container {
-            background: var(--white);
-            border-radius: 16px;
-            border: 1px solid #cbd5e1;
-            box-shadow: var(--shadow-card);
-            overflow-x: auto;
-            overflow-y: auto;
-            max-height: calc(100vh - 310px);
-            position: relative;
-        }
-
-        .excel-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 0.82rem;
-            min-width: 2500px;
-        }
-
-        .excel-table th {
-            background: #f1f5f9;
-            color: #1e293b;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 0.74rem;
-            letter-spacing: 0.05em;
-            padding: 12px 10px;
-            border-bottom: 2px solid #cbd5e1;
-            border-right: 1px solid #e2e8f0;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .excel-table td {
-            padding: 6px 8px;
-            border-bottom: 1px solid #e2e8f0;
-            border-right: 1px solid #e2e8f0;
-            vertical-align: top;
-            background: #ffffff;
-            transition: background 0.15s;
-        }
-
-        .excel-table tr:hover td {
-            background: #f8fbff;
-        }
-
-        .excel-table tr.selected td {
-            background: #eff6ff !important;
-        }
-
-        /* Sticky Columns */
-        .sticky-col-check {
-            position: sticky;
-            left: 0;
-            width: 44px;
-            text-align: center;
-            z-index: 5;
-            background: inherit;
-        }
-
-        .sticky-col-no {
-            position: sticky;
-            left: 44px;
-            width: 48px;
-            text-align: center;
-            z-index: 5;
-            background: inherit;
-            border-right: 2px solid #cbd5e1 !important;
-        }
-
-        th.sticky-col-check, th.sticky-col-no {
-            z-index: 15 !important;
-            background: #f1f5f9 !important;
-        }
-
-        /* Inputs & Textareas inside Excel Cells */
-        .cell-input, .cell-select {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid transparent;
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 0.81rem;
-            background: transparent;
-            color: var(--ink);
-            transition: all 0.2s;
-        }
-
-        .cell-input:hover, .cell-select:hover {
-            border-color: #cbd5e1;
-            background: #ffffff;
-        }
-
-        .cell-input:focus, .cell-select:focus {
-            outline: none;
-            border-color: var(--blue);
-            background: #ffffff;
-            box-shadow: 0 0 0 2px rgba(22, 133, 248, 0.2);
-        }
-
-        .cell-textarea {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid transparent;
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 0.81rem;
-            background: transparent;
-            color: var(--ink);
-            resize: vertical;
-            min-height: 44px;
-            line-height: 1.35;
-            transition: all 0.2s;
-        }
-
-        .cell-textarea:hover {
-            border-color: #cbd5e1;
-            background: #ffffff;
-        }
-
-        .cell-textarea:focus {
-            outline: none;
-            border-color: var(--blue);
-            background: #ffffff;
-            box-shadow: 0 0 0 2px rgba(22, 133, 248, 0.2);
-        }
-
-        .cell-error {
-            border-color: #ef4444 !important;
-            background: #fee2e2 !important;
-        }
-
-        /* Multi-tag in Excel Cell */
-        .excel-tag-wrapper {
-            position: relative;
-            width: 100%;
-            min-width: 220px;
-        }
-
-        .excel-tag-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            padding: 4px;
-            border: 1px solid transparent;
-            border-radius: 6px;
-            min-height: 38px;
-            cursor: pointer;
-            align-items: center;
-        }
-
-        .excel-tag-container:hover {
-            border-color: #cbd5e1;
-            background: #ffffff;
-        }
-
-        .excel-tag-container:focus-within {
-            border-color: var(--blue);
-            background: #ffffff;
-            box-shadow: 0 0 0 2px rgba(22, 133, 248, 0.2);
-        }
-
-        .chip {
-            background: var(--blue-soft);
-            color: var(--blue-dark);
-            border: 1px solid var(--blue-border);
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-size: 0.73rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .chip.mitra {
-            background: var(--purple-soft);
-            color: var(--purple);
-            border-color: #ddd6fe;
-        }
-
-        .chip-del {
-            cursor: pointer;
-            opacity: 0.6;
-        }
-
-        .chip-del:hover { opacity: 1; }
-
-        .chip-input {
-            border: none;
-            outline: none;
-            font-size: 0.78rem;
-            font-family: inherit;
-            padding: 2px 4px;
-            flex: 1;
-            min-width: 60px;
-            background: transparent;
-        }
-
-        .excel-tag-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            box-shadow: var(--shadow-float);
-            max-height: 180px;
-            overflow-y: auto;
-            z-index: 100;
-            display: none;
-        }
-
-        .excel-tag-opt {
-            padding: 6px 10px;
-            font-size: 0.78rem;
-            cursor: pointer;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .excel-tag-opt:hover {
-            background: var(--blue-soft);
-            color: var(--blue-dark);
-        }
-
-        /* Status Badge */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 4px 9px;
-            border-radius: 20px;
-            font-size: 0.72rem;
-            font-weight: 700;
-        }
-
-        .status-badge.menunggu {
-            background: var(--orange-soft);
-            color: #b45309;
-            border: 1px solid #fde68a;
-        }
-
-        .status-badge.selesai {
-            background: var(--green-soft);
-            color: var(--green-dark);
-            border: 1px solid #a7f3d0;
-        }
-
-        /* Modals */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(7, 29, 66, 0.45);
-            backdrop-filter: blur(4px);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-card {
-            background: #ffffff;
-            border-radius: 20px;
-            box-shadow: var(--shadow-float);
-            width: 100%;
-            max-width: 760px;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes modalPop {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .modal-header {
-            padding: 18px 24px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .modal-title {
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: var(--blue-dark);
-        }
-
-        .modal-body {
-            padding: 24px;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        .modal-footer {
-            padding: 16px 24px;
-            border-top: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 10px;
-            background: #f8fafc;
-        }
-
-        .warning-box {
-            background: #fffbeb;
-            border: 1px solid #fde68a;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 16px;
-            font-size: 0.83rem;
-            color: #92400e;
-        }
-
-        .error-box {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 16px;
-            font-size: 0.83rem;
-            color: #b91c1c;
-        }
-
-        /* Docx Preview Area */
-        .preview-pane {
-            min-height: 480px;
-            max-height: 65vh;
-            overflow-y: auto;
-            background: #e2e8f0;
-            padding: 20px;
-            border-radius: 12px;
-        }
-
-        .docx-preview-wrapper-wrapper {
-            overflow: auto !important;
-            max-height: 60vh !important;
-            width: 100% !important;
-        }
-
-        .docx-preview-wrapper {
-            background: #ffffff;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            margin: 0 auto 20px;
-            padding: 40px;
-            max-width: 800px;
-        }
-
-        /* Pagination Bar */
-        .pagination-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 14px;
-            font-size: 0.82rem;
-            color: var(--muted);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="Assets/ART logo.svg"><rect width='32' height='32' rx='6' fill='%230d2340'/><g fill='%23c8a84b' transform='translate(0,1)'><path d='M 5 15 C 2 13, 1 9, 3 4 C 4 8, 6 11, 9 13 Z' opacity='0.55'/><path d='M 6 18 C 3 16, 2 11, 4 7 C 5 10, 7 14, 10 16 Z' opacity='0.85'/><path d='M 8 18 Q 8 12, 13 11 L 19 11 Q 23 12, 23 16 Q 23 20, 19 21 L 14 22 Q 8 22, 8 18 Z'/><circle cx='20' cy='11' r='3.2'/><path d='M 18 8 Q 18 6, 19 6 Q 19 5, 20 5.5 Q 20 4.5, 21 5 Q 21 6, 22 6.5 L 22 8 Z'/><path d='M 23 11 L 25.5 10.5 L 23 12.5 Z'/><path d='M 22 12.5 Q 22.5 14.5, 21.5 14.5 L 21 12.5 Z'/><circle cx='20.2' cy='10.5' r='0.65' fill='white'/><rect x='13' y='22' width='1' height='4' rx='0.3'/><rect x='17.5' y='22' width='1' height='4' rx='0.3'/></g></svg>">
+<title>Surat Tugas - Sistem Automasi Pekerjaan Administrasi (APA)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+
+<!-- Library: render docx preview (HTML) + save blob untuk download -->
+<script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/docx-preview@0.3.5/dist/docx-preview.min.js" integrity="sha384-XETEC39BEI+1nILZ5N2gFQcu6ii4k3avoqyi4YwQMbs29xkt01EKMqd9rFvic0Wu" crossorigin="anonymous"></script>
+<script>
+  // docx-preview expose API via global `window.docx`. Alias ke
+  // `window.docxPreview` agar konsumen (ensureLibrariesLoaded, openPreview)
+  // pakai nama yang konsisten dgn fungsinya.
+  if (typeof docx !== 'undefined' && typeof docx.renderAsync === 'function') {
+    window.docxPreview = docx;
+  }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha384-PlRSzpewlarQuj5alIadXwjNUX+2eNMKwr0f07ShWYLy8B6TjEbm7ZlcN/ScSbwy" crossorigin="anonymous"></script>
+
+<!-- docxtemplater — template-based generation (engine utama generate surat).
+     Library ini expose global sebagai window.docxtemplater (lowercase).
+     Lihat https://docxtemplater.com/docs/get-started-browser/ -->
+<script src="https://unpkg.com/docxtemplater@3.68.5/build/docxtemplater.js" integrity="sha384-iFfWkkwxgayOORmVuUa4qEjdYyil2iKW0E2D1CgOQvaVkeKHJO1I8jc3OOhsRrX5" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/pizzip@3.2.0/dist/pizzip.js" integrity="sha384-EKMdeygnsgFUPocowqWjGXhnzFAiDXk3KuOx8g8lsB5/JNEQYTWaADHxmioDiFU8" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/pizzip@3.2.0/dist/pizzip-utils.js" integrity="sha384-B6aZG+W8d1ZCLXaGFRFVAK62rF5tPeNMJxdQTQQD2jzaFbD5CpMi4Ru+QFkOLxoA" crossorigin="anonymous"></script>
+
+<style>
+  :root{
+    --bg:#f5f4f0;--white:#fff;--navy:#0d2340;--navy2:#163358;
+    --gold:#c8a84b;--gold-light:#f5edda;
+    --text:#1a1a2e;--muted:#6b7280;
+    --border:#e2ddd6;--border2:#d1ccc3;
+    --red:#c0392b;--success:#1a7a4a;
+    --sidebar-w:260px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;height:100%;display:flex;flex-direction:column;overflow-x:hidden}
+
+  /* TOPBAR di-handle 9201-topbar.js. Sidebar struktur di bawah. */
+  .layout{display:flex;flex:1;min-height:0}
+  .sidebar{
+    width:var(--sidebar-w);background:var(--white);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;
+    transition:width .25s ease, opacity .2s ease;
+    position:relative;
+  }
+  /* #3: Sidebar collapsed state — toggle via tombol .sidebar-toggle */
+  body.sidebar-collapsed .sidebar{
+    width:0;opacity:0;border-right-width:0;overflow:hidden;pointer-events:none;
+  }
+  body.sidebar-collapsed .topbar-brand{
+    width:0;padding:0;border-right:none;opacity:0;overflow:hidden;
+    transition:width .25s ease, opacity .2s ease;
+  }
+  /* Tombol toggle — fixed position di pinggir sidebar, melayang di atas
+     border. Saat collapsed, geser ke ujung kiri (x:0). */
+  .sidebar-toggle{
+    position:fixed;top:62px;left:calc(var(--sidebar-w) - 14px);
+    width:28px;height:28px;border-radius:50%;
+    background:var(--white);border:1.5px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;z-index:150;color:var(--navy);
+    transition:left .25s ease, background .15s, transform .15s;
+    box-shadow:0 2px 8px rgba(13,35,64,.08);
+    font-size:13px;font-weight:700;line-height:1;padding:0;
+  }
+  .sidebar-toggle:hover{background:var(--bg);transform:scale(1.05)}
+  body.sidebar-collapsed .sidebar-toggle{left:6px}
+  body.sidebar-collapsed .sidebar-toggle .toggle-icon{transform:rotate(180deg)}
+  .toggle-icon{display:inline-block;transition:transform .25s ease}
+  .sidebar-section-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;padding:20px 20px 8px}
+  .nav-group-label{font-size:10px;font-weight:600;color:var(--border2);letter-spacing:1.2px;text-transform:uppercase;padding:16px 20px 6px;margin-top:4px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-left:3px solid transparent;text-decoration:none;user-select:none;transition:background .15s,color .15s}
+  .nav-item:hover{background:var(--bg);color:var(--navy)}
+  .nav-item.active{background:var(--gold-light);color:var(--navy);border-left-color:var(--gold);font-weight:600}
+  .nav-item-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--bg);flex-shrink:0;transition:background .15s}
+  .nav-item.active .nav-item-icon{background:rgba(200,168,75,.2)}
+  .nav-item:hover .nav-item-icon{background:var(--border)}
+  .sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.7}
+  .sidebar-footer strong{color:var(--navy);font-weight:600}
+  .admin-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(200,168,75,0.15);border:1px solid rgba(200,168,75,0.35);border-radius:100px;padding:2px 8px;font-size:10px;font-weight:600;color:var(--gold);margin-top:4px;letter-spacing:.3px}
+
+  .main{flex:1;overflow-y:auto;padding:32px 36px}
+  .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:24px;flex-wrap:wrap}
+  .page-eyebrow{font-size:11px;font-weight:600;color:var(--gold);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .page-eyebrow::before{content:'';width:16px;height:2px;background:var(--gold)}
+  .page-title{font-family:'Fraunces',serif;font-size:clamp(22px,2.5vw,30px);font-weight:300;color:var(--navy);line-height:1.2}
+  .page-title em{font-style:italic;color:var(--gold)}
+  .page-desc{font-size:13px;color:var(--muted);margin-top:5px;line-height:1.7}
+
+  /* STATS */
+  .stats-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+  .stat-pill{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:11px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:120px}
+  .stat-pill-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  .stat-pill-num{font-size:18px;font-weight:700;color:var(--navy);line-height:1}
+  .stat-pill-label{font-size:11px;color:var(--muted);margin-top:1px}
+
+  /* FILTER BAR */
+  .filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .search-wrap{position:relative;flex:1;min-width:200px}
+  .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none}
+  .search-input{width:100%;padding:8px 12px 8px 32px;background:var(--white);border:1.5px solid var(--border2);border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s}
+  .search-input:focus{border-color:var(--navy)}
+  .search-input::placeholder{color:#b8b3ac}
+  .filter-select{padding:8px 12px;background:var(--white);border:1.5px solid var(--border2);border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--text);outline:none;cursor:pointer;transition:border-color .2s}
+  .filter-select:focus{border-color:var(--navy)}
+
+  /* BUTTONS */
+  .btn-primary{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:var(--navy);color:white;border:none;border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s,transform .15s;white-space:nowrap;position:relative}
+  .btn-primary:hover:not(:disabled){background:var(--navy2);transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn-primary.loading{color:transparent;pointer-events:none}
+  .btn-primary.loading::after{content:'';position:absolute;top:50%;left:50%;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;transform:translate(-50%,-50%);animation:spin .7s linear infinite}
+  .btn-approve{background:#1a7a4a;color:white;border:none;border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+  .btn-approve:hover{background:#15643d}
+  .btn-preview{background:#e8f0fe;color:var(--navy);border:1.5px solid #b4cdf5;border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+  .btn-preview:hover{background:#d3e0f8;border-color:var(--navy)}
+  .btn-download{background:var(--gold);color:var(--navy);border:none;border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:background .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+  .btn-download:hover{background:#b89438}
+  /* Tombol Edit di baris selesai — outline gold, beda dari Preview/Download */
+  .btn-edit-row{background:var(--gold-light);color:#7a5c10;border:1.5px solid rgba(200,168,75,.5);border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+  .btn-edit-row:hover{background:rgba(200,168,75,.25);border-color:var(--gold)}
+  .btn-save-edit{background:#1a7a4a;color:white;border:none;border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;position:relative}
+  .btn-save-edit:hover{background:#15643d}
+  .btn-save-edit:disabled{opacity:.6;cursor:not-allowed}
+  .btn-save-edit.loading{color:transparent}
+  .btn-save-edit.loading::after{content:'';position:absolute;top:50%;left:50%;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;transform:translate(-50%,-50%);animation:spin .7s linear infinite}
+  .btn-cancel-edit{background:transparent;color:var(--muted);border:1.5px solid var(--border2);border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+  .btn-cancel-edit:hover{background:#fef2f2;color:var(--red);border-color:#fecaca}
+
+  /* MODIFIER .btn-icon — bikin tombol jadi square compact (logo-only).
+     Diapply ke btn-edit-row, btn-preview, btn-download di kolom Aksi
+     supaya kolom lebih hemat ruang. Tooltip via attribute title. */
+  .btn-edit-row.btn-icon,
+  .btn-preview.btn-icon,
+  .btn-download.btn-icon,
+  .btn-cancel-edit.btn-icon{
+    width:30px;height:30px;padding:0;justify-content:center;
+    font-size:14px;gap:0;
+  }
+  /* Khusus btn-cancel-edit di kolom aksi — sudah tanpa ✕ Batal label,
+     cuma ✕. Pastikan square-nya juga compact. */
+  td.col-aksi .btn-cancel-edit{
+    width:30px;height:30px;padding:0;justify-content:center;
+    font-size:13px;gap:0;
+  }
+  /* Visual highlight untuk baris yang sedang di-edit — border kiri kuning */
+  tr[data-editing="1"] td{background:rgba(200,168,75,.05) !important}
+  tr[data-editing="1"] td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
+  .btn-outline{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--white);border:1.5px solid var(--border2);border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;transition:all .2s;white-space:nowrap}
+  .btn-outline:hover{border-color:var(--navy);background:var(--bg)}
+  .btn-sm{padding:4px 10px;background:transparent;border:1px solid var(--border2);border-radius:5px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;color:var(--navy)}
+  .btn-sm:hover{background:var(--gold-light);border-color:var(--gold)}
+  @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+  /* HINT BAR */
+  .hint-bar{background:#eff6ff;border:1px solid #bfdbfe;border-radius:7px;padding:10px 14px;font-size:12px;color:#1e40af;line-height:1.55;margin-bottom:14px;display:flex;gap:8px;align-items:flex-start}
+  .hint-bar kbd{background:white;border:1px solid #bfdbfe;border-bottom-width:2px;border-radius:3px;padding:1px 5px;font-family:ui-monospace,monospace;font-size:10.5px;color:var(--navy);margin:0 1px}
+
+  /* ════════════════════════════════════════════════════
+     EXCEL-LIKE TABLE
+  ════════════════════════════════════════════════════ */
+  .table-wrap{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:visible;box-shadow:0 1px 4px rgba(13,35,64,.05);position:relative}
+  .table-head{background:var(--navy);padding:11px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:80;border-radius:10px 10px 0 0}
+  .table-head-title{font-size:12px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:.8px;text-transform:uppercase}
+  .table-head-count{font-size:11px;color:rgba(255,255,255,.35)}
+  /* #4: container tombol di sebelah kanan table-head */
+  .table-head-actions{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+  /* Tombol kompak khusus untuk table-head — dark background context */
+  .btn-table-head{
+    padding:6px 12px;border-radius:6px;
+    background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+    color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;
+    font-weight:600;cursor:pointer;transition:background .15s,border-color .15s;
+    white-space:nowrap;
+  }
+  .btn-table-head:hover:not(:disabled){background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3)}
+  .btn-table-head:disabled{opacity:.4;cursor:not-allowed}
+  .btn-table-head.btn-table-head-gold{
+    background:var(--gold);color:var(--navy);border-color:var(--gold);
+  }
+  .btn-table-head.btn-table-head-gold:hover:not(:disabled){background:#b89438;border-color:#b89438}
+  .btn-table-head.btn-table-head-gold:disabled{opacity:.45}
+
+  .import-preview-panel{background:#f8fafc;border:1px solid #dbe4f0;border-radius:10px;padding:12px 14px;font-size:12px;color:#34445c;line-height:1.55;margin-bottom:14px}
+  .import-preview-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+  .import-stat{background:#fff;border:1px solid var(--border);border-radius:9px;padding:10px 12px;min-width:0}
+  .import-stat-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .import-stat-value{font-family:'Lora',serif;font-size:22px;font-weight:700;color:var(--navy);line-height:1.1;margin-top:3px}
+  .import-preview-table-wrap{border:1px solid var(--border);border-radius:10px;overflow:auto;background:#fff;max-height:46vh}
+  .import-preview-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1100px}
+  .import-preview-table th{position:sticky;top:0;z-index:1;background:#faf9f6;color:var(--navy);font-size:10px;text-transform:uppercase;letter-spacing:.55px;text-align:left;padding:10px;border-bottom:1px solid var(--border);white-space:nowrap}
+  .import-preview-table td{font-size:11.5px;color:#233653;vertical-align:top;padding:10px;border-bottom:1px solid var(--border);line-height:1.45}
+  .import-preview-table tr:last-child td{border-bottom:none}
+  #modal-import-surat .modal-wide{max-width:min(1320px,calc(100vw - 32px))}
+  #modal-import-surat .modal-body{padding:18px 20px}
+  #modal-import-surat .import-preview-table-wrap{max-height:56vh}
+  .import-status-pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;white-space:nowrap}
+  .import-status-pill.ready{background:#dcfce7;color:#166534}
+  .import-status-pill.warn{background:#fef3c7;color:#92400e}
+  .import-warning-list{margin:0;padding-left:16px;color:#8a4a12}
+  .import-muted{color:var(--muted)}
+  @media (max-width:760px){.import-preview-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+  /* BULK APPROVE — custom checkbox color sekarang via class .ck-success
+     yang didefinisikan di 9201-shared.js. Tidak perlu accent-color/outline
+     lagi. */
+
+  /* DRAFT SAVED INDICATOR — floating toast ringan */
+  #draft-saved-toast{
+    position:fixed;bottom:20px;right:20px;
+    background:#1a7a4a;color:#fff;
+    font-size:11.5px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;
+    padding:7px 14px;border-radius:7px;
+    box-shadow:0 4px 16px rgba(0,0,0,.18);
+    opacity:0;pointer-events:none;z-index:9999;
+    transition:opacity .25s ease,transform .25s ease;
+    transform:translateY(6px);
+  }
+  #draft-saved-toast.show{opacity:1;transform:translateY(0)}
+  .table-scroll{overflow-x:auto;overflow-y:visible}
+  .table-scroll::-webkit-scrollbar{height:10px}
+  .table-scroll::-webkit-scrollbar-track{background:var(--bg)}
+  .table-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:5px}
+  .table-scroll::-webkit-scrollbar-thumb:hover{background:#a9a298}
+
+  .table-pagination{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:12px 16px;border-top:1px solid var(--border);background:#fbfaf7;
+    flex-wrap:wrap;
+  }
+  .table-pagination[hidden]{display:none}
+  .pager-summary{font-size:12px;color:var(--muted);font-weight:600}
+  .pager-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .pager-btn{
+    min-width:34px;height:32px;padding:0 10px;border:1px solid var(--border2);
+    border-radius:7px;background:var(--white);color:var(--navy);
+    font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;
+    cursor:pointer;transition:background .15s,border-color .15s,color .15s;
+  }
+  .pager-btn:hover:not(:disabled):not(.active){background:var(--gold-light);border-color:var(--gold)}
+  .pager-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
+  .pager-btn:disabled{opacity:.45;cursor:not-allowed}
+  .pager-nav{min-width:auto}
+  .pager-gap{display:inline-flex;align-items:center;height:32px;padding:0 4px;color:var(--muted);font-weight:700}
+  @media (max-width:760px){
+    .table-pagination{align-items:flex-start}
+    .pager-actions{width:100%}
+    .pager-btn{height:30px;font-size:11.5px}
+  }
+
+  /* Top scrollbar — sinkron dengan scrollbar bawah supaya admin tidak perlu
+     scroll ke baris terakhir dulu kalau mau geser tabel horizontal.
+     Visibility di-control oleh JS (setupTopScrollbar) — kalau tabel tidak
+     overflow, JS akan set display:none. */
+  .table-scroll-top{overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--border);background:#fafaf8;position:sticky;top:var(--st-table-head-h,48px);z-index:75}
+  .table-scroll-top::-webkit-scrollbar{height:10px}
+  .table-scroll-top::-webkit-scrollbar-track{background:var(--bg)}
+  .table-scroll-top::-webkit-scrollbar-thumb{background:var(--border2);border-radius:5px}
+  .table-scroll-top::-webkit-scrollbar-thumb:hover{background:#a9a298}
+  .table-scroll-top-inner{height:1px}
+  .table-sticky-cols{display:none;overflow:hidden;background:#f9f8f5;border-bottom:2px solid var(--border);position:sticky;top:var(--st-table-header-top,60px);z-index:74}
+  .table-wrap.table-is-stuck .table-sticky-cols{display:block}
+  .table-sticky-cols table.list-table{margin:0}
+
+  table.list-table{width:100%;border-collapse:separate;border-spacing:0;min-width:2223px;table-layout:fixed}
+  table.list-table thead th{
+    background:#f9f8f5;padding:9px 10px;text-align:center;font-size:10.5px;font-weight:700;
+    color:var(--navy);letter-spacing:.5px;text-transform:uppercase;
+    border-bottom:2px solid var(--border);border-right:1px solid var(--border);
+    white-space:nowrap;
+  }
+  /* col-nomor-surat dan col-tgl-surat: white-space diatur di blok text-align di atas */
+  table.list-table thead th:last-child{border-right:none}
+
+  /* Header yang bisa di-sort */
+  table.list-table thead th.sortable{
+    cursor:pointer;user-select:none;transition:background .15s;
+  }
+  table.list-table thead th.sortable:hover{background:#efece4}
+  table.list-table thead th.sortable .sort-arrow{
+    display:inline-block;margin-left:5px;font-size:10px;color:var(--border2);
+    transition:color .15s,transform .15s;vertical-align:baseline;
+  }
+  table.list-table thead th.sortable.sorted{background:var(--gold-light);color:var(--navy)}
+  table.list-table thead th.sortable.sorted .sort-arrow{color:var(--gold)}
+
+  table.list-table tbody tr{transition:background .15s}
+  table.list-table tbody tr:hover{background:#fafaf8}
+  table.list-table tbody td{
+    padding:0;font-size:12.5px;color:var(--text);vertical-align:middle;
+    border-bottom:1px solid var(--border);border-right:1px solid var(--border);
+    background:transparent;
+  }
+  table.list-table tbody td:last-child{border-right:none}
+  table.list-table tbody tr:last-child td{border-bottom:none}
+
+  /* Lebar kolom — versi compact (UI/UX permintaan: kecilkan kolom) */
+  .col-check         { width:38px;  text-align:center;padding:6px 0 }
+  .col-no            { width:46px;  text-align:center }
+  .col-nomor-surat   { width:78px }   /* #2 r2: ramping, "Nomor" / "Surat" header 2-baris */
+  .col-tgl-surat     { width:96px }   /* lebih ramping; data 11.5px font cukup */
+  .col-waktu         { width:175px }  /* #6 + #3: muat picker + toggle multi-range */
+  .col-perihal       { width:185px }
+  .col-tujuan        { width:130px }
+  .col-nama          { width:175px }  /* #7: kecil */
+  .col-menimbang     { width:145px }
+  .col-alat          { width:118px }  /* lebar agar header "ALAT ANGKUTAN" tidak terpotong */
+  .col-mak           { width:155px }  /* #5 r2: lebih lebar untuk muat "KRO" full */
+  .col-ttd           { width:130px }  /* lebih ramping */
+  .col-tipe          { width:155px }  /* #10: kecil; tipe text wrap */
+  .col-status        { width:105px }
+  .col-aksi          { width:140px;text-align:center } /* #6 r2: aksi center */
+  .col-pengaju       { width:165px }
+
+  /* Styling isi kolom pengaju — read-only, text-heavy */
+  td.col-pengaju{
+    padding:10px 12px;font-size:12px;color:var(--navy);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    background:#fafaf8;
+  }
+
+  /* Sel Excel-like */
+  .xls-cell{
+    width:100%;min-height:42px;padding:9px 10px;border:1.5px solid transparent;border-radius:0;
+    font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;color:var(--text);
+    background:transparent;outline:none;display:block;line-height:1.45;
+    transition:background .12s, border-color .12s, box-shadow .12s;
+    word-break:break-word;
+  }
+  .xls-cell::placeholder{color:#c8c3ba;font-size:11.5px;font-style:italic}
+  .xls-cell:hover:not(:read-only):not(:disabled){background:rgba(13,35,64,.025);border-color:var(--border)}
+  .xls-cell:focus{
+    background:#fffdf6;border-color:var(--navy);
+    box-shadow:inset 0 0 0 1px var(--navy);position:relative;z-index:2;
+  }
+  .xls-cell:read-only,.xls-cell:disabled{
+    background:transparent;border-color:transparent;cursor:default;color:var(--text);
+  }
+  .xls-cell.err{border-color:var(--red)!important;background:#fef5f4!important;animation:shake .35s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+
+  textarea.xls-cell{resize:none;overflow:hidden;min-height:42px;font-family:'Plus Jakarta Sans',sans-serif}
+
+  /* ════════════════════════════════════════════════════
+     #3: WAKTU CUSTOM (multi-range) — opsional di bawah picker.
+     Pattern sama dengan user-side (surat-tugas.html).
+  ════════════════════════════════════════════════════ */
+  .waktu-toggle{
+    display:inline-flex;align-items:center;gap:4px;
+    margin:2px 8px 0 8px;padding:2px 8px;
+    background:transparent;border:1px dashed var(--border2);border-radius:100px;
+    font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:500;
+    color:var(--muted);cursor:pointer;transition:all .15s;
+    white-space:nowrap;
+  }
+  .waktu-toggle:hover{border-color:var(--navy);color:var(--navy);background:rgba(13,35,64,.03)}
+  .waktu-toggle.active{
+    border-style:solid;border-color:var(--gold);
+    background:var(--gold-light);color:#7a5c10;
+  }
+  .waktu-toggle-icon{font-size:13px;font-weight:700;line-height:1}
+  .waktu-custom{
+    width:calc(100% - 16px);margin:5px 8px 4px 8px;padding:6px 9px;
+    border:1.5px solid var(--gold);border-radius:6px;background:#fffdf6;
+    font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;color:var(--text);
+    outline:none;line-height:1.4;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  .waktu-custom:focus{border-color:var(--navy);box-shadow:0 0 0 2px rgba(13,35,64,.08)}
+  .waktu-custom::placeholder{color:#c8c3ba;font-size:10.5px;font-style:italic}
+  .waktu-custom.hidden{display:none}
+
+  /* Display readonly text (untuk row selesai) */
+  .ro-text{padding:9px 10px;font-size:12.5px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word;min-height:42px}
+  .ro-text.muted{color:var(--muted);font-style:italic;font-size:11.5px}
+  .ro-text strong{font-weight:600;color:var(--navy)}
+  .ro-text small{font-size:10.5px;color:var(--muted);display:block;margin-top:1px}
+  .ro-ttd{padding:9px 10px;display:flex;flex-direction:column;gap:1px;min-height:42px}
+  .ro-ttd-name{font-size:12px;font-weight:600;color:var(--navy);line-height:1.35}
+  .ro-ttd-jabatan{font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.35}
+  .ro-ttd-nip{font-size:10.5px;color:var(--muted);line-height:1.35}
+
+  /* Sticky look untuk No. & Status */
+  td.col-no{text-align:center;font-weight:700;color:var(--muted);font-size:12px;padding:11px 4px;background:#fafaf8}
+  td.col-check{text-align:center;padding:11px 4px;background:#fafaf8}
+  /* Checkbox styling sekarang di-handle GLOBAL oleh 9201-shared.js
+     (custom CSS-rendered checkbox). Per-page tidak perlu set width/height/
+     accent-color/outline lagi — cukup pakai class .ck-success untuk varian
+     hijau (bulk approve). */
+  th.col-check.col-check-dual{padding:6px 0;vertical-align:middle}
+  .th-check-inner{display:flex;flex-direction:column;align-items:center;gap:5px}
+  /* #6: Status cell + Aksi cell content rata tengah supaya rapi */
+  td.col-status{padding:11px 9px;text-align:center}
+  td.col-aksi{padding:8px 10px;text-align:center}
+  /* Aksi-wrap juga di-center supaya tombol-tombol grouping di tengah */
+  .aksi-wrap{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600;white-space:nowrap}
+  .badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+  .badge.menunggu{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+  .badge.selesai{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+
+  /* ─── Compact display untuk kolom Tanggal Surat ───
+     Sama seperti kolom Waktu Pelaksanaan: biarkan natural, wrap natural
+     kalau panjang. Width 118px cukup untuk muat "30 April 2026" 1-baris. */
+  td.col-tgl-surat .ro-text,
+  td.col-tgl-surat .xls-cell{font-size:11.5px;line-height:1.4}
+  /* Sama untuk col-nomor-surat — "B-022/668870-92800/KP-650/05/2026" akan
+     wrap natural pada "/" karena word-break:break-word di .xls-cell. */
+  td.col-nomor-surat .ro-text,
+  td.col-nomor-surat .xls-cell{font-size:11.5px;line-height:1.4}
+
+  /* HEADER 2-baris — specificity harus >= table.list-table thead th (yg set
+     white-space:nowrap). Pakai selector lengkap supaya override benar. */
+  table.list-table thead th.col-tgl-surat,
+  table.list-table thead th.col-nomor-surat{
+    white-space:normal;word-break:normal;line-height:1.4;
+    text-align:center;vertical-align:middle;
+  }
+
+  .table-empty{padding:48px 24px;text-align:center}
+  .table-empty-icon{font-size:28px;opacity:.3;margin-bottom:10px}
+  .table-empty-text{font-size:13px;color:var(--muted)}
+
+  .skel{background:linear-gradient(90deg,rgba(13,35,64,.05) 25%,rgba(13,35,64,.1) 50%,rgba(13,35,64,.05) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px}
+  @keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+
+  .alert{padding:11px 14px;border-radius:7px;font-size:13px;line-height:1.5;margin-bottom:16px;display:none;gap:8px;align-items:flex-start}
+  .alert.show{display:flex;animation:fadeUp .3s ease}
+  .alert.error{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+  .alert.success{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+  .alert.info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .fade-in{animation:fadeUp .5s ease both}
+
+  /* ════════════════════════════════════════════════════
+     TAG (untuk pegawai multi-select di sel)
+  ════════════════════════════════════════════════════ */
+  .pg-cell{padding:6px 8px;min-height:42px;display:flex;flex-wrap:wrap;gap:3px;align-content:flex-start;cursor:text}
+  .pg-cell.focused{background:#fffdf6;box-shadow:inset 0 0 0 1.5px var(--navy)}
+  .pg-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 5px 2px 7px;background:var(--gold-light);border:1px solid rgba(200,168,75,.45);border-radius:100px;font-size:11px;font-weight:600;color:#7a5c10;white-space:nowrap;max-width:170px;line-height:1.3}
+  .pg-tag-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pg-tag-x{background:none;border:none;cursor:pointer;color:#a07020;font-size:13px;padding:0 2px;line-height:1;flex-shrink:0;font-weight:700}
+  .pg-tag-x:hover{color:var(--red)}
+  .pg-input{flex:1;min-width:60px;border:none;outline:none;background:transparent;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--text);padding:2px 4px}
+  .pg-input::placeholder{color:#c8c3ba;font-style:italic;font-size:11px}
+
+  /* Untuk single-select penandatangan */
+  .pg-cell.single .pg-tag{background:#e0f2fe;border-color:#7dd3fc;color:#075985}
+  .pg-cell.single .pg-tag-x{color:#0369a1}
+
+  /* Error state untuk pegawai cell */
+  .pg-cell.err{background:#fef5f4!important;box-shadow:inset 0 0 0 1.5px var(--red)!important;animation:shake .35s}
+
+  /* ════════════════════════════════════════════════════
+     TP-CELL — single-select untuk kolom Tipe
+     Pola visual mengikuti .pg-cell.single, tapi infrastructure
+     terpisah agar handler tidak bercampur dengan pegawai.
+     Source data: TIPE_OPTIONS (statis, 7 entri).
+  ════════════════════════════════════════════════════ */
+  .tp-cell{padding:6px 8px;min-height:42px;display:flex;flex-wrap:wrap;gap:3px;align-content:center;align-items:center;cursor:text;position:relative}
+  .tp-cell.focused{background:#fffdf6;box-shadow:inset 0 0 0 1.5px var(--navy)}
+  .tp-cell.err{background:#fef5f4!important;box-shadow:inset 0 0 0 1.5px var(--red)!important;animation:shake .35s}
+  .tp-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 5px 2px 8px;background:#eef2ff;border:1px solid #a5b4fc;border-radius:100px;font-size:11px;font-weight:600;color:#3730a3;white-space:normal;max-width:100%;line-height:1.3}
+  .tp-tag-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .tp-tag-x{background:none;border:none;cursor:pointer;color:#4338ca;font-size:13px;padding:0 2px;line-height:1;flex-shrink:0;font-weight:700}
+  .tp-tag-x:hover{color:var(--red)}
+  .tp-input{flex:1;min-width:60px;border:none;outline:none;background:transparent;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--text);padding:2px 4px}
+  .tp-input::placeholder{color:#c8c3ba;font-style:italic;font-size:11px}
+  /* Caret bawah (indicator dropdown) di pojok kanan cell — hanya muncul saat empty (no tag) */
+  .tp-cell:not(:has(.tp-tag))::after{
+    content:'';position:absolute;right:8px;top:50%;width:7px;height:7px;
+    border-right:1.5px solid #a89e8d;border-bottom:1.5px solid #a89e8d;
+    transform:translateY(-70%) rotate(45deg);pointer-events:none;
+  }
+
+  /* Autocomplete popup untuk Tipe — terpisah dari ac-popup pegawai */
+  .tp-ac-popup{position:fixed;background:white;border:1.5px solid var(--navy);border-radius:8px;box-shadow:0 12px 32px rgba(13,35,64,.18);z-index:9999;overflow:hidden;min-width:260px;max-width:340px;display:none}
+  .tp-ac-popup.open{display:block}
+  .tp-ac-list{max-height:280px;overflow-y:auto}
+  .tp-ac-list::-webkit-scrollbar{width:5px}
+  .tp-ac-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  .tp-ac-item{padding:9px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s;line-height:1.4}
+  .tp-ac-item:last-child{border-bottom:none}
+  .tp-ac-item:hover,.tp-ac-item.focused{background:var(--gold-light)}
+  .tp-ac-item.selected{background:#ecfdf5;font-weight:600}
+  .tp-ac-item.selected:hover,.tp-ac-item.selected.focused{background:#d1fae5}
+  .tp-ac-empty{padding:10px 12px;font-size:11.5px;color:var(--muted);font-style:italic;text-align:center}
+
+  /* ════════════════════════════════════════════════════
+     AUTOCOMPLETE DROPDOWN (pegawai)
+  ════════════════════════════════════════════════════ */
+  .ac-popup{position:fixed;background:white;border:1.5px solid var(--navy);border-radius:8px;box-shadow:0 12px 32px rgba(13,35,64,.18);z-index:9999;overflow:hidden;min-width:260px;max-width:340px;display:none}
+  .ac-popup.open{display:block}
+  .ac-list{max-height:240px;overflow-y:auto}
+  .ac-list::-webkit-scrollbar{width:5px}
+  .ac-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  .ac-item{padding:8px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;transition:background .12s}
+  .ac-item:last-child{border-bottom:none}
+  .ac-item:hover,.ac-item.focused{background:var(--gold-light)}
+  .ac-item.selected{background:#ecfdf5}
+  .ac-item.selected:hover,.ac-item.selected.focused{background:#d1fae5}
+  .ac-item.disabled{cursor:not-allowed;opacity:.62;background:#fafafa}
+  .ac-item.disabled:hover,.ac-item.disabled.focused{background:#fafafa}
+  .ac-badge{display:inline-block;margin-left:6px;border-radius:100px;padding:1px 7px;font-size:9.5px;font-weight:700;letter-spacing:.3px;vertical-align:middle}
+  .ac-badge.pegawai{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+  .ac-badge.mitra{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}
+  .ac-badge.pensiun{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+
+  /* MAK typeahead — popup terpisah dari ac-popup pegawai supaya logic
+     tidak conflict (data type beda). Render item lebih kaya: kode MAK
+     + ringkasan deskripsi gabungan. */
+  .mak-ac-popup{position:fixed;background:white;border:1.5px solid var(--navy);border-radius:8px;box-shadow:0 12px 32px rgba(13,35,64,.18);z-index:9999;overflow:hidden;min-width:340px;max-width:520px;display:none}
+  .mak-ac-popup.open{display:block}
+  .mak-ac-header{padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between}
+  .mak-ac-list{max-height:280px;overflow-y:auto}
+  .mak-ac-list::-webkit-scrollbar{width:5px}
+  .mak-ac-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  .mak-ac-item{padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s}
+  .mak-ac-item:last-child{border-bottom:none}
+  .mak-ac-item:hover,.mak-ac-item.focused{background:var(--gold-light)}
+  .mak-ac-item-code{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:11.5px;font-weight:600;color:var(--navy);word-break:break-all;line-height:1.4}
+  .mak-ac-item-desc{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .mak-ac-item-count{display:inline-block;background:var(--gold-light);color:#7a5c10;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:100px;margin-left:6px}
+  .mak-ac-empty{padding:18px 12px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.5}
+  .ac-check{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;color:transparent}
+  .ac-item.selected .ac-check{background:var(--success);border-color:var(--success);color:white}
+  .ac-name{font-weight:600;color:var(--navy);flex:1;line-height:1.3}
+  .ac-nip{font-size:10px;color:var(--muted);line-height:1.3}
+  .ac-empty{padding:14px 12px;text-align:center;font-size:11.5px;color:var(--muted);font-style:italic}
+  .ac-hint{padding:6px 12px;font-size:10px;color:var(--muted);background:#fafaf8;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .ac-hint kbd{background:white;border:1px solid var(--border2);border-radius:3px;padding:1px 4px;font-family:ui-monospace,monospace;font-size:9px}
+
+  /* ════════════════════════════════════════════════════
+     CALENDAR POPUP (single & range)
+  ════════════════════════════════════════════════════ */
+  .cal-popup{position:fixed;background:white;border:1.5px solid var(--navy);border-radius:10px;box-shadow:0 12px 36px rgba(13,35,64,.2);z-index:9999;overflow:hidden;width:286px;display:none}
+  .cal-popup.open{display:block}
+  .cal-header{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+  .cal-nav{background:none;border:none;color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:2px 8px;border-radius:4px;line-height:1;transition:all .2s}
+  .cal-nav:hover{color:white;background:rgba(255,255,255,.1)}
+  .cal-title{font-size:13px;font-weight:600;color:white;cursor:pointer;flex:1;text-align:center;user-select:none;padding:2px 8px;border-radius:4px;transition:background .2s}
+  .cal-title:hover{background:rgba(255,255,255,.1)}
+  .cal-day-names{display:grid;grid-template-columns:repeat(7,1fr);background:#f0efeb;border-bottom:1px solid var(--border)}
+  .cal-day-name{text-align:center;padding:5px 0;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.5px}
+  .cal-days{display:grid;grid-template-columns:repeat(7,1fr);padding:6px;gap:1px}
+  .cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:5px;cursor:pointer;transition:all .12s;position:relative;user-select:none}
+  .cal-day:hover:not(.cal-empty):not(.cal-disabled){background:var(--gold-light);color:var(--navy)}
+  .cal-day.cal-empty{visibility:hidden}
+  .cal-day.cal-other{color:#ccc;font-weight:400}
+  .cal-day.cal-start,.cal-day.cal-end,.cal-day.cal-single{background:var(--navy);color:white;font-weight:600}
+  .cal-day.cal-in-range{background:var(--gold-light);color:#7a5c10;border-radius:0}
+  .cal-day.cal-start{border-radius:5px 0 0 5px}
+  .cal-day.cal-end{border-radius:0 5px 5px 0}
+  .cal-day.cal-start.cal-end,.cal-day.cal-single{border-radius:5px}
+  .cal-day.cal-today::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--gold)}
+  .cal-day.cal-start.cal-today::after,.cal-day.cal-end.cal-today::after,.cal-day.cal-single.cal-today::after{background:rgba(255,255,255,.7)}
+  /* Tugas #2 — keyboard focus ring (outline kuning) */
+  .cal-day.cal-focused{box-shadow:0 0 0 2px var(--gold) inset;z-index:1}
+  .cal-footer{border-top:1px solid var(--border);padding:7px 12px;display:flex;align-items:center;justify-content:space-between;font-size:11px;background:#fafaf8}
+  .cal-footer-text{color:var(--navy);font-weight:500;flex:1}
+  .cal-clear{background:none;border:1px solid var(--border2);border-radius:5px;padding:3px 9px;font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;color:var(--muted);cursor:pointer;transition:all .2s}
+  .cal-clear:hover{border-color:var(--red);color:var(--red)}
+
+  /* Year picker overlay */
+  .cal-year-grid{display:grid;grid-template-columns:repeat(4,1fr);padding:10px;gap:6px;display:none}
+  .cal-popup.year-mode .cal-day-names,.cal-popup.year-mode .cal-days{display:none}
+  .cal-popup.year-mode .cal-year-grid{display:grid}
+  .cal-year-cell{padding:10px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--navy);background:var(--bg);border-radius:5px;cursor:pointer;transition:all .15s}
+  .cal-year-cell:hover{background:var(--gold-light)}
+  .cal-year-cell.current{background:var(--navy);color:white}
+
+  /* Date cell display (saat tidak focus) */
+  .date-cell-display{padding:9px 10px;font-size:12.5px;color:var(--text);min-height:42px;line-height:1.45;cursor:text}
+  .date-cell-display.empty{color:#c8c3ba;font-style:italic;font-size:11.5px}
+
+  /* MODALS */
+  .modal-overlay{position:fixed;inset:0;background:rgba(13,35,64,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeOverlay .2s ease}
+  @keyframes fadeOverlay{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--white);border-radius:12px;width:100%;max-width:520px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(13,35,64,.3);animation:slideUp .25s ease}
+  .modal-wide{max-width:640px}
+  .modal-preview{background:var(--white);border-radius:12px;width:100%;max-width:860px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(13,35,64,.3);animation:slideUp .25s ease}
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .modal-header{padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .modal-header.approve{background:#1a7a4a}
+  .modal-header.detail{background:var(--navy)}
+  .modal-title{font-family:'Fraunces',serif;font-size:18px;font-weight:300;color:white}
+  .modal-title em{font-style:italic;color:var(--gold)}
+  .modal-close{background:none;border:none;color:rgba(255,255,255,.5);font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .2s,background .2s;line-height:1}
+  .modal-close:hover{color:white;background:rgba(255,255,255,.1)}
+  .modal-body{padding:22px 24px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0}
+  .modal-preview .modal-body{padding:0;background:#ededed;flex:1;overflow-y:auto}
+  .modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
+  .form-group{display:flex;flex-direction:column;gap:6px}
+  .form-label{font-size:12px;font-weight:600;color:var(--navy)}
+  .form-textarea{width:100%;padding:10px 12px;background:var(--white);border:1.5px solid var(--border2);border-radius:7px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s;resize:vertical;min-height:70px;line-height:1.5}
+  .form-textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(13,35,64,.07)}
+  .error-msg{font-size:11px;color:var(--red);display:none}
+  .error-msg.show{display:block}
+  /* ─── Approve modal: ringkasan data surat ───
+     Pattern: 2-kolom grid untuk fields, dipisahkan oleh garis tipis.
+     Lebih clean dari pattern lama dengan label uppercase. */
+  .approve-preview{
+    background:var(--bg);border:1px solid var(--border);border-radius:9px;
+    padding:14px 16px;font-size:12.5px;line-height:1.6;color:var(--text);
+    margin-bottom:14px;
+  }
+  .approve-preview-row{
+    display:grid;grid-template-columns:120px 1fr;gap:10px;
+    padding:6px 0;border-bottom:1px dashed var(--border);
+  }
+  .approve-preview-row:last-child{border-bottom:none}
+  .approve-preview-row strong{
+    color:var(--muted);font-weight:600;font-size:11px;
+    letter-spacing:.4px;text-transform:uppercase;padding-top:2px;
+  }
+  .approve-preview-row span{color:var(--navy);font-weight:500;word-break:break-word}
+  .approve-preview-row span.empty{color:var(--muted);font-weight:400;font-style:italic}
+
+  /* Bertugas Sebagai: quick-fill row & list per pegawai */
+  .bertugas-quick-row{
+    display:flex;gap:6px;margin-bottom:10px;align-items:center;
+    background:rgba(13,35,64,.03);padding:9px 11px;border-radius:8px;
+    border:1px dashed var(--border);
+  }
+  .form-input-quick{
+    flex:1;padding:8px 11px;border:1.5px solid var(--border2);border-radius:7px;
+    font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;outline:none;
+    background:#fff;
+  }
+  .form-input-quick:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(13,35,64,.06)}
+  .btn-quick{padding:8px 13px;font-size:12px;white-space:nowrap;border-radius:7px}
+  .bertugas-list{display:flex;flex-direction:column;gap:7px}
+  /* #2 redesign: container input Jumlah Responden — pattern sama dengan
+     .bertugas-quick-row supaya visual konsisten antar section di modal. */
+  .responden-row{
+    display:flex;gap:6px;align-items:center;
+    background:rgba(13,35,64,.03);padding:9px 11px;border-radius:8px;
+    border:1px dashed var(--border);
+  }
+
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .detail-field{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px 14px}
+  .detail-field.full{grid-column:1/-1}
+  .detail-field-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+  .detail-field-val{font-size:13px;font-weight:600;color:var(--navy);line-height:1.5;word-break:break-word}
+  .detail-field-val.empty{color:var(--muted);font-weight:400;font-style:italic}
+
+  .preview-container{padding:24px;min-height:100%}
+  .preview-container .docx-wrapper{background:transparent!important}
+  .preview-container .docx{background:white!important;padding:56px 72px!important;box-shadow:0 4px 20px rgba(13,35,64,.12);margin:0 auto 20px!important;max-width:720px}
+  .preview-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:var(--muted);gap:14px}
+  .preview-loading-spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spinFull 0.8s linear infinite}
+  @keyframes spinFull{to{transform:rotate(360deg)}}
+  .preview-error{padding:48px 24px;text-align:center;color:var(--red)}
+  .preview-error-icon{font-size:40px;margin-bottom:12px;opacity:.5}
+
+  /* PRINT */
+  @media print {
+    @page { margin: 0; size: A4; }
+    html, body { margin:0!important;padding:0!important;background:white!important; }
+    body > * { display:none!important; }
+    body > #modal-preview { display:block!important;position:static!important;background:white!important;padding:0!important;margin:0!important;inset:auto!important; }
+    #modal-preview .modal-preview { max-width:none!important;max-height:none!important;box-shadow:none!important;border-radius:0!important;animation:none!important;margin:0!important;padding:0!important;display:block!important;overflow:visible!important;width:auto!important; }
+    #modal-preview .modal-header,#modal-preview .modal-footer { display:none!important; }
+    #modal-preview .modal-body { background:white!important;overflow:visible!important;padding:0!important;margin:0!important;display:block!important; }
+    #modal-preview .preview-container { padding:0!important;margin:0!important; }
+    #modal-preview .preview-container .docx-wrapper { background:white!important;padding:0!important;margin:0!important; }
+    #modal-preview .preview-container .docx,
+    #modal-preview .preview-container section.docx { box-shadow:none!important;margin:0!important;max-width:none!important;padding:2cm!important; }
+    #modal-preview .preview-container section.docx { page-break-after:always;page-break-inside:avoid; }
+    #modal-preview .preview-container section.docx:last-child { page-break-after:auto; }
+  }
+
+  @media(max-width:768px){:root{--sidebar-w:220px}.main{padding:24px 16px}}
+  @media(max-width:600px){
+    .sidebar{position:fixed;left:-260px;top:52px;bottom:0;z-index:150;transition:left .25s ease;box-shadow:4px 0 20px rgba(13,35,64,.12)}
+    .sidebar.open{left:0}.layout{display:block}
+    .detail-grid{grid-template-columns:1fr}.modal{max-width:100%}
+  }
+
+  /* Readonly cell — bisa difokus, diselect, dicopy */
+  .ro-text {
+    user-select: text;
+    cursor: text;
+    outline: none;
+    border: 1.5px solid transparent;
+    border-radius: 0;
+    transition: background .12s, border-color .12s, box-shadow .12s;
+  }
+  .ro-ttd {
+    user-select: text;
+    cursor: default;
+    outline: none;
+    border: 1.5px solid transparent;
+    transition: background .12s, border-color .12s, box-shadow .12s;
+  }
+  
+  /* Tampilan fokus readonly — mirip xls-cell tapi warna berbeda (biru muda) */
+  .ro-text:focus {
+    background: #f0f7ff !important;
+    border-color: #3b82f6 !important;
+    box-shadow: inset 0 0 0 1px #3b82f6;
+    position: relative;
+    z-index: 2;
+  }
+  .ro-ttd:focus {
+    background: #f0f7ff !important;
+    border-color: #3b82f6 !important;
+    box-shadow: inset 0 0 0 1px #3b82f6;
+    position: relative;
+    z-index: 2;
+  }
+  
+  /* Highlight baris yang sedang aktif saat navigasi arrow */
+  tr.row-focused {
+    background: #fafdf6 !important;
+  }
+  tr.row-focused td {
+    background: transparent;
+  }  
+
+  /* Integrasi layout APA Shell */
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .app-shell {
+    display: flex;
+    min-height: 100vh;
+  }
+  .main-content {
+    margin-left: 264px;
+    flex: 1;
+    min-height: 100vh;
+    padding: 32px 36px 80px;
+    max-width: calc(100vw - 264px);
+    overflow-x: hidden;
+    transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  body.sidebar-hidden .main-content {
+    margin-left: 0 !important;
+    max-width: 100vw !important;
+    padding-left: max(5%, 72px) !important;
+  }
+
+</style>
+
+  <!-- Supabase JS Client & Global Config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+
+  <!-- APA Global Components: Topbar & Sidebar -->
+  <link rel="stylesheet" href="topbar.css">
+  <script src="topbar.js"></script>
+  <link rel="stylesheet" href="sidebar.css">
+  <script src="sidebar.js"></script>
+
 </head>
-
 <body>
-    <div class="app-shell">
-        <main class="main-content">
-            <!-- Header Page -->
-            <div class="page-header">
-                <div>
-                    <div class="eyebrow">Administrasi & Surat Tugas</div>
-                    <h1 class="page-title">Daftar Pengajuan Surat Tugas</h1>
-                    <p class="page-desc">Kelola, sunting inline seperti Excel, terbitkan nomor otomatis, dan cetak dokumen resmi kepegawaian.</p>
-                </div>
-            </div>
 
-            <!-- Quick Stat Grid -->
-            <div class="stat-grid">
-                <div class="stat-card">
-                    <div class="stat-icon total">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                    </div>
-                    <div>
-                        <div class="stat-value" id="statTotal">0</div>
-                        <div class="stat-label">Total Surat Tugas</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon waiting">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    </div>
-                    <div>
-                        <div class="stat-value" id="statWaiting" style="color: #b45309;">0</div>
-                        <div class="stat-label">Menunggu Persetujuan</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon done">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                    </div>
-                    <div>
-                        <div class="stat-value" id="statDone" style="color: var(--green-dark);">0</div>
-                        <div class="stat-label">Selesai / Diterbitkan</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Toolbar Komprehensif -->
-            <div class="toolbar-panel">
-                <div class="toolbar-left">
-                    <div class="search-box">
-                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" id="searchInput" class="search-input" placeholder="Cari nomor, perihal, atau tujuan...">
-                    </div>
-                    <select id="statusFilter" class="cell-select" style="border:1px solid #cbd5e1; padding:8px 12px; width:180px;">
-                        <option value="all">Semua Status</option>
-                        <option value="menunggu">Menunggu Persetujuan</option>
-                        <option value="selesai">Selesai / Terbit</option>
-                    </select>
-                    <button type="button" class="btn btn-primary" id="btnAddNewRow">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        + Tambah
-                    </button>
-                </div>
-                <div class="toolbar-right">
-                    <button type="button" class="btn btn-secondary" id="btnExportXlsx">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Export
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="btnImportXlsx">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                        Import
-                    </button>
-                    <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display:none;">
-                    <button type="button" class="btn btn-secondary" id="btnBulkDownloadZip">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-                        Download (Zip)
-                    </button>
-                    <button type="button" class="btn btn-success" id="btnBulkApprove">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        Setujui Terpilih
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="btnReloadData">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
-                        Muat Ulang
-                    </button>
-                </div>
-            </div>
-
-            <!-- Double Horizontal Scrollbar (Synchronized Top Scrollbar) -->
-            <div class="top-scrollbar-wrapper" id="topScrollbarWrapper">
-                <div class="top-scrollbar-inner" id="topScrollbarInner"></div>
-            </div>
-
-            <!-- Tabel Gaya Excel Inline Editing -->
-            <div class="excel-table-container" id="excelTableContainer">
-                <table class="excel-table" id="excelTable">
-                    <thead>
-                        <tr>
-                            <th class="sticky-col-check"><input type="checkbox" id="checkAllHead"></th>
-                            <th class="sticky-col-no">No</th>
-                            <th style="width: 220px;">Nomor Surat</th>
-                            <th style="width: 140px;">Tanggal Surat</th>
-                            <th style="width: 190px;">Waktu Pelaksanaan</th>
-                            <th style="width: 250px;">Perihal</th>
-                            <th style="width: 170px;">Tempat Tujuan</th>
-                            <th style="width: 260px;">Nama (Pegawai + Mitra)</th>
-                            <th style="width: 220px;">Menimbang</th>
-                            <th style="width: 150px;">Alat Angkutan</th>
-                            <th style="width: 260px;">POK / MAK</th>
-                            <th style="width: 220px;">Penandatangan</th>
-                            <th style="width: 220px;">Tipe Surat</th>
-                            <th style="width: 240px; text-align: center;">Aksi</th>
-                            <th style="width: 100px; text-align: center;">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="excelTableBody">
-                        <!-- Baris tabel dirender dinamis -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination Bar -->
-            <div class="pagination-bar">
-                <span id="paginationInfo">Menampilkan 0 dari 0 baris (Maks. 100 baris per halaman)</span>
-                <span style="font-size:0.75rem; color:#94a3b8;">Navigasi keyboard: Panah Atas/Bawah/Kiri/Kanan, Tab, dan Enter untuk berpindah sel.</span>
-            </div>
-        </main>
+<div class="app-shell">
+  <main class="main-content">
+    <div class="page-header fade-in">
+      <div>
+        <div class="page-eyebrow">Administrasi</div>
+        <h1 class="page-title">Surat <em>Tugas</em></h1>
+        <p class="page-desc">Kelola dan setujui surat tugas. Gunakan <kbd style="font-family:ui-monospace,monospace;font-size:11px;background:#f0efeb;border:1px solid var(--border);padding:1px 5px;border-radius:3px">Tab</kbd> dan tombol panah untuk pindah sel.</p>
+      </div>
+      <!-- #4: tombol Tambah/Download/Reload dipindah ke table-head supaya
+           dekat dengan tabel. Lihat di .table-head di bawah. -->
     </div>
 
-    <!-- Modal 1: Setujui Surat Tugas (Single / Bulk Approval) -->
-    <div id="approveModal" class="modal-overlay">
-        <div class="modal-card">
-            <div class="modal-header">
-                <div class="modal-title" id="approveModalTitle">Persetujuan & Penerbitan Surat Tugas</div>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnCloseApproveModal">&times;</button>
-            </div>
-            <div class="modal-body" id="approveModalBody">
-                <div id="approveValidationBox"></div>
-                <div id="approveConflictBox"></div>
-                <div id="approveRetirementBox"></div>
+    <div id="page-alert" class="alert"><span id="page-alert-icon"></span><span id="page-alert-text"></span></div>
 
-                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:16px;">
-                    <div style="font-weight:700;font-size:0.88rem;color:var(--blue-dark);margin-bottom:8px;">Format Penomoran Otomatis:</div>
-                    <div style="font-size:0.82rem;color:#475569;margin-bottom:4px;">• Surat Tugas: <code id="previewNomorST" style="font-weight:700;color:var(--blue);">B-001/668870-92800/KP-650/04/2026</code></div>
-                    <div style="font-size:0.82rem;color:#475569;">• SPD: <code id="previewNomorSPD" style="font-weight:700;color:var(--blue);">B-001/668870-92800/SPPD-524111/04/2026</code></div>
-                </div>
+    <div class="stats-row fade-in" style="animation-delay:.08s">
+      <div class="stat-pill"><div class="stat-pill-icon" style="background:#e8f0fe">📋</div><div><div class="stat-pill-num" id="st-total">—</div><div class="stat-pill-label">Total</div></div></div>
+      <div class="stat-pill"><div class="stat-pill-icon" style="background:#fef3c7">⏳</div><div><div class="stat-pill-num" id="st-menunggu">—</div><div class="stat-pill-label">Menunggu</div></div></div>
+      <div class="stat-pill"><div class="stat-pill-icon" style="background:#ecfdf5">✅</div><div><div class="stat-pill-num" id="st-selesai">—</div><div class="stat-pill-label">Selesai</div></div></div>
+    </div>
 
-                <div id="visumSection" style="margin-bottom:16px;display:none;">
-                    <label style="display:block;font-size:0.82rem;font-weight:700;color:var(--blue-dark);margin-bottom:6px;">Jumlah Responden (Lembar Visum):</label>
-                    <input type="number" id="inputJumlahResponden" class="cell-input" style="border:1px solid #cbd5e1;background:#fff;padding:8px;max-width:140px;" value="5" min="1" max="50">
-                </div>
+    <div class="filter-bar fade-in" style="animation-delay:.1s">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" type="text" id="search-input" placeholder="Cari perihal atau tujuan..." oninput="filterTable({ resetPage: true })">
+      </div>
+      <select class="filter-select" id="filter-status" onchange="filterTable({ resetPage: true })">
+        <option value="">Semua Status</option>
+        <option value="menunggu">Menunggu Persetujuan</option>
+        <option value="selesai">Selesai</option>
+      </select>
+    </div>
 
-                <div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                        <label style="font-size:0.84rem;font-weight:700;color:var(--blue-dark);">Peran "Bertugas Sebagai" per Personel:</label>
-                        <div style="display:flex;gap:6px;">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnFillAllRoles">Isi Semua</button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnClearAllRoles">Kosongkan</button>
-                        </div>
-                    </div>
-                    <div id="roleAssignmentList" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
-                        <!-- Input peran personel -->
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" id="btnCloseApproveModal2">Batal</button>
-                <button type="button" class="btn btn-success btn-sm" id="btnConfirmApprove">Setujui & Terbitkan</button>
-            </div>
+    <div class="hint-bar fade-in" style="animation-delay:.11s">
+      <span>⌨️</span>
+      <span>
+        <strong>Mode Excel:</strong>
+        <kbd>Tab</kbd> / <kbd>Enter</kbd> = pindah sel ·
+        <kbd>Shift</kbd>+<kbd>Tab</kbd> = ke kiri ·
+        Tanggal: ketik bebas (<em>2/1/26</em>, <em>02-01-2026</em>, <em>2 jan 2026</em>) atau klik untuk popup ·
+        Pegawai: ketik nama lalu Enter / klik dari saran ·
+        Paste dari Excel didukung (Tab-separated).
+      </span>
+    </div>
+
+    <div class="table-wrap fade-in" style="animation-delay:.12s">
+      <div class="table-head">
+        <span class="table-head-title">Daftar Pengajuan Surat Tugas</span>
+        <span class="table-head-count" id="table-count">Memuat...</span>
+        <!-- #4: tombol-tombol aksi pindah ke sini supaya dekat tabel.
+             Pakai class .table-head-actions yang push ke kanan.
+             #5: tombol Export & Import Excel ditambah di sebelah Tambah. -->
+        <div class="table-head-actions">
+          <button class="btn-table-head" onclick="addNewSurat()" title="Tambah surat tugas baru sebagai admin">+ Tambah</button>
+          <button class="btn-table-head" onclick="exportSuratToExcel()" title="Export semua surat ke file Excel (.xlsx)">⬇ Export</button>
+          <button class="btn-table-head" onclick="document.getElementById('inp-import-excel').click()" title="Import surat dari file Excel dan cek dulu sebelum diterapkan">⬆ Import</button>
+          <input type="file" id="inp-import-excel" accept=".xlsx,.xls" style="display:none" onchange="importSuratFromExcel(this)">
+          <button class="btn-table-head btn-table-head-gold" id="btn-bulk-download" onclick="bulkDownloadSelected()" disabled title="Pilih dulu surat yang ingin di-download">📥 Download</button>
+          <button class="btn-table-head" style="background:rgba(26,122,74,.9);border-color:rgba(26,122,74,.7);color:#fff" id="btn-bulk-approve" onclick="openBulkApprove()" disabled title="Pilih dulu surat menunggu yang ingin disetujui">✅ Setujui</button>
+          <button class="btn-table-head" onclick="loadSurat()" title="Muat ulang data">↺ Muat Ulang</button>
         </div>
+      </div>
+      <div class="table-scroll-top" id="table-scroll-top" aria-hidden="true">
+        <div class="table-scroll-top-inner" id="table-scroll-top-inner"></div>
+      </div>
+      <div class="table-sticky-cols" id="table-sticky-cols"></div>
+      <div class="table-scroll" id="table-area">
+        <table class="list-table">
+          <thead><tr>
+            <th class="col-no">No</th>
+            <th class="col-nomor-surat">Nomor Surat</th>
+            <th class="col-tgl-surat">Tanggal Surat</th>
+            <th class="col-waktu">Waktu Pelaksanaan</th>
+            <th class="col-perihal">Perihal</th>
+            <th class="col-tujuan">Tempat Tujuan</th>
+            <th class="col-nama">Nama</th>
+            <th class="col-menimbang">Menimbang</th>
+            <th class="col-alat">Alat Angkutan</th>
+            <th class="col-mak">POK</th>
+            <th class="col-ttd">Penandatangan</th>
+            <th class="col-aksi">Aksi</th>
+            <th class="col-status">Status</th>
+          </tr></thead>
+          <tbody><tr><td colspan="13"><div style="padding:16px;display:flex;flex-direction:column;gap:8px">
+            <div class="skel" style="height:44px;border-radius:6px"></div>
+            <div class="skel" style="height:44px;border-radius:6px"></div>
+            <div class="skel" style="height:44px;border-radius:6px"></div>
+          </div></td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination" id="table-pagination" hidden></div>
     </div>
+  </main>
+</div>
 
-    <!-- Modal 2: Edit Bertugas Sebagai (Setelah Disetujui) -->
-    <div id="editRolesModal" class="modal-overlay">
-        <div class="modal-card">
-            <div class="modal-header">
-                <div class="modal-title">Edit "Bertugas Sebagai"</div>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnCloseEditRolesModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p style="font-size:0.83rem;color:var(--muted);margin-bottom:14px;">Perbarui peran atau tugas personel pada surat tugas yang telah disetujui tanpa mengubah nomor surat.</p>
-                <div id="editRolesList" style="display:flex;flex-direction:column;gap:8px;"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" id="btnCloseEditRolesModal2">Batal</button>
-                <button type="button" class="btn btn-primary btn-sm" id="btnSaveEditedRoles">Simpan Perubahan</button>
-            </div>
+<!-- ═══════════════════════════════════════════════════════════
+     POPUPS (calendar & autocomplete)
+═════════════════════════════════════════════════════════════ -->
+<div class="cal-popup" id="cal-popup">
+  <div class="cal-header">
+    <button class="cal-nav" id="cal-prev" type="button">‹</button>
+    <span class="cal-title" id="cal-title"></span>
+    <button class="cal-nav" id="cal-next" type="button">›</button>
+  </div>
+  <div class="cal-day-names" id="cal-day-names"></div>
+  <div class="cal-days" id="cal-days"></div>
+  <div class="cal-year-grid" id="cal-year-grid"></div>
+  <div class="cal-footer">
+    <span class="cal-footer-text" id="cal-footer-text">Pilih tanggal</span>
+    <button class="cal-clear" id="cal-clear" type="button">Hapus</button>
+  </div>
+</div>
+
+<div class="ac-popup" id="ac-popup">
+  <div class="ac-hint" id="ac-hint">
+    <span>↑↓ navigasi · <kbd>Enter</kbd> pilih · <kbd>Esc</kbd> tutup</span>
+    <span id="ac-count"></span>
+  </div>
+  <div class="ac-list" id="ac-list"></div>
+</div>
+
+<!-- POPUP TYPEAHEAD POK (MAK PEMBEBANAN) -->
+<div class="mak-ac-popup" id="mak-ac-popup">
+  <div class="mak-ac-header">
+    <span>↑↓ navigasi · <kbd>Enter</kbd> pilih · <kbd>Esc</kbd> tutup</span>
+    <span id="mak-ac-count"></span>
+  </div>
+  <div class="mak-ac-list" id="mak-ac-list"></div>
+</div>
+
+<!-- POPUP AUTOCOMPLETE TIPE (single-select dari TIPE_OPTIONS) -->
+<div class="tp-ac-popup" id="tp-ac-popup">
+  <div class="tp-ac-list" id="tp-ac-list"></div>
+</div>
+
+<!-- MODAL PREVIEW IMPORT SURAT TUGAS -->
+<div class="modal-overlay" id="modal-import-surat" style="display:none" onclick="if(event.target===this)closeSuratImportModal()">
+  <div class="modal modal-wide">
+    <div class="modal-header detail">
+      <span class="modal-title">Preview <em>Import Surat Tugas</em></span>
+      <button class="modal-close" onclick="closeSuratImportModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-preview-panel">
+        Cek hasil baca Excel sebelum data disimpan. Kolom <strong>Lamanya Tugas</strong> diabaikan,
+        <strong>Tujuan / Tugas</strong> dibaca sebagai perihal, dan <strong>Program</strong> + <strong>MAK Pembebanan</strong>
+        digabung menjadi POK.
+      </div>
+      <div class="import-preview-stats">
+        <div class="import-stat"><div class="import-stat-label">Baris Dibaca</div><div class="import-stat-value" id="surat-import-total">0</div></div>
+        <div class="import-stat"><div class="import-stat-label">Siap Import</div><div class="import-stat-value" id="surat-import-ready">0</div></div>
+        <div class="import-stat"><div class="import-stat-label">Warning</div><div class="import-stat-value" id="surat-import-warn">0</div></div>
+        <div class="import-stat"><div class="import-stat-label">File</div><div class="import-stat-value" id="surat-import-file" style="font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.35">-</div></div>
+      </div>
+      <div class="import-preview-table-wrap">
+        <table class="import-preview-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>No</th>
+              <th>Nomor</th>
+              <th>Tanggal Surat</th>
+              <th>Waktu Pelaksanaan</th>
+              <th>Perihal</th>
+              <th>Nama</th>
+              <th>POK</th>
+              <th>Penandatangan</th>
+              <th>Catatan</th>
+            </tr>
+          </thead>
+          <tbody id="surat-import-preview-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeSuratImportModal()">Batal</button>
+      <button class="btn-primary" id="btn-surat-import-submit" onclick="submitSuratImport()" disabled>Terapkan Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL APPROVE -->
+<div class="modal-overlay" id="modal-approve" style="display:none" onclick="if(event.target===this)closeModal('modal-approve')">
+  <div class="modal modal-wide">
+    <div class="modal-header approve">
+      <span class="modal-title">✅ Setujui <em>Surat Tugas</em></span>
+      <button class="modal-close" onclick="closeModal('modal-approve')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="approve-alert" class="alert"><span id="approve-alert-icon"></span><span id="approve-alert-text"></span></div>
+
+      <!-- Ringkasan langsung tampil tanpa label "Ringkasan Data Surat" — UI clean -->
+      <div class="approve-preview" id="approve-preview"></div>
+
+      <!-- BERTUGAS SEBAGAI (role per pegawai) — hanya muncul untuk tipe
+           dengan lampiran (T2/T3V) DAN ≥ 2 pegawai. Dikontrol dari
+           openApprove() via toggle .style.display. List item dirender
+           dinamis ke #approve-bertugas-list. -->
+      <div class="form-group" id="approve-bertugas-row" style="display:none">
+        <label class="form-label">
+          <span style="display:inline-flex;align-items:center;gap:6px">
+            <span style="font-size:14px">📋</span>
+            <span>Bertugas Sebagai</span>
+          </span>
+          <span style="font-style:italic;color:var(--muted);font-weight:400;margin-left:6px">(opsional per pegawai)</span>
+        </label>
+
+        <!-- Quick-fill: isi semua role sekaligus dengan nilai sama -->
+        <div class="bertugas-quick-row">
+          <input type="text" id="inp-bertugas-quick" class="form-input form-input-quick"
+                 placeholder="Contoh: Tim Pelaksana">
+          <button type="button" class="btn-outline btn-quick" onclick="bertugasApplyAll()"
+                  title="Isi semua pegawai dengan nilai di atas">↓ Isi Semua</button>
+          <button type="button" class="btn-outline btn-quick" onclick="bertugasClearAll()"
+                  title="Kosongkan semua field bertugas">✕ Kosongkan</button>
         </div>
-    </div>
 
-    <!-- Modal 3: Preview Surat Tugas (.docx) -->
-    <div id="previewModal" class="modal-overlay">
-        <div class="modal-card" style="max-width: 900px;">
-            <div class="modal-header">
-                <div class="modal-title" id="previewModalTitle">Pratinjau Surat Tugas Resmi</div>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnClosePreviewModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="preview-pane" id="docxPreviewContainer"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" id="btnWordAndPrint">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                    Buka di Word & Print
-                </button>
-                <button type="button" class="btn btn-primary btn-sm" id="btnDownloadSingleDocx">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    Download .docx
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnClosePreviewModal2">Tutup</button>
-            </div>
+        <!-- List per pegawai — dirender di JS oleh renderBertugasList() -->
+        <div id="approve-bertugas-list" class="bertugas-list"></div>
+      </div>
+
+      <!-- #2: JUMLAH RESPONDEN — hanya muncul untuk tipe surat dengan visum.
+           Toggle visibility via openApprove() berdasarkan tipeHasVisum().
+           Disimpan ke kolom DB surat_tugas.jumlah_responden saat submit.
+           Desain konsisten dengan section "Bertugas Sebagai" di atas. -->
+      <div class="form-group" id="approve-responden-row" style="display:none">
+        <label class="form-label">
+          <span style="display:inline-flex;align-items:center;gap:6px">
+            <span style="font-size:14px">📋</span>
+            <span>Jumlah Responden</span>
+          </span>
+          <span style="font-style:italic;color:var(--muted);font-weight:400;margin-left:6px">(opsional, untuk lampiran visum)</span>
+        </label>
+        <div class="responden-row">
+          <input type="number" min="0" step="1" class="form-input form-input-quick" id="inp-jumlah-responden"
+                 placeholder="Masukkan jumlah responden">
         </div>
+      </div>
     </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('modal-approve')">Batal</button>
+      <button class="btn-primary" id="btn-approve-submit" onclick="submitApprove()" style="background:#1a7a4a">✅ Setujui Surat</button>
+    </div>
+  </div>
+</div>
 
-    <!-- Modal 4: Import Excel Preview Modal -->
-    <div id="importModal" class="modal-overlay">
-        <div class="modal-card" style="max-width: 860px;">
-            <div class="modal-header">
-                <div class="modal-title">Pratinjau Import Data Excel</div>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnCloseImportModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div style="font-size:0.83rem;color:var(--muted);margin-bottom:12px;">Periksa data hasil pembacaan berkas Excel sebelum diterapkan ke sistem:</div>
-                <div style="max-height:360px;overflow:auto;border:1px solid #cbd5e1;border-radius:10px;">
-                    <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
-                        <thead>
-                            <tr style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;">
-                                <th style="padding:8px;text-align:center;">Baris</th>
-                                <th style="padding:8px;">Perihal</th>
-                                <th style="padding:8px;">Tujuan</th>
-                                <th style="padding:8px;">Waktu</th>
-                                <th style="padding:8px;">Pegawai</th>
-                                <th style="padding:8px;">Catatan Validasi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="importPreviewBody"></tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" id="btnCloseImportModal2">Batal</button>
-                <button type="button" class="btn btn-success btn-sm" id="btnApplyImport">Terapkan Import</button>
-            </div>
+<!-- MODAL EDIT BERTUGAS — untuk edit role pegawai pada surat yang sudah
+     selesai (status=selesai). Diakses lewat tombol "✏ Edit Role" di
+     tabel. Saat submit, hanya kolom bertugas_sebagai yang di-PATCH —
+     surat lainnya tidak disentuh. -->
+<div class="modal-overlay" id="modal-edit-bertugas" style="display:none" onclick="if(event.target===this)closeModal('modal-edit-bertugas')">
+  <div class="modal modal-wide">
+    <div class="modal-header detail">
+      <span class="modal-title">✏ Edit <em>Bertugas Sebagai</em></span>
+      <button class="modal-close" onclick="closeModal('modal-edit-bertugas')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px">
+        Edit role per pegawai untuk surat: <strong id="edit-bertugas-perihal" style="color:var(--navy)"></strong>.<br>
+        Perubahan langsung disimpan ke database. Kolom lain di surat tidak akan disentuh.
+      </p>
+
+      <!-- Quick-fill: isi semua role sekaligus -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;background:rgba(0,0,0,.025);padding:8px 10px;border-radius:7px">
+        <input type="text" id="inp-edit-bertugas-quick" class="form-input"
+               placeholder="Contoh: Tim Pelaksana"
+               style="flex:1;padding:7px 10px;border:1.5px solid var(--border2);border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;outline:none">
+        <button type="button" class="btn-outline" onclick="editBertugasApplyAll()"
+                style="padding:7px 12px;font-size:12px;white-space:nowrap"
+                title="Isi semua pegawai dengan nilai di atas">↓ Isi Semua</button>
+        <button type="button" class="btn-outline" onclick="editBertugasClearAll()"
+                style="padding:7px 12px;font-size:12px;white-space:nowrap"
+                title="Kosongkan semua field bertugas">✕ Kosongkan</button>
+      </div>
+
+      <!-- List per pegawai — dirender di JS oleh renderEditBertugasList() -->
+      <div id="edit-bertugas-list" style="display:flex;flex-direction:column;gap:7px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('modal-edit-bertugas')">Batal</button>
+      <button class="btn-primary" id="btn-edit-bertugas-submit" onclick="submitEditBertugas()">💾 Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PREVIEW DOCX -->
+<div class="modal-overlay" id="modal-preview" style="display:none" onclick="if(event.target===this)closeModal('modal-preview')">
+  <div class="modal-preview">
+    <div class="modal-header detail">
+      <span class="modal-title">👁 Preview <em>Surat Tugas</em></span>
+      <button class="modal-close" onclick="closeModal('modal-preview')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="preview-container" id="preview-container">
+        <div class="preview-loading"><div class="preview-loading-spin"></div><div>Memuat dokumen...</div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('modal-preview')">Tutup</button>
+      <button class="btn-preview" id="btn-open-in-word" onclick="openInWordForPrint()" title="Buka di Microsoft Word desktop, lalu Ctrl+P untuk print">📄 Buka di Word & Print</button>
+      <button class="btn-download" id="btn-preview-download" onclick="downloadFromPreview()">📥 Download .docx</button>
+    </div>
+  </div>
+</div>
+
+<!-- (#2 refactor) Modal `modal-visum-prompt` dihapus.
+     Jumlah responden visum sekarang persistent di kolom DB
+     surat_tugas.jumlah_responden — di-input admin saat approve. -->
+
+<!-- DRAFT SAVED TOAST — floating indicator saat draft tersimpan otomatis -->
+<div id="draft-saved-toast">📝 Draft tersimpan</div>
+
+<!-- MODAL BULK APPROVE — konfirmasi sebelum menyetujui banyak surat sekaligus -->
+<div class="modal-overlay" id="modal-bulk-approve" style="display:none" onclick="if(event.target===this)closeModal('modal-bulk-approve')">
+  <div class="modal modal-wide">
+    <div class="modal-header approve">
+      <span class="modal-title">✅ Setujui <em>Surat Terpilih</em></span>
+      <button class="modal-close" onclick="closeModal('modal-bulk-approve')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert info show" style="margin-bottom:0;border-radius:8px">
+        <span>ℹ️</span>
+        <span style="font-size:12px;line-height:1.55">
+          Surat akan disetujui menggunakan nilai yang sudah terisi di tabel.
+          <strong>Bertugas Sebagai</strong> dan <strong>Jumlah Responden</strong> tidak diisi di sini — gunakan tombol
+          <em>Edit Role</em> / buka modal Setujui individual setelah proses selesai.
+        </span>
+      </div>
+
+      <!-- List surat yang akan disetujui — diisi JS -->
+      <div id="bulk-approve-list" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;padding-right:4px"></div>
+
+      <!-- Progress indicator — muncul saat proses berjalan -->
+      <div id="bulk-approve-progress" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:12.5px;color:var(--navy)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:16px;height:16px;border:2px solid rgba(13,35,64,.2);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>
+          <span id="bulk-approve-progress-text">Memproses...</span>
         </div>
+        <div style="margin-top:8px;background:var(--border);border-radius:4px;height:5px;overflow:hidden">
+          <div id="bulk-approve-bar" style="height:100%;background:#1a7a4a;border-radius:4px;transition:width .3s ease;width:0%"></div>
+        </div>
+      </div>
     </div>
+    <div class="modal-footer">
+      <button class="btn-outline" id="btn-bulk-approve-cancel" onclick="closeModal('modal-bulk-approve')">Batal</button>
+      <button class="btn-primary" id="btn-bulk-approve-submit" onclick="submitBulkApprove()" style="background:#1a7a4a">
+        ✅ Setujui Semua (<span id="bulk-approve-count">0</span>)
+      </button>
+    </div>
+  </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            let tableRows = [];
-            let currentApprovingItem = null;
-            let currentApprovingItems = [];
-            let currentPreviewBlob = null;
-            let currentPreviewFilename = '';
-            let currentEditingRolesItem = null;
-            let parsedImportRows = [];
+<script src="config.js"></script>
+<script src="9201-shared.js"></script>
 
-            // Inisialisasi Data
-            await window.SuratTugasHelper.initData();
-            const personelList = window.SuratTugasHelper.getAllPersonel();
-            const pokList = window.SuratTugasHelper.state.kamusPok;
-            const tipeConfig = window.SuratTugasHelper.TIPE_SURAT_CONFIG;
 
-            // Load baris dari database / local
-            await loadData();
-            setupDoubleScrollbar();
-            setupKeyboardNavigation();
 
-            // Event Listeners Toolbar
-            document.getElementById('btnAddNewRow').addEventListener('click', () => {
-                addNewRow();
-                renderTable();
-            });
 
-            document.getElementById('btnReloadData').addEventListener('click', async () => {
-                await loadData();
-            });
 
-            document.getElementById('searchInput').addEventListener('input', renderTable);
-            document.getElementById('statusFilter').addEventListener('change', renderTable);
 
-            document.getElementById('btnExportXlsx').addEventListener('click', () => {
-                window.SuratTugasHelper.exportToExcel(tableRows);
-            });
-
-            document.getElementById('btnImportXlsx').addEventListener('click', () => {
-                document.getElementById('excelFileInput').click();
-            });
-
-            document.getElementById('excelFileInput').addEventListener('change', handleExcelImport);
-
-            document.getElementById('btnBulkDownloadZip').addEventListener('click', handleBulkDownloadZip);
-            document.getElementById('btnBulkApprove').addEventListener('click', handleBulkApprove);
-
-            document.getElementById('checkAllHead').addEventListener('change', (e) => {
-                tableRows.forEach(r => r._selected = e.target.checked);
-                renderTable();
-            });
-
-            // Modal Handlers
-            document.getElementById('btnCloseApproveModal').addEventListener('click', closeApproveModal);
-            document.getElementById('btnCloseApproveModal2').addEventListener('click', closeApproveModal);
-            document.getElementById('btnConfirmApprove').addEventListener('click', confirmApprove);
-
-            document.getElementById('btnCloseEditRolesModal').addEventListener('click', closeEditRolesModal);
-            document.getElementById('btnCloseEditRolesModal2').addEventListener('click', closeEditRolesModal);
-            document.getElementById('btnSaveEditedRoles').addEventListener('click', saveEditedRoles);
-
-            document.getElementById('btnClosePreviewModal').addEventListener('click', closePreviewModal);
-            document.getElementById('btnClosePreviewModal2').addEventListener('click', closePreviewModal);
-            document.getElementById('btnDownloadSingleDocx').addEventListener('click', () => {
-                if (currentPreviewBlob) {
-                    window.SuratTugasHelper.downloadBlob(currentPreviewBlob, currentPreviewFilename);
-                }
-            });
-            document.getElementById('btnWordAndPrint').addEventListener('click', async () => {
-                if (currentPreviewBlob) {
-                    await window.SuratTugasHelper.uploadPreviewAndOpen(currentPreviewBlob, currentPreviewFilename);
-                }
-            });
-
-            document.getElementById('btnCloseImportModal').addEventListener('click', closeImportModal);
-            document.getElementById('btnCloseImportModal2').addEventListener('click', closeImportModal);
-            document.getElementById('btnApplyImport').addEventListener('click', applyImport);
-
-            document.getElementById('btnFillAllRoles').addEventListener('click', () => {
-                const inputs = document.querySelectorAll('#roleAssignmentList input');
-                inputs.forEach(i => i.value = 'Petugas Pendataan Lapangan');
-            });
-
-            document.getElementById('btnClearAllRoles').addEventListener('click', () => {
-                const inputs = document.querySelectorAll('#roleAssignmentList input');
-                inputs.forEach(i => i.value = '');
-            });
-
-            // Load Data Awal
-            async function loadData() {
-                await window.SuratTugasHelper.initData();
-                tableRows = [...window.SuratTugasHelper.state.suratTugasList];
-
-                // Jika data masih kosong sama sekali, tambahkan 1 baris draft
-                if (tableRows.length === 0) {
-                    addNewRow();
-                }
-
-                renderStats();
-                renderTable();
-            }
-
-            function renderStats() {
-                const total = tableRows.length;
-                const waiting = tableRows.filter(r => r.status === 'menunggu').length;
-                const done = tableRows.filter(r => r.status === 'selesai').length;
-
-                document.getElementById('statTotal').textContent = total;
-                document.getElementById('statWaiting').textContent = waiting;
-                document.getElementById('statDone').textContent = done;
-            }
-
-            function addNewRow() {
-                const now = new Date();
-                const defaultDateStr = now.toISOString().split('T')[0];
-                const newRow = {
-                    id: 'row_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-                    nomor_surat: '',
-                    nomor_urut: null,
-                    tgl_surat: defaultDateStr,
-                    waktu_pelaksanaan: '25 s.d. 27 Maret 2026',
-                    perihal: '',
-                    tempat_tujuan: 'Distrik Kota Waisai',
-                    pegawai_nip_list: [],
-                    menimbang: 'Bahwa dalam rangka kelancaran pelaksanaan tugas administrasi dan statistik di lingkungan BPS Kabupaten Raja Ampat, dipandang perlu menugaskan pegawai yang bersangkutan.',
-                    alat_angkutan: 'Kendaraan Dinas / Roda Dua',
-                    pok_id: '2901.BMA.006.051.A.524111',
-                    penandatangan_nip: '196803201994012001',
-                    tipe_surat: 'surat_tugas',
-                    status: 'menunggu',
-                    bertugas_sebagai: {},
-                    _selected: false,
-                    _isNew: true
-                };
-
-                tableRows.unshift(newRow);
-                saveRowDraft(newRow);
-                renderStats();
-            }
-
-            function saveRowDraft(row) {
-                try {
-                    localStorage.setItem('apa_admin_draft_' + row.id, JSON.stringify(row));
-                } catch (e) {}
-            }
-
-            // Render Table Excel
-            function renderTable() {
-                const tbody = document.getElementById('excelTableBody');
-                const query = document.getElementById('searchInput').value.toLowerCase().trim();
-                const statusF = document.getElementById('statusFilter').value;
-
-                let filtered = [...tableRows];
-                if (query) {
-                    filtered = filtered.filter(r => 
-                        (r.nomor_surat && r.nomor_surat.toLowerCase().includes(query)) ||
-                        (r.perihal && r.perihal.toLowerCase().includes(query)) ||
-                        (r.tempat_tujuan && r.tempat_tujuan.toLowerCase().includes(query))
-                    );
-                }
-                if (statusF !== 'all') {
-                    filtered = filtered.filter(r => r.status === statusF);
-                }
-
-                // Batas pagination 100 baris
-                const displayRows = filtered.slice(0, 100);
-                document.getElementById('paginationInfo').textContent = `Menampilkan ${displayRows.length} dari ${filtered.length} baris (Maks. 100 baris per halaman)`;
-
-                tbody.innerHTML = '';
-                if (displayRows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:40px;color:var(--muted);">Tidak ada surat tugas yang ditemukan.</td></tr>';
-                    return;
-                }
-
-                displayRows.forEach((row, idx) => {
-                    const tr = document.createElement('tr');
-                    tr.dataset.rowId = row.id;
-                    if (row._selected) tr.classList.add('selected');
-
-                    // 1. Checkbox
-                    const tdCheck = document.createElement('td');
-                    tdCheck.className = 'sticky-col-check';
-                    const chk = document.createElement('input');
-                    chk.type = 'checkbox';
-                    chk.checked = !!row._selected;
-                    chk.addEventListener('change', () => {
-                        row._selected = chk.checked;
-                        tr.classList.toggle('selected', chk.checked);
-                    });
-                    tdCheck.appendChild(chk);
-                    tr.appendChild(tdCheck);
-
-                    // 2. No
-                    const tdNo = document.createElement('td');
-                    tdNo.className = 'sticky-col-no';
-                    tdNo.style.fontWeight = '700';
-                    tdNo.style.color = 'var(--muted)';
-                    tdNo.textContent = idx + 1;
-                    tr.appendChild(tdNo);
-
-                    // 3. Nomor Surat
-                    const tdNomor = document.createElement('td');
-                    const inNomor = document.createElement('input');
-                    inNomor.className = 'cell-input';
-                    inNomor.placeholder = row.status === 'selesai' ? 'B-001/...' : 'Otomatis saat disetujui';
-                    inNomor.value = row.nomor_surat || '';
-                    inNomor.addEventListener('change', (e) => {
-                        row.nomor_surat = e.target.value.trim();
-                        saveRowDraft(row);
-                    });
-                    tdNomor.appendChild(inNomor);
-                    tr.appendChild(tdNomor);
-
-                    // 4. Tanggal Surat
-                    const tdTgl = document.createElement('td');
-                    const inTgl = document.createElement('input');
-                    inTgl.type = 'date';
-                    inTgl.className = 'cell-input';
-                    inTgl.value = row.tgl_surat || new Date().toISOString().split('T')[0];
-                    inTgl.addEventListener('change', (e) => {
-                        row.tgl_surat = e.target.value;
-                        saveRowDraft(row);
-                    });
-                    tdTgl.appendChild(inTgl);
-                    tr.appendChild(tdTgl);
-
-                    // 5. Waktu Pelaksanaan (Custom Flatpickr Date Range Picker)
-                    const tdWaktu = document.createElement('td');
-                    const inWaktu = document.createElement('input');
-                    inWaktu.className = 'cell-input';
-                    inWaktu.placeholder = 'Pilih rentang tanggal';
-                    inWaktu.value = row.waktu_pelaksanaan || '';
-                    tdWaktu.appendChild(inWaktu);
-                    
-                    // Attach Flatpickr range picker
-                    flatpickr(inWaktu, {
-                        mode: 'range',
-                        locale: 'id',
-                        dateFormat: 'd F Y',
-                        onClose: function(selectedDates, dateStr, instance) {
-                            if (selectedDates.length === 2) {
-                                const d1 = selectedDates[0];
-                                const d2 = selectedDates[1];
-                                const m1 = window.SuratTugasHelper.formatDateIndo(d1);
-                                const m2 = window.SuratTugasHelper.formatDateIndo(d2);
-                                
-                                let formattedText = `${m1} s.d. ${m2}`;
-                                if (d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear()) {
-                                    formattedText = `${d1.getDate()} s.d. ${d2.getDate()} ${m2.split(' ').slice(1).join(' ')}`;
-                                }
-                                inWaktu.value = formattedText;
-                                row.waktu_pelaksanaan = formattedText;
-                                saveRowDraft(row);
-                            } else if (selectedDates.length === 1) {
-                                inWaktu.value = window.SuratTugasHelper.formatDateIndo(selectedDates[0]);
-                                row.waktu_pelaksanaan = inWaktu.value;
-                                saveRowDraft(row);
-                            }
-                        }
-                    });
-                    tr.appendChild(tdWaktu);
-
-                    // 6. Perihal (Auto-grow Textarea)
-                    const tdPerihal = document.createElement('td');
-                    const taPerihal = document.createElement('textarea');
-                    taPerihal.className = 'cell-textarea';
-                    taPerihal.placeholder = 'Perihal kegiatan...';
-                    taPerihal.value = row.perihal || '';
-                    attachAutoGrow(taPerihal);
-                    taPerihal.addEventListener('input', (e) => {
-                        row.perihal = e.target.value;
-                        saveRowDraft(row);
-                    });
-                    tdPerihal.appendChild(taPerihal);
-                    tr.appendChild(tdPerihal);
-
-                    // 7. Tempat Tujuan
-                    const tdTujuan = document.createElement('td');
-                    const taTujuan = document.createElement('textarea');
-                    taTujuan.className = 'cell-textarea';
-                    taTujuan.placeholder = 'Lokasi tujuan...';
-                    taTujuan.value = row.tempat_tujuan || '';
-                    attachAutoGrow(taTujuan);
-                    taTujuan.addEventListener('input', (e) => {
-                        row.tempat_tujuan = e.target.value;
-                        saveRowDraft(row);
-                    });
-                    tdTujuan.appendChild(taTujuan);
-                    tr.appendChild(tdTujuan);
-
-                    // 8. Nama (Multi-tag Pegawai + Mitra)
-                    const tdNama = document.createElement('td');
-                    tdNama.appendChild(createExcelTagAutocomplete(row));
-                    tr.appendChild(tdNama);
-
-                    // 9. Menimbang
-                    const tdMenimbang = document.createElement('td');
-                    const taMenimbang = document.createElement('textarea');
-                    taMenimbang.className = 'cell-textarea';
-                    taMenimbang.placeholder = 'Dasar pertimbangan surat...';
-                    taMenimbang.value = row.menimbang || '';
-                    attachAutoGrow(taMenimbang);
-                    taMenimbang.addEventListener('input', (e) => {
-                        row.menimbang = e.target.value;
-                        saveRowDraft(row);
-                    });
-                    tdMenimbang.appendChild(taMenimbang);
-                    tr.appendChild(tdMenimbang);
-
-                    // 10. Alat Angkutan
-                    const tdAngkut = document.createElement('td');
-                    const inAngkut = document.createElement('input');
-                    inAngkut.className = 'cell-input';
-                    inAngkut.value = row.alat_angkutan || 'Kendaraan Dinas';
-                    inAngkut.addEventListener('change', (e) => {
-                        row.alat_angkutan = e.target.value;
-                        saveRowDraft(row);
-                    });
-                    tdAngkut.appendChild(inAngkut);
-                    tr.appendChild(tdAngkut);
-
-                    // 11. POK / MAK (Autocomplete dari kamus_pok)
-                    const tdPok = document.createElement('td');
-                    const selPok = document.createElement('select');
-                    selPok.className = 'cell-select';
-                    pokList.forEach(p => {
-                        const opt = document.createElement('option');
-                        opt.value = p.kode_mak;
-                        opt.textContent = `${p.kode_mak} - ${p.deskripsi}`;
-                        if (row.pok_id === p.kode_mak) opt.selected = true;
-                        selPok.appendChild(opt);
-                    });
-                    selPok.addEventListener('change', (e) => {
-                        row.pok_id = e.target.value;
-                        saveRowDraft(row);
-                    });
-                    tdPok.appendChild(selPok);
-                    tr.appendChild(tdPok);
-
-                    // 12. Penandatangan
-                    const tdTtd = document.createElement('td');
-                    const selTtd = document.createElement('select');
-                    selTtd.className = 'cell-select';
-                    const ttdOptions = [
-                        { nip: '196803201994012001', label: 'Ir. Nurhaida Sirun (Kepala s.d Mar 2026)' },
-                        { nip: '198904192012111001', label: 'Andrie Wardani, SST (Plt. Kepala Apr-Jun 2026)' },
-                        { nip: '198604072009022004', label: 'Frida Irian S. Ompusunggu (Kepala Jul 2026+)' }
-                    ];
-                    ttdOptions.forEach(opt => {
-                        const o = document.createElement('option');
-                        o.value = opt.nip;
-                        o.textContent = opt.label;
-                        if (row.penandatangan_nip === opt.nip) o.selected = true;
-                        selTtd.appendChild(o);
-                    });
-                    selTtd.addEventListener('change', (e) => {
-                        row.penandatangan_nip = e.target.value;
-                        saveRowDraft(row);
-                    });
-                    tdTtd.appendChild(selTtd);
-                    tr.appendChild(tdTtd);
-
-                    // 13. Tipe Surat (10 Tipe)
-                    const tdTipe = document.createElement('td');
-                    const selTipe = document.createElement('select');
-                    selTipe.className = 'cell-select';
-                    Object.keys(tipeConfig).forEach(tKey => {
-                        const opt = document.createElement('option');
-                        opt.value = tKey;
-                        opt.textContent = tipeConfig[tKey].label;
-                        if (row.tipe_surat === tKey) opt.selected = true;
-                        selTipe.appendChild(opt);
-                    });
-                    selTipe.addEventListener('change', (e) => {
-                        row.tipe_surat = e.target.value;
-                        saveRowDraft(row);
-                    });
-                    tdTipe.appendChild(selTipe);
-                    tr.appendChild(tdTipe);
-
-                    // 14. Aksi
-                    const tdAksi = document.createElement('td');
-                    tdAksi.style.textAlign = 'center';
-                    tdAksi.style.whiteSpace = 'nowrap';
-
-                    // Tombol Preview
-                    const btnPrev = document.createElement('button');
-                    btnPrev.type = 'button';
-                    btnPrev.className = 'btn btn-secondary btn-sm';
-                    btnPrev.textContent = 'Preview';
-                    btnPrev.addEventListener('click', () => openPreviewModal(row));
-                    tdAksi.appendChild(btnPrev);
-
-                    // Tombol Setujui atau Edit Peran
-                    if (row.status === 'selesai') {
-                        const btnEditRole = document.createElement('button');
-                        btnEditRole.type = 'button';
-                        btnEditRole.className = 'btn btn-secondary btn-sm';
-                        btnEditRole.style.marginLeft = '4px';
-                        btnEditRole.textContent = 'Peran';
-                        btnEditRole.title = 'Edit Bertugas Sebagai';
-                        btnEditRole.addEventListener('click', () => openEditRolesModal(row));
-                        tdAksi.appendChild(btnEditRole);
-                    } else {
-                        const btnAppr = document.createElement('button');
-                        btnAppr.type = 'button';
-                        btnAppr.className = 'btn btn-success btn-sm';
-                        btnAppr.style.marginLeft = '4px';
-                        btnAppr.textContent = 'Setujui';
-                        btnAppr.addEventListener('click', () => openApproveModal(row));
-                        tdAksi.appendChild(btnAppr);
-                    }
-
-                    // Tombol Download .docx
-                    const btnDl = document.createElement('button');
-                    btnDl.type = 'button';
-                    btnDl.className = 'btn btn-secondary btn-sm';
-                    btnDl.style.marginLeft = '4px';
-                    btnDl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
-                    btnDl.title = 'Download .docx';
-                    btnDl.addEventListener('click', async () => {
-                        try {
-                            const blob = await window.SuratTugasHelper.generateDocxBlob(row);
-                            const cleanNomor = (row.nomor_surat || `Surat_Tugas_${row.id}`).replace(/[/\\?%*:|"<>]/g, '_');
-                            window.SuratTugasHelper.downloadBlob(blob, `${cleanNomor}.docx`);
-                        } catch (err) {
-                            alert('Gagal membuat dokumen: ' + err.message);
-                        }
-                    });
-                    tdAksi.appendChild(btnDl);
-
-                    // Tombol Hapus
-                    const btnDel = document.createElement('button');
-                    btnDel.type = 'button';
-                    btnDel.className = 'btn btn-danger btn-sm';
-                    btnDel.style.marginLeft = '4px';
-                    btnDel.innerHTML = '&times;';
-                    btnDel.title = 'Hapus baris';
-                    btnDel.addEventListener('click', async () => {
-                        if (confirm('Hapus baris surat tugas ini?')) {
-                            await window.SuratTugasHelper.deleteSuratTugas(row.id);
-                            tableRows = tableRows.filter(r => r.id !== row.id);
-                            renderStats();
-                            renderTable();
-                        }
-                    });
-                    tdAksi.appendChild(btnDel);
-
-                    tr.appendChild(tdAksi);
-
-                    // 15. Status
-                    const tdStatus = document.createElement('td');
-                    tdStatus.style.textAlign = 'center';
-                    tdStatus.innerHTML = row.status === 'selesai' 
-                        ? `<span class="status-badge selesai">Selesai</span>` 
-                        : `<span class="status-badge menunggu">Menunggu</span>`;
-                    tr.appendChild(tdStatus);
-
-                    tbody.appendChild(tr);
-                });
-
-                syncScrollbarWidth();
-            }
-
-            // Auto-grow Helper
-            function attachAutoGrow(textarea) {
-                textarea.addEventListener('input', () => {
-                    textarea.style.height = 'auto';
-                    textarea.style.height = (textarea.scrollHeight) + 'px';
-                });
-            }
-
-            // Double Horizontal Scrollbar Synchronizer
-            function setupDoubleScrollbar() {
-                const topWrapper = document.getElementById('topScrollbarWrapper');
-                const bottomWrapper = document.getElementById('excelTableContainer');
-
-                topWrapper.addEventListener('scroll', () => {
-                    bottomWrapper.scrollLeft = topWrapper.scrollLeft;
-                });
-                bottomWrapper.addEventListener('scroll', () => {
-                    topWrapper.scrollLeft = bottomWrapper.scrollLeft;
-                });
-            }
-
-            function syncScrollbarWidth() {
-                const table = document.getElementById('excelTable');
-                const topInner = document.getElementById('topScrollbarInner');
-                if (table && topInner) {
-                    topInner.style.width = table.offsetWidth + 'px';
-                }
-            }
-
-            // Keyboard Navigation (Arrow Keys, Tab, Enter)
-            function setupKeyboardNavigation() {
-                const table = document.getElementById('excelTable');
-                table.addEventListener('keydown', (e) => {
-                    const target = e.target;
-                    if (!target.matches('.cell-input, .cell-textarea, .cell-select')) return;
-
-                    const currentTd = target.closest('td');
-                    const currentTr = target.closest('tr');
-                    if (!currentTd || !currentTr) return;
-
-                    const colIndex = Array.from(currentTr.children).indexOf(currentTd);
-                    const allTrs = Array.from(table.querySelectorAll('tbody tr'));
-                    const rowIndex = allTrs.indexOf(currentTr);
-
-                    if (e.key === 'ArrowDown' || e.key === 'Enter') {
-                        if (target.tagName.toLowerCase() === 'textarea' && e.shiftKey) return; // Shift+Enter newline
-                        e.preventDefault();
-                        const nextRow = allTrs[rowIndex + 1];
-                        if (nextRow) {
-                            const nextCell = nextRow.children[colIndex];
-                            const el = nextCell ? nextCell.querySelector('.cell-input, .cell-textarea, .cell-select') : null;
-                            if (el) el.focus();
-                        }
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        const prevRow = allTrs[rowIndex - 1];
-                        if (prevRow) {
-                            const prevCell = prevRow.children[colIndex];
-                            const el = prevCell ? prevCell.querySelector('.cell-input, .cell-textarea, .cell-select') : null;
-                            if (el) el.focus();
-                        }
-                    }
-                });
-            }
-
-            // Multi-tag Autocomplete inside Excel Cell
-            function createExcelTagAutocomplete(row) {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'excel-tag-wrapper';
-
-                const container = document.createElement('div');
-                container.className = 'excel-tag-container';
-
-                const ghost = document.createElement('input');
-                ghost.className = 'chip-input';
-                ghost.placeholder = (row.pegawai_nip_list && row.pegawai_nip_list.length > 0) ? '+ Personel' : 'Pilih...';
-
-                const dropdown = document.createElement('div');
-                dropdown.className = 'excel-tag-dropdown';
-
-                function renderChips() {
-                    container.innerHTML = '';
-                    const nips = row.pegawai_nip_list || [];
-                    nips.forEach(nip => {
-                        const p = personelList.find(x => x.nip === nip) || { nama: nip, is_mitra: false };
-                        const chip = document.createElement('span');
-                        chip.className = `chip ${p.is_mitra ? 'mitra' : ''}`;
-                        chip.innerHTML = `${p.nama} <span class="chip-del">&times;</span>`;
-                        chip.querySelector('.chip-del').addEventListener('click', (ev) => {
-                            ev.stopPropagation();
-                            row.pegawai_nip_list = row.pegawai_nip_list.filter(x => x !== nip);
-                            saveRowDraft(row);
-                            renderChips();
-                        });
-                        container.appendChild(chip);
-                    });
-                    container.appendChild(ghost);
-                }
-
-                function filterOptions(query = '') {
-                    dropdown.innerHTML = '';
-                    const q = query.toLowerCase();
-                    const available = personelList.filter(p => 
-                        !(row.pegawai_nip_list || []).includes(p.nip) &&
-                        (p.nama.toLowerCase().includes(q) || p.nip.toLowerCase().includes(q))
-                    );
-
-                    if (available.length === 0) {
-                        dropdown.innerHTML = '<div style="padding:8px;font-size:0.75rem;color:#94a3b8;text-align:center;">Tidak ada</div>';
-                        return;
-                    }
-
-                    available.slice(0, 10).forEach(p => {
-                        const opt = document.createElement('div');
-                        opt.className = 'excel-tag-opt';
-                        opt.innerHTML = `<b>${p.nama}</b> <span style="color:#64748b;font-size:0.72rem;">(${p.nip})</span>`;
-                        opt.addEventListener('click', () => {
-                            if (!row.pegawai_nip_list) row.pegawai_nip_list = [];
-                            row.pegawai_nip_list.push(p.nip);
-                            saveRowDraft(row);
-                            renderChips();
-                            ghost.value = '';
-                            dropdown.style.display = 'none';
-                        });
-                        dropdown.appendChild(opt);
-                    });
-                }
-
-                container.addEventListener('click', () => {
-                    ghost.focus();
-                    filterOptions(ghost.value);
-                    dropdown.style.display = 'block';
-                });
-
-                ghost.addEventListener('input', (e) => {
-                    filterOptions(e.target.value);
-                    dropdown.style.display = 'block';
-                });
-
-                document.addEventListener('click', (e) => {
-                    if (!wrapper.contains(e.target)) dropdown.style.display = 'none';
-                });
-
-                renderChips();
-                wrapper.appendChild(container);
-                wrapper.appendChild(dropdown);
-                return wrapper;
-            }
-
-            // Modal: Setujui Surat Tugas (Validasi, Bentrok, Pensiun, Nomor Otomatis)
-            function openApproveModal(item, itemsBatch = null) {
-                currentApprovingItem = item;
-                currentApprovingItems = itemsBatch || (item ? [item] : []);
-
-                const valBox = document.getElementById('approveValidationBox');
-                const confBox = document.getElementById('approveConflictBox');
-                const retBox = document.getElementById('approveRetirementBox');
-                const roleList = document.getElementById('roleAssignmentList');
-                const visumSection = document.getElementById('visumSection');
-
-                valBox.innerHTML = '';
-                confBox.innerHTML = '';
-                retBox.innerHTML = '';
-                roleList.innerHTML = '';
-
-                // Validasi field wajib
-                const missingFields = [];
-                if (!item.perihal || !item.perihal.trim()) missingFields.push('Perihal');
-                if (!item.waktu_pelaksanaan || !item.waktu_pelaksanaan.trim()) missingFields.push('Waktu Pelaksanaan');
-                if (!item.tempat_tujuan || !item.tempat_tujuan.trim()) missingFields.push('Tempat Tujuan');
-                if (!item.pegawai_nip_list || item.pegawai_nip_list.length === 0) missingFields.push('Personel Bertugas');
-
-                if (missingFields.length > 0) {
-                    valBox.innerHTML = `<div class="error-box">
-                        <b>Field wajib belum lengkap:</b> ${missingFields.join(', ')}. Harap lengkapi sebelum menyetujui.
-                    </div>`;
-                    document.getElementById('btnConfirmApprove').disabled = true;
-                } else {
-                    document.getElementById('btnConfirmApprove').disabled = false;
-                }
-
-                // Cek Bentrok & Pensiun
-                const parsedDate = window.SuratTugasHelper.parseIndonesianDateRange(item.waktu_pelaksanaan);
-                const conflicts = window.SuratTugasHelper.checkScheduleConflicts(item.pegawai_nip_list, parsedDate.startDate, parsedDate.endDate, item.id);
-                if (conflicts.length > 0) {
-                    const conflictHtml = conflicts.map(c => `• <b>${c.name}</b> telah ditugaskan pada "${c.perihal}" (${c.waktu}) [${c.nomor_surat}]`).join('<br>');
-                    confBox.innerHTML = `<div class="warning-box">
-                        <b>⚠️ Peringatan Bentrok Jadwal:</b><br>${conflictHtml}
-                    </div>`;
-                }
-
-                const retirements = window.SuratTugasHelper.checkRetirement(item.pegawai_nip_list, parsedDate.startDate);
-                if (retirements.length > 0) {
-                    const retHtml = retirements.map(r => `• <b>${r.nama}</b>: ${r.alasan}`).join('<br>');
-                    retBox.innerHTML = `<div class="error-box">
-                        <b>⚠️ Peringatan Status Pensiun:</b><br>${retHtml}
-                    </div>`;
-                }
-
-                // Cek Tipe Visum
-                const tConf = tipeConfig[item.tipe_surat] || {};
-                visumSection.style.display = (tConf.flags && tConf.flags.has_visum) ? 'block' : 'none';
-
-                // Hitung Nomor Berikutnya
-                const year = new Date(item.tgl_surat || new Date()).getFullYear();
-                const existingYearNums = tableRows
-                    .filter(r => r.status === 'selesai' && r.nomor_urut)
-                    .map(r => r.nomor_urut);
-                const nextNum = existingYearNums.length > 0 ? (Math.max(...existingYearNums) + 1) : 1;
-
-                const stNomor = window.SuratTugasHelper.generateNomorSurat(year, nextNum, item.tgl_surat);
-                const spdNomor = window.SuratTugasHelper.generateNomorSPD(year, nextNum, item.pok_id, item.tgl_surat);
-
-                document.getElementById('previewNomorST').textContent = stNomor;
-                document.getElementById('previewNomorSPD').textContent = spdNomor;
-
-                // Render Input Bertugas Sebagai
-                const nips = item.pegawai_nip_list || [];
-                const roles = item.bertugas_sebagai || {};
-                nips.forEach(nip => {
-                    const p = personelList.find(x => x.nip === nip) || { nama: nip };
-                    const div = document.createElement('div');
-                    div.style.display = 'flex';
-                    div.style.alignItems = 'center';
-                    div.style.gap = '10px';
-                    div.innerHTML = `
-                        <div style="width:200px;font-size:0.82rem;font-weight:600;color:var(--ink);flex-shrink:0;">${p.nama}</div>
-                        <input type="text" class="cell-input role-input" data-nip="${nip}" style="border:1px solid #cbd5e1;background:#fff;" placeholder="Contoh: Pengawas / Pencacah Lapangan" value="${roles[nip] || ''}">
-                    `;
-                    roleList.appendChild(div);
-                });
-
-                document.getElementById('approveModal').classList.add('active');
-            }
-
-            function closeApproveModal() {
-                document.getElementById('approveModal').classList.remove('active');
-            }
-
-            async function confirmApprove() {
-                if (!currentApprovingItem) return;
-
-                const roleInputs = document.querySelectorAll('#roleAssignmentList .role-input');
-                const bertugasMap = {};
-                roleInputs.forEach(inp => {
-                    bertugasMap[inp.dataset.nip] = inp.value.trim() || 'Petugas Lapangan';
-                });
-
-                const numResp = parseInt(document.getElementById('inputJumlahResponden').value, 10) || 5;
-
-                const year = new Date(currentApprovingItem.tgl_surat || new Date()).getFullYear();
-                const existingYearNums = tableRows
-                    .filter(r => r.status === 'selesai' && r.nomor_urut)
-                    .map(r => r.nomor_urut);
-                const nextNum = existingYearNums.length > 0 ? (Math.max(...existingYearNums) + 1) : 1;
-
-                const stNomor = window.SuratTugasHelper.generateNomorSurat(year, nextNum, currentApprovingItem.tgl_surat);
-                const spdNomor = window.SuratTugasHelper.generateNomorSPD(year, nextNum, currentApprovingItem.pok_id, currentApprovingItem.tgl_surat);
-
-                const updates = {
-                    nomor_surat: stNomor,
-                    nomor_urut: nextNum,
-                    nomor_spd: spdNomor,
-                    nomor_spd_urut: nextNum,
-                    jumlah_responden: numResp,
-                    bertugas_sebagai: bertugasMap,
-                    status: 'selesai'
-                };
-
-                Object.assign(currentApprovingItem, updates);
-                await window.SuratTugasHelper.updateSuratTugas(currentApprovingItem.id, updates);
-
-                closeApproveModal();
-                renderStats();
-                renderTable();
-                alert(`Surat Tugas berhasil disetujui dengan nomor: ${stNomor}!`);
-            }
-
-            // Bulk Approval
-            async function handleBulkApprove() {
-                const selected = tableRows.filter(r => r._selected && r.status === 'menunggu');
-                if (selected.length === 0) {
-                    alert('Pilih minimal 1 baris surat tugas berstatus "Menunggu" yang ingin disetujui.');
-                    return;
-                }
-
-                if (confirm(`Setujui sekaligus ${selected.length} surat tugas terpilih?`)) {
-                    let yearNums = tableRows
-                        .filter(r => r.status === 'selesai' && r.nomor_urut)
-                        .map(r => r.nomor_urut);
-                    let currentMax = yearNums.length > 0 ? Math.max(...yearNums) : 0;
-
-                    for (const item of selected) {
-                        currentMax++;
-                        const year = new Date(item.tgl_surat || new Date()).getFullYear();
-                        const stNomor = window.SuratTugasHelper.generateNomorSurat(year, currentMax, item.tgl_surat);
-                        const spdNomor = window.SuratTugasHelper.generateNomorSPD(year, currentMax, item.pok_id, item.tgl_surat);
-
-                        const bertugas = {};
-                        (item.pegawai_nip_list || []).forEach(nip => {
-                            bertugas[nip] = (item.bertugas_sebagai && item.bertugas_sebagai[nip]) || 'Petugas Lapangan';
-                        });
-
-                        const updates = {
-                            nomor_surat: stNomor,
-                            nomor_urut: currentMax,
-                            nomor_spd: spdNomor,
-                            nomor_spd_urut: currentMax,
-                            bertugas_sebagai: bertugas,
-                            status: 'selesai'
-                        };
-
-                        Object.assign(item, updates);
-                        await window.SuratTugasHelper.updateSuratTugas(item.id, updates);
-                    }
-
-                    renderStats();
-                    renderTable();
-                    alert(`Berhasil menyetujui ${selected.length} surat tugas terpilih!`);
-                }
-            }
-
-            // Edit Bertugas Sebagai (Setelah Disetujui)
-            function openEditRolesModal(item) {
-                currentEditingRolesItem = item;
-                const container = document.getElementById('editRolesList');
-                container.innerHTML = '';
-
-                const nips = item.pegawai_nip_list || [];
-                const roles = item.bertugas_sebagai || {};
-
-                nips.forEach(nip => {
-                    const p = personelList.find(x => x.nip === nip) || { nama: nip };
-                    const div = document.createElement('div');
-                    div.style.display = 'flex';
-                    div.style.alignItems = 'center';
-                    div.style.gap = '10px';
-                    div.innerHTML = `
-                        <div style="width:200px;font-size:0.82rem;font-weight:600;color:var(--ink);">${p.nama}</div>
-                        <input type="text" class="cell-input edit-role-inp" data-nip="${nip}" style="border:1px solid #cbd5e1;background:#fff;" value="${roles[nip] || 'Petugas Lapangan'}">
-                    `;
-                    container.appendChild(div);
-                });
-
-                document.getElementById('editRolesModal').classList.add('active');
-            }
-
-            function closeEditRolesModal() {
-                document.getElementById('editRolesModal').classList.remove('active');
-            }
-
-            async function saveEditedRoles() {
-                if (!currentEditingRolesItem) return;
-                const inps = document.querySelectorAll('#editRolesList .edit-role-inp');
-                const newRoles = {};
-                inps.forEach(i => {
-                    newRoles[i.dataset.nip] = i.value.trim() || 'Petugas Lapangan';
-                });
-
-                currentEditingRolesItem.bertugas_sebagai = newRoles;
-                await window.SuratTugasHelper.updateSuratTugas(currentEditingRolesItem.id, { bertugas_sebagai: newRoles });
-
-                closeEditRolesModal();
-                alert('Peran "Bertugas Sebagai" berhasil diperbarui!');
-            }
-
-            // Modal: Preview Surat Tugas (.docx)
-            async function openPreviewModal(item) {
-                const container = document.getElementById('docxPreviewContainer');
-                document.getElementById('previewModalTitle').textContent = `Pratinjau Dokumen: ${item.nomor_surat || 'Surat Tugas Baru'}`;
-                document.getElementById('previewModal').classList.add('active');
-
-                try {
-                    const blob = await window.SuratTugasHelper.generateDocxBlob(item);
-                    currentPreviewBlob = blob;
-                    const cleanNomor = (item.nomor_surat || `Surat_Tugas_${item.id}`).replace(/[/\\?%*:|"<>]/g, '_');
-                    currentPreviewFilename = `${cleanNomor}.docx`;
-
-                    await window.SuratTugasHelper.renderPreviewTo(blob, container);
-                } catch (err) {
-                    container.innerHTML = `<div style="padding:30px;color:#ef4444;text-align:center;">
-                        <b>Gagal memuat pratinjau dokumen:</b><br>${err.message}
-                    </div>`;
-                }
-            }
-
-            function closePreviewModal() {
-                document.getElementById('previewModal').classList.remove('active');
-            }
-
-            // Bulk Download .docx as Zip
-            async function handleBulkDownloadZip() {
-                const selected = tableRows.filter(r => r._selected);
-                const itemsToDownload = selected.length > 0 ? selected : tableRows;
-
-                if (itemsToDownload.length === 0) {
-                    alert('Tidak ada surat tugas untuk diunduh.');
-                    return;
-                }
-
-                const btn = document.getElementById('btnBulkDownloadZip');
-                btn.disabled = true;
-                btn.textContent = 'Membuat Zip...';
-
-                try {
-                    await window.SuratTugasHelper.downloadBulkZip(itemsToDownload, (cur, tot) => {
-                        btn.textContent = `Zip (${cur}/${tot})...`;
-                    });
-                } catch (err) {
-                    alert('Gagal mendownload ZIP: ' + err.message);
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg> Download (Zip)`;
-                }
-            }
-
-            // Excel Import Handler
-            async function handleExcelImport(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                try {
-                    parsedImportRows = await window.SuratTugasHelper.parseExcelFile(file);
-                    const tbody = document.getElementById('importPreviewBody');
-                    tbody.innerHTML = '';
-
-                    parsedImportRows.forEach(r => {
-                        const tr = document.createElement('tr');
-                        tr.style.borderBottom = '1px solid #e2e8f0';
-                        tr.innerHTML = `
-                            <td style="padding:6px;text-align:center;">${r.rowNum}</td>
-                            <td style="padding:6px;">${r.perihal}</td>
-                            <td style="padding:6px;">${r.tempat_tujuan}</td>
-                            <td style="padding:6px;">${r.waktu_pelaksanaan}</td>
-                            <td style="padding:6px;">${r.raw_nama}</td>
-                            <td style="padding:6px;color:${r.isValid ? 'var(--green-dark)' : 'var(--red)'};font-weight:600;">${r.notes}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-
-                    document.getElementById('importModal').classList.add('active');
-                } catch (err) {
-                    alert('Gagal membaca file Excel: ' + err.message);
-                } finally {
-                    e.target.value = '';
-                }
-            }
-
-            function closeImportModal() {
-                document.getElementById('importModal').classList.remove('active');
-            }
-
-            async function applyImport() {
-                const validRows = parsedImportRows.filter(r => r.isValid);
-                if (validRows.length === 0) {
-                    alert('Tidak ada baris valid yang dapat diimpor.');
-                    return;
-                }
-
-                const creator = (window.APA_AUTH && window.APA_AUTH.getCurrentUser()) ? window.APA_AUTH.getCurrentUser().username : 'admin';
-
-                const batch = validRows.map(r => ({
-                    perihal: r.perihal,
-                    tempat_tujuan: r.tempat_tujuan,
-                    waktu_pelaksanaan: r.waktu_pelaksanaan,
-                    pegawai_nip_list: r.pegawai_nip_list,
-                    menimbang: r.menimbang || 'Bahwa dalam rangka kelancaran tugas dinas dan survei BPS Kabupaten Raja Ampat...',
-                    alat_angkutan: r.alat_angkutan,
-                    pok_id: r.pok_id,
-                    tipe_surat: r.tipe_surat,
-                    status: 'menunggu',
-                    created_by: creator
-                }));
-
-                const inserted = await window.SuratTugasHelper.saveBatchSuratTugas(batch);
-                closeImportModal();
-                await loadData();
-                alert(`Berhasil mengimpor ${inserted.length} baris surat tugas ke dalam sistem!`);
-            }
-        });
-    </script>
+<!-- ═══════════════════════════════════════════════════════════
+     LOGIC — di file terpisah agar mudah di-maintain
+═════════════════════════════════════════════════════════════ -->
+<script src="admin-surat-tugas.js?v=20260617-1"></script>
 </body>
-
 </html>
