@@ -1,0 +1,410 @@
+/**
+ * ==============================================================================
+ * TOPBAR GLOBAL CSS - SISTEM AUTOMASI PEKERJAAN ADMINISTRASI (APA)
+ * BPS KABUPATEN RAJA AMPAT
+ * ==============================================================================
+ */
+
+:root {
+    --tb-height: 64px;
+    --tb-bg: #0c1f38;
+    --tb-border: rgba(255, 255, 255, 0.08);
+    --tb-text: #ffffff;
+    --tb-muted: #94a3b8;
+    --tb-blue: #1685f8;
+    --tb-gold: #facc15;
+    --tb-gold-bg: rgba(250, 204, 21, 0.12);
+    --tb-gold-border: rgba(250, 204, 21, 0.35);
+    --tb-blue-pill: #60a5fa;
+    --tb-blue-pill-bg: rgba(96, 165, 250, 0.12);
+    --tb-blue-pill-border: rgba(96, 165, 250, 0.35);
+    --tb-font: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Penyesuaian Ruang Layout ketika Topbar Aktif */
+body.has-apa-topbar {
+    padding-top: var(--tb-height) !important;
+}
+
+body.has-apa-topbar .apa-sidebar {
+    top: var(--tb-height) !important;
+    height: calc(100vh - var(--tb-height)) !important;
+}
+
+body.has-apa-topbar .apa-floating-toggle-btn {
+    top: calc(var(--tb-height) + 16px) !important;
+}
+
+/* Header Topbar */
+.apa-topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--tb-height);
+    background: var(--tb-bg);
+    border-bottom: 1px solid var(--tb-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 1000;
+    font-family: var(--tb-font);
+    box-sizing: border-box;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+}
+
+/* Bagian Kiri: Logo + Nama Website + Arti */
+.apa-topbar .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.apa-topbar .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--tb-text);
+}
+
+.apa-topbar .topbar-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: #ffffff;
+    padding: 3px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    flex-shrink: 0;
+}
+
+.apa-topbar .topbar-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.apa-topbar .topbar-brand-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.apa-topbar .topbar-brand-meaning {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    letter-spacing: 0.02em;
+}
+
+.apa-topbar .topbar-brand-sub {
+    font-size: 0.65rem;
+    color: var(--tb-muted);
+    font-weight: 500;
+}
+
+/* Bagian Kanan: Tanggal, Notifikasi, User Info, Dropdown */
+.apa-topbar .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Tanggal Hari Ini */
+.apa-topbar .topbar-date {
+    color: var(--tb-muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Ikon Notifikasi */
+.apa-topbar .topbar-notif-btn {
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    transition: background 0.2s ease;
+}
+
+.apa-topbar .topbar-notif-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.apa-topbar .topbar-notif-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.9;
+    transition: transform 0.2s ease;
+}
+
+.apa-topbar .topbar-notif-btn:hover .topbar-notif-icon {
+    transform: scale(1.08);
+}
+
+.apa-topbar .topbar-notif-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b;
+    box-shadow: 0 0 6px #f59e0b;
+}
+
+/* Popover Notifikasi */
+.apa-topbar-notif-popover {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 210px;
+    width: 290px;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border: 1px solid #e2e8f0;
+    padding: 16px;
+    z-index: 1010;
+    color: #1e293b;
+    font-size: 0.85rem;
+}
+
+.apa-topbar-notif-popover.show {
+    display: block;
+    animation: apaPopIn 0.2s ease;
+}
+
+.apa-topbar-notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: 700;
+    color: #0f172a;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+}
+
+.apa-topbar-notif-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f8fafc;
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+/* Wrapper User & Dropdown */
+.apa-topbar .topbar-user-wrapper {
+    position: relative;
+}
+
+.apa-topbar .topbar-user-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 4px 10px 4px 4px;
+    border-radius: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.apa-topbar .topbar-user-btn:hover,
+.apa-topbar .topbar-user-btn.active {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Foto Profil User */
+.apa-topbar .topbar-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1685f8, #0d9488);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: grid;
+    place-items: center;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+}
+
+.apa-topbar .topbar-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.apa-topbar .topbar-user-name {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Role Badge */
+.apa-topbar .topbar-role-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 12px;
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
+}
+
+.apa-topbar .topbar-role-badge.admin {
+    background: var(--tb-gold-bg);
+    color: var(--tb-gold);
+    border: 1px solid var(--tb-gold-border);
+}
+
+.apa-topbar .topbar-role-badge.user,
+.apa-topbar .topbar-role-badge.pegawai {
+    background: var(--tb-blue-pill-bg);
+    color: var(--tb-blue-pill);
+    border: 1px solid var(--tb-blue-pill-border);
+}
+
+/* Chevron Icon */
+.apa-topbar .topbar-chevron {
+    color: var(--tb-muted);
+    transition: transform 0.2s ease;
+}
+
+.apa-topbar .topbar-user-btn.active .topbar-chevron {
+    transform: rotate(180deg);
+}
+
+/* Menu Dropdown Profil */
+.apa-topbar .topbar-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 240px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(12, 31, 56, 0.25);
+    border: 1px solid #e2e8f0;
+    padding: 8px;
+    z-index: 1020;
+    box-sizing: border-box;
+}
+
+.apa-topbar .topbar-dropdown-menu.show {
+    display: block;
+    animation: apaPopIn 0.2s ease;
+}
+
+.apa-topbar .dropdown-header {
+    padding: 10px 12px 8px;
+}
+
+.apa-topbar .dropdown-header-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.apa-topbar .dropdown-header-sub {
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-top: 3px;
+}
+
+.apa-topbar .dropdown-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 6px 0;
+}
+
+.apa-topbar .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: #334155;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.apa-topbar .dropdown-item:hover {
+    background: #f8fafc;
+    color: var(--tb-blue);
+}
+
+.apa-topbar .dropdown-item svg {
+    color: currentColor;
+    flex-shrink: 0;
+}
+
+.apa-topbar .dropdown-item.logout {
+    color: #ef4444;
+}
+
+.apa-topbar .dropdown-item.logout:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* Responsif Topbar */
+@media (max-width: 992px) {
+    .apa-topbar .topbar-date {
+        display: none;
+    }
+    .apa-topbar {
+        padding: 0 16px;
+    }
+    .apa-topbar-notif-popover {
+        right: 140px;
+    }
+}
+
+@media (max-width: 640px) {
+    .apa-topbar .topbar-brand-meaning {
+        display: none;
+    }
+    .apa-topbar .topbar-user-name {
+        display: none;
+    }
+    .apa-topbar .topbar-role-badge {
+        display: none;
+    }
+    .apa-topbar-notif-popover {
+        right: 10px;
+        width: 250px;
+    }
+}
