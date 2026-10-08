@@ -6,7 +6,13 @@
 <link rel="icon" type="image/svg+xml" href="Assets/ART logo.svg">
 <title>Surat Tugas - Sistem Automasi Pekerjaan Administrasi (APA)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<!-- APA Global Components: Topbar & Sidebar -->
+<link rel="stylesheet" href="topbar.css">
+<script src="topbar.js"></script>
+<link rel="stylesheet" href="sidebar.css">
+<script src="sidebar.js"></script>
 
 <!-- Library: render docx preview (HTML) + save blob untuk download -->
 <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
@@ -696,7 +702,7 @@
   body.sidebar-hidden .main-content {
     margin-left: 0 !important;
     max-width: 100vw !important;
-    padding-left: max(5%, 72px) !important;
+    padding-left: max(5%, 84px) !important;
   }
 
 </style>
@@ -705,16 +711,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
 
-  <!-- APA Global Components: Topbar & Sidebar -->
-  <link rel="stylesheet" href="topbar.css">
-  <script src="topbar.js"></script>
-  <link rel="stylesheet" href="sidebar.css">
-  <script src="sidebar.js"></script>
-
 </head>
 <body>
 
 <div class="app-shell">
+  <!-- Sidebar dimount terpadu oleh sidebar.js -->
+  <aside class="sidebar apa-sidebar" id="appSidebar"></aside>
   <main class="main-content">
     <div class="page-header fade-in">
       <div>

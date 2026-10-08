@@ -112,7 +112,7 @@ body.sidebar-hidden .apa-sidebar {
 
 body.sidebar-hidden .main-content {
     margin-left: 0 !important;
-    padding-left: max(5%, 72px) !important;
+    padding-left: max(5%, 84px) !important;
 }
 
 body.sidebar-hidden .apa-floating-toggle-btn {
