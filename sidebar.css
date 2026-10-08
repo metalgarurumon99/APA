@@ -26,7 +26,7 @@
     width: var(--sb-width);
     background: var(--sb-bg);
     border-right: 1px solid var(--sb-border);
-    padding: 24px 18px 20px;
+    padding: 12px 14px 20px;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -45,7 +45,7 @@
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
 }
 
 /* Tombol Sembunyikan Sidebar */
@@ -128,11 +128,14 @@ body.sidebar-hidden .apa-floating-toggle-btn {
 }
 
 /* Menu Navigasi */
-.apa-sidebar .side-nav {
+.apa-sidebar .side-nav,
+.side-nav {
     display: flex;
     flex-direction: column;
     gap: 8px;
     flex: 1;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
 
 .apa-sidebar .nav-section-label {
