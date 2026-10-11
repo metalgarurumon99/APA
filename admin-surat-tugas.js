@@ -1081,9 +1081,7 @@ function restoreAllAdminDrafts() {
       if (applyAdminDraftToRow(id)) restoredCount++;
     }
   });
-  if (restoredCount > 0) {
-    showPageAlert(`📝 ${restoredCount} draft dimuat dari sesi terakhir.`, 'info');
-  }
+  // Draft berhasil dimuat diam-diam (banner draft dimuat dihilangkan sesuai UI requirement)
 }
 
 function renderTable(data, totalFiltered = data.length) {
@@ -1358,16 +1356,15 @@ function cellDateHTML(id, field, isoVal, editable, placeholder) {
   }
   const display = isoVal ? fmtTgl(isoVal) : '';
   return `<td class="col-tgl-surat">
-    <input type="text" class="xls-cell" data-field="${field}" data-id="${id}"
+    <textarea class="xls-cell" rows="1" data-field="${field}" data-id="${id}"
       data-col-field="${field}"
       data-iso="${escAttr(isoVal)}"
-      value="${escAttr(display)}"
       placeholder="${escAttr(placeholder)}"
       onblur="onDateBlur(this)"
       onfocus="onDateFocus(this)"
       onclick="openCal(this, false)"
       ondblclick="openCal(this, false)"
-      onkeydown="if(event.altKey&&event.key==='ArrowDown'){event.preventDefault();openCal(this,false);}">
+      onkeydown="if(event.altKey&&event.key==='ArrowDown'){event.preventDefault();openCal(this,false);}">${esc(display)}</textarea>
   </td>`;
 }
 
@@ -1383,17 +1380,16 @@ function cellDateRangeHTML(id, field, isoMulai, isoSelesai, editable, waktuTextC
   }
   const display = waktuTextCustom || (isoMulai ? fmtWaktu(isoMulai, isoSelesai) : '');
   return `<td class="col-waktu">
-    <input type="text" class="xls-cell" data-field="${field}" data-id="${id}"
+    <textarea class="xls-cell" rows="1" data-field="${field}" data-id="${id}"
       data-col-field="${field}"
       data-iso-mulai="${escAttr(isoMulai)}"
       data-iso-selesai="${escAttr(isoSelesai || '')}"
-      value="${escAttr(display)}"
       placeholder="tgl atau rentang"
       onblur="onRangeBlur(this)"
       onfocus="onDateFocus(this)"
       onclick="openCal(this, true)"
       ondblclick="openCal(this, true)"
-      onkeydown="if(event.altKey&&event.key==='ArrowDown'){event.preventDefault();openCal(this,true);}">
+      onkeydown="if(event.altKey&&event.key==='ArrowDown'){event.preventDefault();openCal(this,true);}">${esc(display)}</textarea>
   </td>`;
 }
 
@@ -2493,7 +2489,7 @@ function collectRowFields(suratId) {
   const waktu = getRange('waktu');
   const peg   = getMulti('pegawai_multi');
   const ttd   = getSingle('penandatangan');
-  const waktuInp = row.querySelector('input.xls-cell[data-field="waktu"]');
+  const waktuInp = row.querySelector('.xls-cell[data-field="waktu"]');
   const waktuTextCustom = waktuInp ? (waktuInp.dataset.waktuTextCustom || (waktuInp.value && waktuInp.value.includes('&') ? waktuInp.value.trim() : '')) : '';
 
   return {
@@ -4566,11 +4562,8 @@ function toggleBulkDownloadAll(checked) {
 ════════════════════════════════════════════════════════════════════ */
 let _draftToastTimer = null;
 function showDraftSavedToast() {
-  const el = document.getElementById('draft-saved-toast');
-  if (!el) return;
-  el.classList.add('show');
-  clearTimeout(_draftToastTimer);
-  _draftToastTimer = setTimeout(() => el.classList.remove('show'), 1500);
+  // Sesuai permintaan UI: toast draft tersimpan disembunyikan
+  return;
 }
 
 /* ════════════════════════════════════════════════════════════════════

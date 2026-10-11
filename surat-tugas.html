@@ -299,8 +299,6 @@
      Visibility di-control oleh JS (setupTopScrollbar) — kalau tabel tidak
      overflow, JS akan set display:none. */
   .table-scroll-top{overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--border);background:#fafaf8;position:sticky;top:var(--st-table-head-h,48px);z-index:75}
-  .table-scroll-top::-webkit-scrollbar{height:10px}
-  .table-scroll-top::-webkit-scrollbar-track{background:var(--bg)}
   .table-scroll-top::-webkit-scrollbar-thumb{background:var(--border2);border-radius:5px}
   .table-scroll-top::-webkit-scrollbar-thumb:hover{background:#a9a298}
   .table-scroll-top-inner{height:1px}
@@ -308,14 +306,13 @@
   .table-wrap.table-is-stuck .table-sticky-cols{display:block}
   .table-sticky-cols table.list-table{margin:0}
 
-  table.list-table{width:100%;border-collapse:separate;border-spacing:0;min-width:2223px;table-layout:fixed}
+  table.list-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1800px;table-layout:fixed}
   table.list-table thead th{
-    background:#f9f8f5;padding:9px 10px;text-align:center;font-size:10.5px;font-weight:700;
-    color:var(--navy);letter-spacing:.5px;text-transform:uppercase;
+    background:#f9f8f5;padding:8px 4px;text-align:center;font-size:10.5px;font-weight:700;
+    color:var(--navy);letter-spacing:.4px;text-transform:uppercase;
     border-bottom:2px solid var(--border);border-right:1px solid var(--border);
-    white-space:nowrap;
+    white-space:normal;word-break:normal;line-height:1.25;vertical-align:middle;
   }
-  /* col-nomor-surat dan col-tgl-surat: white-space diatur di blok text-align di atas */
   table.list-table thead th:last-child{border-right:none}
 
   /* Header yang bisa di-sort */
@@ -329,47 +326,47 @@
   table.list-table tbody tr{transition:background .15s}
   table.list-table tbody tr:hover{background:#fafaf8}
   table.list-table tbody td{
-    padding:0;font-size:12.5px;color:var(--text);vertical-align:middle;
+    padding:0;font-size:12px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);vertical-align:middle;
     border-bottom:1px solid var(--border);border-right:1px solid var(--border);
-    background:transparent;
+    background:transparent;white-space:normal;word-break:break-word;
   }
   table.list-table tbody td:last-child{border-right:none}
   table.list-table tbody tr:last-child td{border-bottom:none}
 
-  /* Lebar kolom — versi compact (UI/UX permintaan: kecilkan kolom) */
+  /* Lebar kolom — dipersempit dengan space minimal kiri-kanan */
   .col-check         { width:38px;  text-align:center;padding:6px 0 }
-  .col-no            { width:46px;  text-align:center }
-  .col-nomor-surat   { width:78px }   /* #2 r2: ramping, "Nomor" / "Surat" header 2-baris */
-  .col-tgl-surat     { width:96px }   /* lebih ramping; data 11.5px font cukup */
-  .col-waktu         { width:175px }  /* #6 + #3: muat picker + toggle multi-range */
-  .col-perihal       { width:185px }
-  .col-tujuan        { width:130px }
-  .col-nama          { width:175px }  /* #7: kecil */
-  .col-menimbang     { width:145px }
-  .col-alat          { width:118px }  /* lebar agar header "ALAT ANGKUTAN" tidak terpotong */
-  .col-mak           { width:155px }  /* #5 r2: lebih lebar untuk muat "KRO" full */
-  .col-ttd           { width:130px }  /* lebih ramping */
-  .col-tipe          { width:155px }  /* #10: kecil; tipe text wrap */
-  .col-status        { width:105px }
-  .col-aksi          { width:140px;text-align:center } /* #6 r2: aksi center */
-  .col-pengaju       { width:165px }
+  .col-no            { width:44px;  text-align:center }
+  .col-nomor-surat   { width:58px;  text-align:center }   /* minimal space kiri-kanan */
+  .col-tgl-surat     { width:108px }
+  .col-waktu         { width:125px }  /* minimal space kiri-kanan, text wrap */
+  .col-perihal       { width:180px }
+  .col-tujuan        { width:125px }
+  .col-nama          { width:165px }
+  .col-menimbang     { width:140px }
+  .col-alat          { width:115px }
+  .col-mak           { width:150px }
+  .col-ttd           { width:130px }
+  .col-tipe          { width:145px }
+  .col-status        { width:100px }
+  .col-aksi          { width:135px;text-align:center }
+  .col-pengaju       { width:155px }
 
-  /* Styling isi kolom pengaju — read-only, text-heavy */
+  /* Styling isi kolom pengaju — read-only, text-wrap */
   td.col-pengaju{
-    padding:10px 12px;font-size:12px;color:var(--navy);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    padding:8px 8px;font-size:12px;color:var(--navy);
+    white-space:normal;word-break:break-word;
     background:#fafaf8;
   }
 
   /* Sel Excel-like */
   .xls-cell{
-    width:100%;min-height:42px;padding:9px 10px;border:1.5px solid transparent;border-radius:0;
-    font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;color:var(--text);
-    background:transparent;outline:none;display:block;line-height:1.45;
+    width:100%;min-height:38px;padding:8px 6px;border:1.5px solid transparent;border-radius:0;
+    font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--text);
+    background:transparent;outline:none;display:block;line-height:1.4;
     transition:background .12s, border-color .12s, box-shadow .12s;
-    word-break:break-word;
+    word-break:break-word;overflow-wrap:anywhere;white-space:normal;
   }
-  .xls-cell::placeholder{color:#c8c3ba;font-size:11.5px;font-style:italic}
+  .xls-cell::placeholder{color:#c8c3ba;font-size:11px;font-style:italic}
   .xls-cell:hover:not(:read-only):not(:disabled){background:rgba(13,35,64,.025);border-color:var(--border)}
   .xls-cell:focus{
     background:#fffdf6;border-color:var(--navy);
@@ -381,55 +378,62 @@
   .xls-cell.err{border-color:var(--red)!important;background:#fef5f4!important;animation:shake .35s}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
 
-  textarea.xls-cell{resize:none;overflow:hidden;min-height:42px;font-family:'Plus Jakarta Sans',sans-serif}
+  textarea.xls-cell{
+    resize:none;overflow:hidden;min-height:38px;
+    font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;line-height:1.4;
+    white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;
+  }
 
-    /* Display readonly text (untuk row selesai) */
-  .ro-text{padding:9px 10px;font-size:12.5px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word;min-height:42px}
-  .ro-text.muted{color:var(--muted);font-style:italic;font-size:11.5px}
+  /* Display readonly text (untuk row selesai) */
+  .ro-text{
+    padding:8px 6px;font-size:12px;font-family:'Plus Jakarta Sans',sans-serif;
+    color:var(--text);line-height:1.4;white-space:pre-wrap;word-break:break-word;
+    overflow-wrap:anywhere;min-height:38px;
+  }
+  .ro-text.muted{color:var(--muted);font-style:italic;font-size:11px}
   .ro-text strong{font-weight:600;color:var(--navy)}
   .ro-text small{font-size:10.5px;color:var(--muted);display:block;margin-top:1px}
-  .ro-ttd{padding:9px 10px;display:flex;flex-direction:column;gap:1px;min-height:42px}
-  .ro-ttd-name{font-size:12px;font-weight:600;color:var(--navy);line-height:1.35}
-  .ro-ttd-jabatan{font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.35}
-  .ro-ttd-nip{font-size:10.5px;color:var(--muted);line-height:1.35}
+  .ro-ttd{padding:8px 6px;display:flex;flex-direction:column;gap:1px;min-height:38px;white-space:normal;word-break:break-word}
+  .ro-ttd-name{font-size:12px;font-weight:600;color:var(--navy);line-height:1.35;word-break:break-word}
+  .ro-ttd-jabatan{font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.35;word-break:break-word}
+  .ro-ttd-nip{font-size:10.5px;color:var(--muted);line-height:1.35;word-break:break-word}
 
   /* Sticky look untuk No. & Status */
-  td.col-no{text-align:center;font-weight:700;color:var(--muted);font-size:12px;padding:11px 4px;background:#fafaf8}
-  td.col-check{text-align:center;padding:11px 4px;background:#fafaf8}
-  /* Checkbox styling sekarang di-handle GLOBAL oleh apa-shared.js
-     (custom CSS-rendered checkbox). Per-page tidak perlu set width/height/
-     accent-color/outline lagi — cukup pakai class .ck-success untuk varian
-     hijau (bulk approve). */
+  td.col-no{text-align:center;font-weight:700;color:var(--muted);font-size:12px;padding:8px 2px;background:#fafaf8}
+  td.col-check{text-align:center;padding:8px 2px;background:#fafaf8}
   th.col-check.col-check-dual{padding:6px 0;vertical-align:middle}
   .th-check-inner{display:flex;flex-direction:column;align-items:center;gap:5px}
-  /* #6: Status cell + Aksi cell content rata tengah supaya rapi */
-  td.col-status{padding:11px 9px;text-align:center}
-  td.col-aksi{padding:8px 10px;text-align:center}
-  /* Aksi-wrap juga di-center supaya tombol-tombol grouping di tengah */
+  td.col-status{padding:8px 6px;text-align:center}
+  td.col-aksi{padding:6px 8px;text-align:center}
   .aksi-wrap{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
 
-  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600;white-space:nowrap}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600;white-space:nowrap}
   .badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
   .badge.menunggu{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
   .badge.selesai{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
 
-  /* ─── Compact display untuk kolom Tanggal Surat ───
-     Sama seperti kolom Waktu Pelaksanaan: biarkan natural, wrap natural
-     kalau panjang. Width 118px cukup untuk muat "30 April 2026" 1-baris. */
-  td.col-tgl-surat .ro-text,
-  td.col-tgl-surat .xls-cell{font-size:11.5px;line-height:1.4}
-  /* Sama untuk col-nomor-surat — "B-022/668870-92800/KP-650/05/2026" akan
-     wrap natural pada "/" karena word-break:break-word di .xls-cell. */
+  /* Kolom nomor surat: space kiri-kanan minimal, centered */
   td.col-nomor-surat .ro-text,
-  td.col-nomor-surat .xls-cell{font-size:11.5px;line-height:1.4}
+  td.col-nomor-surat .xls-cell{font-size:12px;line-height:1.35;text-align:center;padding:8px 2px}
+  td.col-tgl-surat .ro-text,
+  td.col-tgl-surat .xls-cell{font-size:12px;line-height:1.35;padding:8px 4px}
+  td.col-waktu .ro-text,
+  td.col-waktu .xls-cell{font-size:12px;line-height:1.35;padding:8px 4px}
 
-  /* HEADER 2-baris — specificity harus >= table.list-table thead th (yg set
-     white-space:nowrap). Pakai selector lengkap supaya override benar. */
-  table.list-table thead th.col-tgl-surat,
-  table.list-table thead th.col-nomor-surat{
-    white-space:normal;word-break:normal;line-height:1.4;
-    text-align:center;vertical-align:middle;
+  /* Override apa-pg single name agar wrap tanpa terpotong ellipsis */
+  .apa-pg-single-name{
+    font-size:12px !important;
+    font-family:'Plus Jakarta Sans',sans-serif !important;
+    white-space:normal !important;
+    word-break:break-word !important;
+    overflow-wrap:anywhere !important;
+    text-overflow:clip !important;
+    overflow:visible !important;
+    line-height:1.35 !important;
   }
+
+  /* Sembunyikan toast draft tersimpan */
+  #draft-saved-toast{display:none !important}
 
   .table-empty{padding:48px 24px;text-align:center}
   .table-empty-icon{font-size:28px;opacity:.3;margin-bottom:10px}
