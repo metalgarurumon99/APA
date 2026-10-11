@@ -890,7 +890,7 @@ function attachEditableListeners(scope) {
   });
   // #8: Auto-save draft tiap blur untuk semua field editable.
   // Wire ke semua textarea/input di scope (row atau full table).
-  root.querySelectorAll('textarea.xls-cell, input.xls-cell, input.waktu-custom').forEach(el => {
+  root.querySelectorAll('textarea.xls-cell, input.xls-cell').forEach(el => {
     el.addEventListener('blur', () => {
       const tr = el.closest('tr[data-surat-id]');
       if (tr) snapshotAdminDraft(tr.dataset.suratId);
@@ -1016,18 +1016,10 @@ function applyAdminDraftToRow(suratId) {
   if (waktu) {
     waktu.dataset.isoMulai = v.tanggal_berangkat || '';
     waktu.dataset.isoSelesai = v.tanggal_kembali || '';
-    waktu.value = v.tanggal_berangkat ? fmtWaktu(v.tanggal_berangkat, v.tanggal_kembali) : '';
+    waktu.dataset.waktuTextCustom = v.waktu_pelaksanaan_text || '';
+    waktu.value = v.waktu_pelaksanaan_text || (v.tanggal_berangkat ? fmtWaktu(v.tanggal_berangkat, v.tanggal_kembali) : '');
   }
-  // Waktu custom
-  const waktuCustom = row.querySelector('input.waktu-custom[data-field="waktu_text"]');
-  const waktuToggle = row.querySelector('.waktu-toggle');
-  if (waktuCustom && v.waktu_pelaksanaan_text) {
-    waktuCustom.value = v.waktu_pelaksanaan_text;
-    if (waktuCustom.classList.contains('hidden') && waktuToggle) {
-      toggleWaktuCustom(waktuToggle);
-      waktuCustom.value = v.waktu_pelaksanaan_text;
-    }
-  }
+  
   // Pegawai multi
   const pegCell = row.querySelector('[data-field="pegawai_multi"]');
   if (pegCell && Array.isArray(v.pegawai_nip) && v.pegawai_nip.length) {
@@ -1374,9 +1366,6 @@ function cellDateHTML(id, field, isoVal, editable, placeholder) {
 }
 
 function cellDateRangeHTML(id, field, isoMulai, isoSelesai, editable, waktuTextCustom) {
-  // Read-only display (status selesai, tidak dalam mode edit):
-  // Kalau ada waktu_pelaksanaan_text → tampilkan text-nya (override).
-  // Kalau tidak → format default dari range tanggal.
   if (!editable) {
     const hasCustom = !!(waktuTextCustom && waktuTextCustom.trim());
     const displayText = hasCustom ? waktuTextCustom : (isoMulai ? fmtWaktu(isoMulai, isoSelesai) : '');
@@ -1386,12 +1375,7 @@ function cellDateRangeHTML(id, field, isoMulai, isoSelesai, editable, waktuTextC
            tabindex="0" data-col-field="${field}">${isEmpty ? '—' : esc(displayText)}</div>
     </td>`;
   }
-  // Editable mode: picker tanggal range + toggle expand untuk multi-range.
-  // Pattern sama dengan user-side (surat-tugas.html) — toggle .waktu-toggle
-  // yang reveal field .waktu-custom (data-field=waktu_text). Picker tanggal
-  // tetap di atas untuk struktur DB (tanggal_berangkat / tanggal_kembali).
-  const display = isoMulai ? fmtWaktu(isoMulai, isoSelesai) : '';
-  const hasCustom = !!(waktuTextCustom && waktuTextCustom.trim());
+  const display = waktuTextCustom || (isoMulai ? fmtWaktu(isoMulai, isoSelesai) : '');
   return `<td class="col-waktu">
     <input type="text" class="xls-cell" data-field="${field}" data-id="${id}"
       data-col-field="${field}"
@@ -1404,40 +1388,10 @@ function cellDateRangeHTML(id, field, isoMulai, isoSelesai, editable, waktuTextC
       onclick="openCal(this, true)"
       ondblclick="openCal(this, true)"
       onkeydown="if(event.altKey&&event.key==='ArrowDown'){event.preventDefault();openCal(this,true);}">
-    <button type="button" class="waktu-toggle${hasCustom ? ' active' : ''}"
-      onclick="toggleWaktuCustom(this)"
-      title="Tambah teks waktu kustom untuk multi-range">
-      <span class="waktu-toggle-icon">${hasCustom ? '\u2212' : '+'}</span>
-      ${hasCustom ? 'kustom' : 'multi-range'}
-    </button>
-    <input type="text" class="waktu-custom${hasCustom ? '' : ' hidden'}" data-field="waktu_text"
-      value="${escAttr(waktuTextCustom || '')}"
-      placeholder="Misal: 25 s.d. 27 Maret &amp; 30 Maret s.d. 1 April 2026">
   </td>`;
 }
 
-/* Toggle visibility text input "Waktu Custom" untuk multi-range.
-   Pattern sama dengan user-side (surat-tugas.html). Di-call dari
-   onclick tombol .waktu-toggle. */
-function toggleWaktuCustom(btn){
-  const td=btn.closest('td.col-waktu');
-  if(!td)return;
-  const customInp=td.querySelector('.waktu-custom');
-  if(!customInp)return;
-  const willShow=customInp.classList.contains('hidden');
-  customInp.classList.toggle('hidden',!willShow);
-  btn.classList.toggle('active',willShow);
-  // Update icon & label tombol
-  const iconEl=btn.querySelector('.waktu-toggle-icon');
-  if(iconEl)iconEl.textContent=willShow?'\u2212':'+';
-  const textNode=Array.from(btn.childNodes).find(n=>n.nodeType===3&&n.textContent.trim());
-  if(textNode)textNode.textContent=willShow?'kustom':'multi-range';
-  if(willShow){
-    setTimeout(()=>customInp.focus(),50);
-  } else {
-    customInp.value='';
-  }
-}
+
 
 function cellPegawaiMultiHTML(id, nips, names, editable) {
   if (!editable) {
@@ -2783,11 +2737,8 @@ function collectRowFields(suratId) {
   const waktu = getRange('waktu');
   const peg   = getMulti('pegawai_multi');
   const ttd   = getSingle('penandatangan');
-  // #3: waktu_pelaksanaan_text dari toggle expand di kolom waktu.
-  // Field .waktu-custom muncul kalau toggle .waktu-toggle ter-expand.
-  // Kalau collapsed atau kosong → return string kosong → nanti jadi NULL di payload.
-  const waktuTextEl = row.querySelector('input.waktu-custom[data-field="waktu_text"]');
-  const waktuTextCustom = waktuTextEl ? (waktuTextEl.value || '').trim() : '';
+  const waktuInp = row.querySelector('input.xls-cell[data-field="waktu"]');
+  const waktuTextCustom = waktuInp ? (waktuInp.dataset.waktuTextCustom || (waktuInp.value && waktuInp.value.includes('&') ? waktuInp.value.trim() : '')) : '';
 
   return {
     nomor_surat:       get('nomor_surat'),

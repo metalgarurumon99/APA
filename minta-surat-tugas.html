@@ -198,35 +198,7 @@
   /* ════════════════════════════════════════════════════
      WAKTU CUSTOM (multi-range) — opsional di bawah picker
   ════════════════════════════════════════════════════ */
-  /* Toggle button: kecil, subtle, di bawah picker tanggal */
-  .waktu-toggle{
-    display:inline-flex;align-items:center;gap:4px;
-    margin:2px 8px 0 8px;padding:2px 8px;
-    background:transparent;border:1px dashed var(--border2);border-radius:100px;
-    font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:500;
-    color:var(--muted);cursor:pointer;transition:all .15s;
-    white-space:nowrap;
-  }
-  .waktu-toggle:hover{border-color:var(--navy);color:var(--navy);background:rgba(13,35,64,.03)}
-  .waktu-toggle.active{
-    border-style:solid;border-color:var(--gold);
-    background:var(--gold-light);color:#7a5c10;
-  }
-  .waktu-toggle-icon{font-size:13px;font-weight:700;line-height:1}
-
-  /* Field text custom: muncul di bawah picker saat toggle active */
-  .waktu-custom{
-    width:calc(100% - 16px);margin:5px 8px 4px 8px;padding:6px 9px;
-    border:1.5px solid var(--gold);border-radius:6px;background:#fffdf6;
-    font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;color:var(--text);
-    outline:none;line-height:1.4;
-    transition:border-color .15s,box-shadow .15s;
-  }
-  .waktu-custom:focus{border-color:var(--navy);box-shadow:0 0 0 2px rgba(13,35,64,.08)}
-  .waktu-custom::placeholder{color:#c8c3ba;font-size:10.5px;font-style:italic}
-  .waktu-custom.hidden{display:none}
-
-  /* ════════════════════════════════════════════════════
+    /* ════════════════════════════════════════════════════
      PEGAWAI MULTI-SELECT CELL (tag + input)
   ════════════════════════════════════════════════════ */
   .pg-cell{padding:6px 8px;min-height:42px;display:flex;flex-wrap:wrap;gap:3px;align-content:flex-start;cursor:text}
@@ -727,15 +699,7 @@ function cellTextHTML(field,val,placeholder,colClass){
 }
 
 function cellDateRangeHTML(field,isoMulai,isoSelesai,waktuTextCustom){
-  // PATTERN: picker tanggal range tetap di atas (untuk struktur data
-  // tanggal_berangkat/tanggal_kembali). Di bawahnya ada toggle "+ multi-range"
-  // yang reveal text input opsional untuk kasus seperti
-  // "25 s.d. 27 Maret 2026 & 30 Maret s.d. 1 April 2026".
-  //
-  // Kalau text custom sudah pernah diisi, otomatis expanded.
-  // Kalau kosong, collapsed by default — UI tetap clean untuk pengguna umum.
-  const display=isoMulai?fmtWaktu(isoMulai,isoSelesai):'';
-  const hasCustom=!!(waktuTextCustom&&waktuTextCustom.trim());
+  const display=waktuTextCustom||(isoMulai?fmtWaktu(isoMulai,isoSelesai):'');
   return`<td class="col-waktu">
     <input type="text" class="xls-cell" data-field="${field}" data-col-field="${field}"
       data-iso-mulai="${escAttr(isoMulai||'')}"
@@ -747,43 +711,10 @@ function cellDateRangeHTML(field,isoMulai,isoSelesai,waktuTextCustom){
       onclick="openCal(this, true)"
       ondblclick="openCal(this, true)"
       onkeydown="if(event.altKey&&event.key==='ArrowDown'){event.preventDefault();openCal(this,true);}">
-    <button type="button" class="waktu-toggle${hasCustom?' active':''}"
-      onclick="toggleWaktuCustom(this)"
-      title="Tambah teks waktu kustom untuk multi-range">
-      <span class="waktu-toggle-icon">${hasCustom?'\u2212':'+'}</span>
-      ${hasCustom?'kustom':'multi-range'}
-    </button>
-    <input type="text" class="waktu-custom${hasCustom?'':' hidden'}" data-field="waktu_text"
-      value="${escAttr(waktuTextCustom||'')}"
-      placeholder="Misal: 25 s.d. 27 Maret &amp; 30 Maret s.d. 1 April 2026">
   </td>`;
 }
 
-/* Toggle visibility text input "Waktu Custom" untuk multi-range.
-   Di-call dari onclick tombol .waktu-toggle. */
-function toggleWaktuCustom(btn){
-  const td=btn.closest('td.col-waktu');
-  if(!td)return;
-  const customInp=td.querySelector('.waktu-custom');
-  if(!customInp)return;
-  const willShow=customInp.classList.contains('hidden');
-  customInp.classList.toggle('hidden',!willShow);
-  btn.classList.toggle('active',willShow);
-  // Update icon & label tombol
-  const iconEl=btn.querySelector('.waktu-toggle-icon');
-  if(iconEl)iconEl.textContent=willShow?'\u2212':'+';
-  // Replace text node yang ada setelah icon
-  const textNode=Array.from(btn.childNodes).find(n=>n.nodeType===3&&n.textContent.trim());
-  if(textNode)textNode.textContent=willShow?'kustom':'multi-range';
-  if(willShow){
-    // Auto-focus text input saat expand
-    setTimeout(()=>customInp.focus(),50);
-  } else {
-    // Saat collapse, kosongkan field — admin pilih untuk pakai picker saja.
-    // Kalau admin mau preserve text, dia bisa biarkan toggle expanded.
-    customInp.value='';
-  }
-}
+
 
 function cellPegawaiMultiHTML(field,nips,names){
   const tags=nips.map((nip,i)=>buildPegTag(nip,names[i]||nip,false)).join('');
@@ -1243,16 +1174,14 @@ function snapshotDraft(){
     try{nips=JSON.parse(peg?.dataset.nips||'[]');}catch(_){}
     try{names=JSON.parse(peg?.dataset.names||'[]');}catch(_){}
     const waktu=tr.querySelector('input.xls-cell[data-field="waktu"]');
-    const waktuCustom=tr.querySelector('input.waktu-custom[data-field="waktu_text"]');
-    const waktuToggle=tr.querySelector('.waktu-toggle');
+    const waktuCustom=waktu?.dataset.waktuTextCustom||(waktu?.value&&waktu.value.includes('&')?waktu.value:'');
     return{
       perihal:(tr.querySelector('textarea.xls-cell[data-field="perihal"]')?.value||''),
       tujuan:(tr.querySelector('textarea.xls-cell[data-field="tujuan"]')?.value||''),
       pembebanan:(tr.querySelector('input.xls-cell[data-field="pembebanan"]')?.value||''),
       waktuMulai:waktu?.dataset.isoMulai||'',
       waktuSelesai:waktu?.dataset.isoSelesai||'',
-      waktuCustom:(waktuCustom?.value||''),
-      waktuCustomExpanded:!!(waktuToggle&&waktuToggle.classList.contains('active')),
+      waktuCustom,
       nips,names,
     };
   });
@@ -1305,23 +1234,15 @@ function restoreDraft(){
     const waktuEl=tr.querySelector('input.xls-cell[data-field="waktu"]');
     const pokEl=tr.querySelector('input.xls-cell[data-field="pembebanan"]');
     const pegCell=tr.querySelector('.pg-cell[data-field="pegawai_multi"]');
-    const waktuCustomEl=tr.querySelector('input.waktu-custom[data-field="waktu_text"]');
-    const waktuToggle=tr.querySelector('.waktu-toggle');
+    
     if(perihalEl){perihalEl.value=r.perihal||'';autoGrow(perihalEl);}
     if(tujuanEl){tujuanEl.value=r.tujuan||'';autoGrow(tujuanEl);}
     if(pokEl)pokEl.value=r.pembebanan||'';
     if(waktuEl){
       waktuEl.dataset.isoMulai=r.waktuMulai||'';
       waktuEl.dataset.isoSelesai=r.waktuSelesai||'';
-      waktuEl.value=r.waktuMulai?fmtWaktu(r.waktuMulai,r.waktuSelesai):'';
-    }
-    if(waktuCustomEl){
-      waktuCustomEl.value=r.waktuCustom||'';
-      // Restore toggle state
-      if(r.waktuCustomExpanded&&waktuCustomEl.classList.contains('hidden')){
-        toggleWaktuCustom(waktuToggle);
-        waktuCustomEl.value=r.waktuCustom||''; // re-set karena toggle reset
-      }
+      if(r.waktuCustom)waktuEl.dataset.waktuTextCustom=r.waktuCustom;
+      waktuEl.value=r.waktuCustom||(r.waktuMulai?fmtWaktu(r.waktuMulai,r.waktuSelesai):'');
     }
     if(pegCell&&Array.isArray(r.nips)&&r.nips.length){
       pegCell.dataset.nips=JSON.stringify(r.nips);
@@ -1341,7 +1262,7 @@ function restoreDraft(){
 /* Wire blur listener untuk auto-save draft di setiap field input.
    Dipanggil di addRows() untuk row baru. */
 function wireDraftListeners(tr){
-  const fields=tr.querySelectorAll('textarea.xls-cell, input.xls-cell, input.waktu-custom');
+  const fields=tr.querySelectorAll('textarea.xls-cell, input.xls-cell');
   fields.forEach(el=>{
     el.addEventListener('blur',snapshotDraft);
   });
@@ -1497,26 +1418,8 @@ function handlePaste(e){
         waktuEl.value=fmtWaktu(r.mulai,r.selesai);
         waktuEl.classList.remove('err');
       } else if(t){
-        // Tidak parse-able sebagai single range — kemungkinan multi-range
-        // (mis. "25 s.d. 27 Maret & 30 Maret s.d. 1 April 2026"). Kita
-        // taruh di field "Waktu Custom" dan auto-expand toggle. Picker
-        // tetap di-error supaya user input tanggal struktural.
-        const customInp=tr.querySelector('input.waktu-custom[data-field="waktu_text"]');
-        const toggleBtn=tr.querySelector('.waktu-toggle');
-        if(customInp&&toggleBtn){
-          customInp.value=t;
-          if(customInp.classList.contains('hidden')){
-            // Trigger expand via toggleWaktuCustom() supaya state konsisten
-            toggleWaktuCustom(toggleBtn);
-            customInp.value=t; // re-set karena toggle off-on bisa reset
-          }
-          waktuEl.value='';
-          waktuEl.classList.add('err');
-          waktuEl.title='Isi tanggal struktural di kolom atas (untuk filter)';
-        } else {
-          waktuEl.value=t;
-          waktuEl.classList.add('err');
-        }
+        waktuEl.value=t;
+        waktuEl.classList.add('err');
       }
     }
     if(tujuanEl&&cells[2]!==undefined){
@@ -1538,10 +1441,7 @@ function collectRow(tr){
   const waktuEl=tr.querySelector('input.xls-cell[data-field="waktu"]');
   const pokEl=tr.querySelector('input.xls-cell[data-field="pembebanan"]');
   const pegCell=tr.querySelector('.pg-cell[data-field="pegawai_multi"]');
-  // Field "Waktu Custom" opsional di samping picker tanggal range.
-  // Kalau toggle .waktu-toggle ter-expand, field-nya .waktu-custom (data-field=waktu_text).
-  // Value kosong (toggle collapsed atau user belum isi) → kirim NULL ke DB.
-  const waktuTextEl=tr.querySelector('input.waktu-custom[data-field="waktu_text"]');
+  const waktuTextCustom=waktuEl?(waktuEl.dataset.waktuTextCustom||(waktuEl.value&&waktuEl.value.includes('&')?waktuEl.value.trim():'')):'';
   let nips=[],names=[];
   try{nips=JSON.parse(pegCell?.dataset.nips||'[]');}catch(_){}
   try{names=JSON.parse(pegCell?.dataset.names||'[]');}catch(_){}
@@ -1552,7 +1452,7 @@ function collectRow(tr){
     pembebanan:(pokEl?.value||'').trim(),
     waktuMulai:waktuEl?.dataset.isoMulai||'',
     waktuSelesai:waktuEl?.dataset.isoSelesai||'',
-    waktuTextCustom:(waktuTextEl?.value||'').trim(),
+    waktuTextCustom,
     waktuEl,perihalEl,tujuanEl,pokEl,pegCell,
     nips,names
   };
