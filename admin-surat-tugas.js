@@ -1517,8 +1517,7 @@ function onDateFocus(el) {
 }
 
 function onDateBlur(el) {
-  const cal = document.getElementById('cal-popup');
-  if (cal && cal.classList.contains('open')) return;
+  if (window.apaCalendar && window.apaCalendar.isOpen()) return;
 
   const txt = el.value.trim();
   if (!txt) {
@@ -1536,8 +1535,7 @@ function onDateBlur(el) {
   }
 }
 function onRangeBlur(el) {
-  const cal = document.getElementById('cal-popup');
-  if (cal && cal.classList.contains('open')) return;
+  if (window.apaCalendar && window.apaCalendar.isOpen()) return;
 
   // Jika dataset sudah terisi dari kalender, pakai langsung — jangan parse ulang teks tampilan
   if (el.dataset.isoMulai) {
@@ -1564,244 +1562,19 @@ function onRangeBlur(el) {
   }
 }
 /* ════════════════════════════════════════════════════════════════════
-   CALENDAR POPUP
+   CALENDAR (Dikelola terpusat secara global oleh apa-calendar.js)
 ═══════════════════════════════════════════════════════════════════════ */
-let calState = {
-  targetEl: null,
-  isRange:  false,
-  year:     new Date().getFullYear(),
-  month:    new Date().getMonth(),
-  rangePhase: 0,
-  yearMode: false,
-  // Tugas #2 — keyboard navigation: tanggal yg sedang di-highlight
-  // (di-set saat openCal, digerakkan oleh ←↑→↓, dipilih dgn Enter).
-  focusedDay: '',
-};
-
 function openCal(el, isRange) {
   closeAllPopups();
-  calState.targetEl = el;
-  calState.isRange  = isRange;
-  calState.rangePhase = 0;
-  calState.yearMode = false;
-  let initIso = isRange ? (el.dataset.isoMulai || todayISO()) : (el.dataset.iso || todayISO());
-  const d = parseISODate(initIso);
-  if (d) { calState.year = d.getFullYear(); calState.month = d.getMonth(); }
-  // Init focusedDay ke tanggal yg sedang di-pick (atau hari ini kalau kosong)
-  calState.focusedDay = initIso;
-  const popup = document.getElementById('cal-popup');
-  popup.classList.remove('year-mode');
-  popup.classList.add('open');
-  positionPopup(popup, el);
-  renderCal();
+  if (window.apaCalendar) {
+    window.apaCalendar.open(el, isRange);
+  }
 }
 
 function closeCal() {
-  document.getElementById('cal-popup').classList.remove('open');
-  calState.targetEl = null;
-}
-
-function renderCal() {
-  const popup = document.getElementById('cal-popup');
-  popup.classList.toggle('year-mode', calState.yearMode);
-  document.getElementById('cal-title').textContent = `${BULAN[calState.month]} ${calState.year}`;
-  document.getElementById('cal-day-names').innerHTML = ['Min','Sen','Sel','Rab','Kam','Jum','Sab']
-    .map(d => `<div class="cal-day-name">${d}</div>`).join('');
-
-  if (calState.yearMode) { renderYearGrid(); return; }
-
-  const el = calState.targetEl;
-  const startIso = calState.isRange ? (el.dataset.isoMulai || '') : (el.dataset.iso || '');
-  const endIso   = calState.isRange ? (el.dataset.isoSelesai || '') : '';
-  const firstDay = new Date(calState.year, calState.month, 1).getDay();
-  const daysInMonth = new Date(calState.year, calState.month + 1, 0).getDate();
-  const today = todayISO();
-
-  let html = '';
-  for (let i = 0; i < firstDay; i++) html += `<div class="cal-day cal-empty"></div>`;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const ds = `${calState.year}-${String(calState.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    let cls = 'cal-day';
-    if (ds === today) cls += ' cal-today';
-    if (calState.isRange && startIso && endIso && startIso !== endIso) {
-      if (ds === startIso) cls += ' cal-start';
-      else if (ds === endIso) cls += ' cal-end';
-      else if (ds > startIso && ds < endIso) cls += ' cal-in-range';
-    } else if (startIso && ds === startIso) {
-      cls += calState.isRange ? (endIso === startIso ? ' cal-single' : ' cal-start') : ' cal-single';
-    }
-    if (ds === calState.focusedDay) cls += ' cal-focused';
-    html += `<div class="${cls}" data-date="${ds}">${d}</div>`;
+  if (window.apaCalendar) {
+    window.apaCalendar.close();
   }
-  document.getElementById('cal-days').innerHTML = html;
-
-  let txt = 'Pilih tanggal';
-  if (calState.isRange) {
-    if (calState.rangePhase === 1 && startIso) txt = `Mulai: ${fmtTgl(startIso)} — pilih tgl selesai`;
-    else if (startIso && endIso) txt = `${fmtTgl(startIso)} s.d. ${fmtTgl(endIso)}`;
-    else if (startIso) txt = fmtTgl(startIso);
-  } else if (startIso) {
-    txt = fmtTgl(startIso);
-  }
-  document.getElementById('cal-footer-text').textContent = txt;
-}
-
-function renderYearGrid() {
-  const baseYear = Math.floor(calState.year / 12) * 12;
-  let html = '';
-  for (let i = 0; i < 12; i++) {
-    const y = baseYear + i;
-    const cur = y === calState.year ? ' current' : '';
-    html += `<div class="cal-year-cell${cur}" data-year="${y}">${y}</div>`;
-  }
-  document.getElementById('cal-year-grid').innerHTML = html;
-}
-
-function positionPopup(popup, anchorEl) {
-  popup.style.visibility = 'hidden';
-  popup.style.display = 'block';
-  const pH = popup.offsetHeight;
-  const pW = popup.offsetWidth;
-  popup.style.display = '';
-  popup.style.visibility = '';
-  const rect = anchorEl.getBoundingClientRect();
-  const winH = window.innerHeight, winW = window.innerWidth;
-  let top = rect.bottom + 4;
-  let left = rect.left;
-  if (top + pH > winH - 8) top = Math.max(8, rect.top - pH - 4);
-  if (left + pW > winW - 8) left = winW - pW - 8;
-  if (left < 8) left = 8;
-  popup.style.top = top + 'px';
-  popup.style.left = left + 'px';
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('cal-prev').onclick = (e) => {
-    e.stopPropagation();
-    if (calState.yearMode) { calState.year -= 12; renderYearGrid(); return; }
-    calState.month--;
-    if (calState.month < 0) { calState.month = 11; calState.year--; }
-    renderCal();
-  };
-  document.getElementById('cal-next').onclick = (e) => {
-    e.stopPropagation();
-    if (calState.yearMode) { calState.year += 12; renderYearGrid(); return; }
-    calState.month++;
-    if (calState.month > 11) { calState.month = 0; calState.year++; }
-    renderCal();
-  };
-  document.getElementById('cal-title').onclick = (e) => {
-    e.stopPropagation();
-    calState.yearMode = !calState.yearMode;
-    renderCal();
-  };
-  document.getElementById('cal-clear').onclick = (e) => {
-    e.stopPropagation();
-    if (!calState.targetEl) return;
-    if (calState.isRange) {
-      calState.targetEl.dataset.isoMulai = '';
-      calState.targetEl.dataset.isoSelesai = '';
-    } else {
-      calState.targetEl.dataset.iso = '';
-    }
-    calState.targetEl.value = '';
-    calState.rangePhase = 0;
-    renderCal();
-    closeCal();
-  };
-  document.getElementById('cal-days').onclick = (e) => {
-    const d = e.target.closest('.cal-day');
-    if (!d || d.classList.contains('cal-empty')) return;
-    calPickDate(d.dataset.date);
-  };
-  document.getElementById('cal-year-grid').onclick = (e) => {
-    const c = e.target.closest('.cal-year-cell');
-    if (!c) return;
-    calState.year = parseInt(c.dataset.year, 10);
-    calState.yearMode = false;
-    renderCal();
-  };
-});
-
-/* ──────────────────────────────────────────────────────────────────
-   Tugas #2 — Keyboard navigation di calendar popup
-   ──────────────────────────────────────────────────────────────────
-   ←↑→↓  navigasi 1 hari / 1 minggu (auto-pindah bulan kalau lewat batas)
-   Enter pilih tanggal yg sedang di-focus
-   Esc   tutup popup (sudah di-handle di Escape clause global)
-─────────────────────────────────────────────────────────────────── */
-
-/**
- * Pick tanggal ds ke target input. Dipanggil oleh klik mouse (event handler
- * di onclick cal-days) DAN keyboard Enter.
- */
-function calPickDate(ds) {
-  const el = calState.targetEl;
-  if (!el) return;
-  if (!calState.isRange) {
-    el.dataset.iso = ds;
-    el.value = fmtTgl(ds);
-    el.classList.remove('err');
-    closeCal();
-    return;
-  }
-  if (calState.rangePhase === 0) {
-    el.dataset.isoMulai = ds;
-    el.dataset.isoSelesai = '';
-    el.value = fmtTgl(ds) + ' s.d. …';
-    calState.rangePhase = 1;
-    renderCal();
-  } else {
-    let mulai = el.dataset.isoMulai;
-    let selesai = ds;
-    if (selesai < mulai) { [mulai, selesai] = [selesai, mulai]; }
-    el.dataset.isoMulai = mulai;
-    el.dataset.isoSelesai = (selesai === mulai) ? '' : selesai;
-    el.value = fmtWaktu(mulai, el.dataset.isoSelesai);
-    el.classList.remove('err');
-    calState.rangePhase = 0;
-    renderCal();
-    setTimeout(closeCal, 150);
-  }
-}
-
-/**
- * Geser focusedDay sebanyak deltaDays. Auto-pindah bulan kalau pindah ke
- * tanggal di bulan lain. Skip kalau popup tidak terbuka atau di year-mode.
- */
-function calMoveFocus(deltaDays) {
-  const popup = document.getElementById('cal-popup');
-  if (!popup || !popup.classList.contains('open') || calState.yearMode) return;
-
-  let baseIso = calState.focusedDay;
-  if (!baseIso) {
-    // Fallback: pakai tgl yg sedang di-set di target, atau hari ini
-    const el = calState.targetEl;
-    baseIso = (el && (calState.isRange ? el.dataset.isoMulai : el.dataset.iso))
-           || todayISO();
-  }
-  const d = parseISODate(baseIso) || new Date();
-  d.setDate(d.getDate() + deltaDays);
-  const newIso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  // Pindah bulan kalau perlu
-  if (d.getFullYear() !== calState.year || d.getMonth() !== calState.month) {
-    calState.year  = d.getFullYear();
-    calState.month = d.getMonth();
-  }
-  calState.focusedDay = newIso;
-  renderCal();
-  // Scroll ke focused cell kalau ke luar viewport (rare di calendar 6×7)
-  const focusedEl = document.querySelector(`#cal-days .cal-day.cal-focused`);
-  if (focusedEl && focusedEl.scrollIntoView) {
-    focusedEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }
-}
-
-function calPickFocused() {
-  if (!calState.focusedDay) return;
-  // Pastikan tanggal yg di-focus adalah dalam bulan yang sedang di-render
-  // (calMoveFocus sudah jaga ini, tapi defensive)
-  calPickDate(calState.focusedDay);
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2746,19 +2519,7 @@ function navFocusCell(grid, r, c) {
 ═══════════════════════════════════════════════════════════════════════ */
 document.addEventListener('keydown', (e) => {
 
-  /* ── Tugas #2 — Calendar popup keyboard nav ──────────────────────
-     Saat cal-popup terbuka, arrow keys navigasi tanggal & Enter pilih.
-     Listener ini di atas Escape clause supaya tidak konflik dengan
-     handler grid di bawah (yg juga consume arrow keys). */
-  const calPopup = document.getElementById('cal-popup');
-  if (calPopup && calPopup.classList.contains('open') && !calState.yearMode) {
-    if (e.key === 'ArrowUp')    { e.preventDefault(); calMoveFocus(-7); return; }
-    if (e.key === 'ArrowDown')  { e.preventDefault(); calMoveFocus( 7); return; }
-    if (e.key === 'ArrowLeft')  { e.preventDefault(); calMoveFocus(-1); return; }
-    if (e.key === 'ArrowRight') { e.preventDefault(); calMoveFocus( 1); return; }
-    if (e.key === 'Enter')      { e.preventDefault(); calPickFocused(); return; }
-    // Escape tetap fall-through ke clause Escape di bawah (close popup)
-  }
+  if (window.apaCalendar && window.apaCalendar.isOpen() && e.key !== 'Escape') return;
 
   /* ── Escape ─────────────────────────────────────────────────────── */
   if (e.key === 'Escape') {
@@ -2925,14 +2686,7 @@ function moveCellFocus(currentEl, direction) {
    CLOSE POPUPS saat klik di luar
 ═══════════════════════════════════════════════════════════════════════ */
 document.addEventListener('click', (e) => {
-  const cal = document.getElementById('cal-popup');
-  // Gunakan composedPath() agar tetap akurat walau DOM berubah saat renderCal()
-  const path = e.composedPath ? e.composedPath() : [];
-  const clickInsideCal = path.includes(cal);
-  if (cal.classList.contains('open') && document.contains(e.target) && !cal.contains(e.target) &&
-      (!calState.targetEl || !calState.targetEl.contains(e.target)) && calState.targetEl !== e.target) {
-    closeCal();
-  }
+  // Calendar outside click ditangani secara mandiri oleh apaCalendar
   const ac = document.getElementById('ac-popup');
   if (ac.classList.contains('open') && !ac.contains(e.target)) {
     const inAnyPgCell = e.target.closest && e.target.closest('.pg-cell');

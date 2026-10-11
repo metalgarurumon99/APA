@@ -13,6 +13,7 @@
 <script src="topbar.js"></script>
 <link rel="stylesheet" href="sidebar.css">
 <script src="sidebar.js"></script>
+<link rel="stylesheet" href="apa-calendar.css">
 <style>
   /* === SEMUA CSS ASLI TIDAK BERUBAH === */
   :root{--bg:#f5f4f0;--white:#fff;--navy:#0d2340;--navy2:#163358;--gold:#c8a84b;--gold-light:#f5edda;--text:#1a1a2e;--muted:#6b7280;--border:#e2ddd6;--border2:#d1ccc3;--red:#c0392b;--success:#1a7a4a;--sidebar-w:260px;}
@@ -259,41 +260,7 @@
   .ac-hint{padding:6px 12px;font-size:10px;color:var(--muted);background:#fafaf8;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
   .ac-hint kbd{background:white;border:1px solid var(--border2);border-radius:3px;padding:1px 4px;font-family:ui-monospace,monospace;font-size:9px}
 
-  /* ════════════════════════════════════════════════════
-     CALENDAR POPUP (date & date range)
-  ════════════════════════════════════════════════════ */
-  .cal-popup{position:fixed;background:white;border:1.5px solid var(--navy);border-radius:10px;box-shadow:0 12px 36px rgba(13,35,64,.2);z-index:9999;overflow:hidden;width:286px;display:none}
-  .cal-popup.open{display:block}
-  .cal-header{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
-  .cal-nav{background:none;border:none;color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:2px 8px;border-radius:4px;line-height:1;transition:all .2s}
-  .cal-nav:hover{color:white;background:rgba(255,255,255,.1)}
-  .cal-title{font-size:13px;font-weight:600;color:white;cursor:pointer;flex:1;text-align:center;user-select:none;padding:2px 8px;border-radius:4px;transition:background .2s}
-  .cal-title:hover{background:rgba(255,255,255,.1)}
-  .cal-day-names{display:grid;grid-template-columns:repeat(7,1fr);background:#f0efeb;border-bottom:1px solid var(--border)}
-  .cal-day-name{text-align:center;padding:5px 0;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.5px}
-  .cal-days{display:grid;grid-template-columns:repeat(7,1fr);padding:6px;gap:1px}
-  .cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:5px;cursor:pointer;transition:all .12s;position:relative;user-select:none}
-  .cal-day:hover:not(.cal-empty):not(.cal-disabled){background:var(--gold-light);color:var(--navy)}
-  .cal-day.cal-empty{visibility:hidden}
-  .cal-day.cal-start,.cal-day.cal-end,.cal-day.cal-single{background:var(--navy);color:white;font-weight:600}
-  .cal-day.cal-in-range{background:var(--gold-light);color:#7a5c10;border-radius:0}
-  .cal-day.cal-start{border-radius:5px 0 0 5px}
-  .cal-day.cal-end{border-radius:0 5px 5px 0}
-  .cal-day.cal-start.cal-end,.cal-day.cal-single{border-radius:5px}
-  .cal-day.cal-today::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--gold)}
-  .cal-day.cal-start.cal-today::after,.cal-day.cal-end.cal-today::after,.cal-day.cal-single.cal-today::after{background:rgba(255,255,255,.7)}
-  /* Tugas #2 — keyboard focus ring (outline kuning) */
-  .cal-day.cal-focused{box-shadow:0 0 0 2px var(--gold) inset;z-index:1}
-  .cal-footer{border-top:1px solid var(--border);padding:7px 12px;display:flex;align-items:center;justify-content:space-between;font-size:11px;background:#fafaf8}
-  .cal-footer-text{color:var(--navy);font-weight:500;flex:1}
-  .cal-clear{background:none;border:1px solid var(--border2);border-radius:5px;padding:3px 9px;font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;color:var(--muted);cursor:pointer;transition:all .2s}
-  .cal-clear:hover{border-color:var(--red);color:var(--red)}
-  .cal-year-grid{display:grid;grid-template-columns:repeat(4,1fr);padding:10px;gap:6px;display:none}
-  .cal-popup.year-mode .cal-day-names,.cal-popup.year-mode .cal-days{display:none}
-  .cal-popup.year-mode .cal-year-grid{display:grid}
-  .cal-year-cell{padding:10px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--navy);background:var(--bg);border-radius:5px;cursor:pointer;transition:all .15s}
-  .cal-year-cell:hover{background:var(--gold-light)}
-  .cal-year-cell.current{background:var(--navy);color:white}
+  /* Selesai: gaya kalender lama digantikan oleh apa-calendar.css */
 
   .add-row-bar{padding:9px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;background:#fafaf8}
   .action-bar{background:var(--white);border:1px solid var(--border);border-radius:0 0 10px 10px;border-top:2px solid var(--border);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 4px 16px rgba(13,35,64,.07);margin-top:0}
@@ -459,21 +426,7 @@
   </main>
 </div>
 
-<!-- Calendar popup (single & range) -->
-<div class="cal-popup" id="cal-popup">
-  <div class="cal-header">
-    <button class="cal-nav" id="cal-prev" type="button">&#8249;</button>
-    <span class="cal-title" id="cal-title"></span>
-    <button class="cal-nav" id="cal-next" type="button">&#8250;</button>
-  </div>
-  <div class="cal-day-names" id="cal-day-names"></div>
-  <div class="cal-days" id="cal-days"></div>
-  <div class="cal-year-grid" id="cal-year-grid"></div>
-  <div class="cal-footer">
-    <span class="cal-footer-text" id="cal-footer-text">Pilih tanggal</span>
-    <button class="cal-clear" id="cal-clear" type="button">Hapus</button>
-  </div>
-</div>
+<!-- cal-popup di-inject otomatis oleh apa-calendar.js -->
 
 <!-- Autocomplete pegawai popup -->
 <div class="ac-popup" id="ac-popup">
@@ -494,6 +447,7 @@
 
 <script src="config.js"></script>
 <script src="apa-shared.js"></script>
+<script src="apa-calendar.js"></script>
 
 
 
@@ -790,6 +744,7 @@ function cellDateRangeHTML(field,isoMulai,isoSelesai,waktuTextCustom){
       placeholder="tgl atau rentang"
       onblur="onRangeBlur(this)"
       onfocus="onDateFocus(this)"
+      onclick="openCal(this, true)"
       ondblclick="openCal(this, true)"
       onkeydown="if(event.altKey&&event.key==='ArrowDown'){event.preventDefault();openCal(this,true);}">
     <button type="button" class="waktu-toggle${hasCustom?' active':''}"
@@ -886,197 +841,17 @@ function onRangeBlur(el){
   }
 }
 
-/* ══ CALENDAR POPUP ══ */
-let calState={targetEl:null,isRange:false,year:new Date().getFullYear(),month:new Date().getMonth(),rangePhase:0,yearMode:false,focusedDay:''};
-
-function openCal(el,isRange){
+/* ══ CALENDAR POPUP (Global apaCalendar bridge) ══ */
+function openCal(el, isRange) {
   closeAllPopups();
-  calState.targetEl=el;
-  calState.isRange=isRange;
-  calState.rangePhase=0;
-  calState.yearMode=false;
-  const initIso=el.dataset.isoMulai||todayISO();
-  const d=parseISODate(initIso);
-  if(d){calState.year=d.getFullYear();calState.month=d.getMonth();}
-  // Tugas #2: init focusedDay untuk keyboard navigation
-  calState.focusedDay=initIso;
-  const popup=document.getElementById('cal-popup');
-  popup.classList.remove('year-mode');
-  popup.classList.add('open');
-  positionPopup(popup,el);
-  renderCal();
+  if (window.apaCalendar) { window.apaCalendar.open(el, isRange); }
 }
-function closeCal(){
-  document.getElementById('cal-popup').classList.remove('open');
-  calState.targetEl=null;
-}
-function renderCal(){
-  const popup=document.getElementById('cal-popup');
-  popup.classList.toggle('year-mode',calState.yearMode);
-  document.getElementById('cal-title').textContent=`${BULAN[calState.month]} ${calState.year}`;
-  document.getElementById('cal-day-names').innerHTML=['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(d=>`<div class="cal-day-name">${d}</div>`).join('');
-  if(calState.yearMode){renderYearGrid();return;}
-  const el=calState.targetEl;
-  const startIso=el?.dataset.isoMulai||'';
-  const endIso=el?.dataset.isoSelesai||'';
-  const firstDay=new Date(calState.year,calState.month,1).getDay();
-  const daysInMonth=new Date(calState.year,calState.month+1,0).getDate();
-  const today=todayISO();
-  let html='';
-  for(let i=0;i<firstDay;i++)html+=`<div class="cal-day cal-empty"></div>`;
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=`${calState.year}-${String(calState.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    let cls='cal-day';
-    if(ds===today)cls+=' cal-today';
-    if(calState.isRange&&startIso&&endIso&&startIso!==endIso){
-      if(ds===startIso)cls+=' cal-start';
-      else if(ds===endIso)cls+=' cal-end';
-      else if(ds>startIso&&ds<endIso)cls+=' cal-in-range';
-    } else if(startIso&&ds===startIso){
-      cls+=calState.isRange?(endIso===startIso?' cal-single':' cal-start'):' cal-single';
-    }
-    if(ds===calState.focusedDay)cls+=' cal-focused';
-    html+=`<div class="${cls}" data-date="${ds}">${d}</div>`;
-  }
-  document.getElementById('cal-days').innerHTML=html;
-  let txt='Pilih tanggal';
-  if(calState.isRange){
-    if(calState.rangePhase===1&&startIso)txt=`Mulai: ${fmtTgl(startIso)} \u2014 pilih tgl selesai`;
-    else if(startIso&&endIso)txt=`${fmtTgl(startIso)} s.d. ${fmtTgl(endIso)}`;
-    else if(startIso)txt=fmtTgl(startIso);
-  } else if(startIso){
-    txt=fmtTgl(startIso);
-  }
-  document.getElementById('cal-footer-text').textContent=txt;
-}
-function renderYearGrid(){
-  const baseYear=Math.floor(calState.year/12)*12;
-  let html='';
-  for(let i=0;i<12;i++){
-    const y=baseYear+i;
-    const cur=y===calState.year?' current':'';
-    html+=`<div class="cal-year-cell${cur}" data-year="${y}">${y}</div>`;
-  }
-  document.getElementById('cal-year-grid').innerHTML=html;
-}
-function positionPopup(popup,anchorEl){
-  popup.style.visibility='hidden';
-  popup.style.display='block';
-  const pH=popup.offsetHeight,pW=popup.offsetWidth;
-  popup.style.display='';
-  popup.style.visibility='';
-  const rect=anchorEl.getBoundingClientRect();
-  const winH=window.innerHeight,winW=window.innerWidth;
-  let top=rect.bottom+4, left=rect.left;
-  if(top+pH>winH-8)top=Math.max(8,rect.top-pH-4);
-  if(left+pW>winW-8)left=winW-pW-8;
-  if(left<8)left=8;
-  popup.style.top=top+'px';
-  popup.style.left=left+'px';
-}
-
-// Calendar event wiring
-document.getElementById('cal-prev').onclick=(e)=>{
-  e.stopPropagation();
-  if(calState.yearMode){calState.year-=12;renderYearGrid();return;}
-  calState.month--;if(calState.month<0){calState.month=11;calState.year--;}
-  renderCal();
-};
-document.getElementById('cal-next').onclick=(e)=>{
-  e.stopPropagation();
-  if(calState.yearMode){calState.year+=12;renderYearGrid();return;}
-  calState.month++;if(calState.month>11){calState.month=0;calState.year++;}
-  renderCal();
-};
-document.getElementById('cal-title').onclick=(e)=>{
-  e.stopPropagation();
-  calState.yearMode=!calState.yearMode;
-  renderCal();
-};
-document.getElementById('cal-clear').onclick=(e)=>{
-  e.stopPropagation();
-  if(!calState.targetEl)return;
-  calState.targetEl.dataset.isoMulai='';
-  calState.targetEl.dataset.isoSelesai='';
-  calState.targetEl.value='';
-  calState.rangePhase=0;
-  renderCal();
-  closeCal();
-};
-document.getElementById('cal-days').onclick=(e)=>{
-  const d=e.target.closest('.cal-day');
-  if(!d||d.classList.contains('cal-empty'))return;
-  calPickDate(d.dataset.date);
-};
-document.getElementById('cal-year-grid').onclick=(e)=>{
-  const c=e.target.closest('.cal-year-cell');
-  if(!c)return;
-  calState.year=parseInt(c.dataset.year,10);
-  calState.yearMode=false;
-  renderCal();
-};
-
-/* ── Tugas #2 — Calendar keyboard navigation ──
-   ←↑→↓ navigasi 1 hari/1 minggu, Enter pilih, Esc tutup (sudah di-handle).
-   Logic identik dgn admin (admin-surat-tugas.js). */
-function calPickDate(ds){
-  const el=calState.targetEl;
-  if(!el)return;
-  if(!calState.isRange){
-    el.dataset.isoMulai=ds;
-    el.dataset.isoSelesai='';
-    el.value=fmtTgl(ds);
-    el.classList.remove('err');
-    closeCal();
-    return;
-  }
-  if(calState.rangePhase===0){
-    el.dataset.isoMulai=ds;
-    el.dataset.isoSelesai='';
-    el.value=fmtTgl(ds)+' s.d. \u2026';
-    calState.rangePhase=1;
-    renderCal();
-  } else {
-    let mulai=el.dataset.isoMulai, selesai=ds;
-    if(selesai<mulai){[mulai,selesai]=[selesai,mulai];}
-    el.dataset.isoMulai=mulai;
-    el.dataset.isoSelesai=(selesai===mulai)?'':selesai;
-    el.value=fmtWaktu(mulai,el.dataset.isoSelesai);
-    el.classList.remove('err');
-    calState.rangePhase=0;
-    renderCal();
-    setTimeout(closeCal,150);
-  }
-}
-function calMoveFocus(deltaDays){
-  const popup=document.getElementById('cal-popup');
-  if(!popup||!popup.classList.contains('open')||calState.yearMode)return;
-  let baseIso=calState.focusedDay;
-  if(!baseIso){
-    const el=calState.targetEl;
-    baseIso=(el&&el.dataset.isoMulai)||todayISO();
-  }
-  const d=parseISODate(baseIso)||new Date();
-  d.setDate(d.getDate()+deltaDays);
-  const newIso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  if(d.getFullYear()!==calState.year||d.getMonth()!==calState.month){
-    calState.year=d.getFullYear();
-    calState.month=d.getMonth();
-  }
-  calState.focusedDay=newIso;
-  renderCal();
-  const focusedEl=document.querySelector('#cal-days .cal-day.cal-focused');
-  if(focusedEl&&focusedEl.scrollIntoView){
-    focusedEl.scrollIntoView({block:'nearest',inline:'nearest'});
-  }
-}
-function calPickFocused(){
-  if(!calState.focusedDay)return;
-  calPickDate(calState.focusedDay);
+function closeCal() {
+  if (window.apaCalendar) { window.apaCalendar.close(); }
 }
 
 /* ══ AUTOCOMPLETE PEGAWAI ══ */
-let acState={cellEl:null,inputEl:null,filtered:[],focusIdx:-1,isSingle:false};
+var acState={cellEl:null,inputEl:null,filtered:[],focusIdx:-1,isSingle:false};
 
 function onPgCellClick(e,cellEl){
   if(e.target===cellEl){
@@ -1159,9 +934,11 @@ function openAc(cellEl,inp){
   acFilter(inp.value);
 }
 function closeAc(){
-  document.getElementById('ac-popup').classList.remove('open');
+  const p=document.getElementById('ac-popup');
+  if(p)p.classList.remove('open');
+  if(typeof acState!=='undefined'&&acState){
   acState.cellEl=null; acState.inputEl=null;
-  acState.filtered=[]; acState.focusIdx=-1;
+  acState.filtered=[]; acState.focusIdx=-1; }
 }
 function acFilter(q){
   q=(q||'').toLowerCase().trim();
@@ -1340,15 +1117,7 @@ document.addEventListener('keydown',(e)=>{
      Saat cal-popup terbuka, arrow keys navigasi tanggal & Enter pilih.
      Letakkan di atas semua handler lain agar arrow tidak konflik dgn
      navigasi grid tabel. */
-  const calPopup=document.getElementById('cal-popup');
-  if(calPopup&&calPopup.classList.contains('open')&&!calState.yearMode){
-    if(e.key==='ArrowUp')   {e.preventDefault();calMoveFocus(-7);return;}
-    if(e.key==='ArrowDown') {e.preventDefault();calMoveFocus( 7);return;}
-    if(e.key==='ArrowLeft') {e.preventDefault();calMoveFocus(-1);return;}
-    if(e.key==='ArrowRight'){e.preventDefault();calMoveFocus( 1);return;}
-    if(e.key==='Enter')     {e.preventDefault();calPickFocused();return;}
-    // Escape fall-through ke clause Escape di bawah (close popup)
-  }
+  if (window.apaCalendar && window.apaCalendar.isOpen() && e.key !== 'Escape') return;
 
   if(e.key==='Escape'){
     closeAllPopups();
@@ -1424,11 +1193,6 @@ document.addEventListener('focus',(e)=>{
 },true);
 
 document.addEventListener('click',(e)=>{
-  const cal=document.getElementById('cal-popup');
-  if(cal.classList.contains('open')&&document.contains(e.target)&&!cal.contains(e.target)&&
-     (!calState.targetEl||!calState.targetEl.contains(e.target))&&calState.targetEl!==e.target){
-    closeCal();
-  }
   const ac=document.getElementById('ac-popup');
   if(ac.classList.contains('open')&&!ac.contains(e.target)){
     if(!e.target.closest('.pg-cell'))closeAc();

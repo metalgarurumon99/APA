@@ -8,11 +8,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
-<!-- APA Global Components: Topbar & Sidebar -->
+<!-- APA Global Components: Topbar, Sidebar & Calendar -->
 <link rel="stylesheet" href="topbar.css">
 <script src="topbar.js"></script>
 <link rel="stylesheet" href="sidebar.css">
 <script src="sidebar.js"></script>
+<link rel="stylesheet" href="apa-calendar.css">
 
 <!-- Library: render docx preview (HTML) + save blob untuk download -->
 <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
@@ -498,44 +499,7 @@
   .ac-hint{padding:6px 12px;font-size:10px;color:var(--muted);background:#fafaf8;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
   .ac-hint kbd{background:white;border:1px solid var(--border2);border-radius:3px;padding:1px 4px;font-family:ui-monospace,monospace;font-size:9px}
 
-  /* ════════════════════════════════════════════════════
-     CALENDAR POPUP (single & range)
-  ════════════════════════════════════════════════════ */
-  .cal-popup{position:fixed;background:white;border:1.5px solid var(--navy);border-radius:10px;box-shadow:0 12px 36px rgba(13,35,64,.2);z-index:9999;overflow:hidden;width:286px;display:none}
-  .cal-popup.open{display:block}
-  .cal-header{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
-  .cal-nav{background:none;border:none;color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:2px 8px;border-radius:4px;line-height:1;transition:all .2s}
-  .cal-nav:hover{color:white;background:rgba(255,255,255,.1)}
-  .cal-title{font-size:13px;font-weight:600;color:white;cursor:pointer;flex:1;text-align:center;user-select:none;padding:2px 8px;border-radius:4px;transition:background .2s}
-  .cal-title:hover{background:rgba(255,255,255,.1)}
-  .cal-day-names{display:grid;grid-template-columns:repeat(7,1fr);background:#f0efeb;border-bottom:1px solid var(--border)}
-  .cal-day-name{text-align:center;padding:5px 0;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.5px}
-  .cal-days{display:grid;grid-template-columns:repeat(7,1fr);padding:6px;gap:1px}
-  .cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:5px;cursor:pointer;transition:all .12s;position:relative;user-select:none}
-  .cal-day:hover:not(.cal-empty):not(.cal-disabled){background:var(--gold-light);color:var(--navy)}
-  .cal-day.cal-empty{visibility:hidden}
-  .cal-day.cal-other{color:#ccc;font-weight:400}
-  .cal-day.cal-start,.cal-day.cal-end,.cal-day.cal-single{background:var(--navy);color:white;font-weight:600}
-  .cal-day.cal-in-range{background:var(--gold-light);color:#7a5c10;border-radius:0}
-  .cal-day.cal-start{border-radius:5px 0 0 5px}
-  .cal-day.cal-end{border-radius:0 5px 5px 0}
-  .cal-day.cal-start.cal-end,.cal-day.cal-single{border-radius:5px}
-  .cal-day.cal-today::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--gold)}
-  .cal-day.cal-start.cal-today::after,.cal-day.cal-end.cal-today::after,.cal-day.cal-single.cal-today::after{background:rgba(255,255,255,.7)}
-  /* Tugas #2 — keyboard focus ring (outline kuning) */
-  .cal-day.cal-focused{box-shadow:0 0 0 2px var(--gold) inset;z-index:1}
-  .cal-footer{border-top:1px solid var(--border);padding:7px 12px;display:flex;align-items:center;justify-content:space-between;font-size:11px;background:#fafaf8}
-  .cal-footer-text{color:var(--navy);font-weight:500;flex:1}
-  .cal-clear{background:none;border:1px solid var(--border2);border-radius:5px;padding:3px 9px;font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;color:var(--muted);cursor:pointer;transition:all .2s}
-  .cal-clear:hover{border-color:var(--red);color:var(--red)}
-
-  /* Year picker overlay */
-  .cal-year-grid{display:grid;grid-template-columns:repeat(4,1fr);padding:10px;gap:6px;display:none}
-  .cal-popup.year-mode .cal-day-names,.cal-popup.year-mode .cal-days{display:none}
-  .cal-popup.year-mode .cal-year-grid{display:grid}
-  .cal-year-cell{padding:10px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--navy);background:var(--bg);border-radius:5px;cursor:pointer;transition:all .15s}
-  .cal-year-cell:hover{background:var(--gold-light)}
-  .cal-year-cell.current{background:var(--navy);color:white}
+  /* Selesai: gaya kalender lama digantikan oleh apa-calendar.css */
 
   /* Date cell display (saat tidak focus) */
   .date-cell-display{padding:9px 10px;font-size:12.5px;color:var(--text);min-height:42px;line-height:1.45;cursor:text}
@@ -813,20 +777,7 @@
 <!-- ═══════════════════════════════════════════════════════════
      POPUPS (calendar & autocomplete)
 ═════════════════════════════════════════════════════════════ -->
-<div class="cal-popup" id="cal-popup">
-  <div class="cal-header">
-    <button class="cal-nav" id="cal-prev" type="button">‹</button>
-    <span class="cal-title" id="cal-title"></span>
-    <button class="cal-nav" id="cal-next" type="button">›</button>
-  </div>
-  <div class="cal-day-names" id="cal-day-names"></div>
-  <div class="cal-days" id="cal-days"></div>
-  <div class="cal-year-grid" id="cal-year-grid"></div>
-  <div class="cal-footer">
-    <span class="cal-footer-text" id="cal-footer-text">Pilih tanggal</span>
-    <button class="cal-clear" id="cal-clear" type="button">Hapus</button>
-  </div>
-</div>
+<!-- cal-popup di-inject otomatis oleh apa-calendar.js -->
 
 <div class="ac-popup" id="ac-popup">
   <div class="ac-hint" id="ac-hint">
@@ -1069,6 +1020,7 @@
 
 <script src="config.js"></script>
 <script src="apa-shared.js"></script>
+<script src="apa-calendar.js"></script>
 
 
 
