@@ -1023,28 +1023,21 @@ function applyAdminDraftToRow(suratId) {
   // Pegawai multi
   const pegCell = row.querySelector('[data-field="pegawai_multi"]');
   if (pegCell && Array.isArray(v.pegawai_nip) && v.pegawai_nip.length) {
-    pegCell.dataset.nips = JSON.stringify(v.pegawai_nip);
-    pegCell.dataset.names = JSON.stringify(v.pegawai_list || []);
-    // Hapus tag lama, render ulang
-    pegCell.querySelectorAll('.pg-tag').forEach(t => t.remove());
-    const inp = pegCell.querySelector('.pg-input');
-    const tags = v.pegawai_nip.map((nip, j) => buildPegTag(nip, (v.pegawai_list || [])[j] || nip, false)).join('');
-    if (inp) {
-      pegCell.insertAdjacentHTML('afterbegin', tags);
-      inp.placeholder = '';
+    if (window.apaPegawai) {
+      window.apaPegawai.renderCell(pegCell, v.pegawai_nip, v.pegawai_list || []);
+    } else {
+      pegCell.dataset.nips = JSON.stringify(v.pegawai_nip);
+      pegCell.dataset.names = JSON.stringify(v.pegawai_list || []);
     }
   }
   // Penandatangan single
   const ttdCell = row.querySelector('[data-field="penandatangan"]');
   if (ttdCell && v.penandatangan_nip) {
-    ttdCell.dataset.nip = v.penandatangan_nip;
-    ttdCell.dataset.nama = v.penandatangan_nama || '';
-    ttdCell.querySelectorAll('.pg-tag').forEach(t => t.remove());
-    const inp = ttdCell.querySelector('.pg-input');
-    const tag = buildPegTag(v.penandatangan_nip, v.penandatangan_nama || v.penandatangan_nip, true);
-    if (inp) {
-      ttdCell.insertAdjacentHTML('afterbegin', tag);
-      inp.placeholder = '';
+    if (window.apaPegawai) {
+      window.apaPegawai.renderCell(ttdCell, [v.penandatangan_nip], [v.penandatangan_nama || v.penandatangan_nip]);
+    } else {
+      ttdCell.dataset.nip = v.penandatangan_nip;
+      ttdCell.dataset.nama = v.penandatangan_nama || '';
     }
   }
   // Tipe (custom dropdown — pakai data-value pada .tp-cell)
@@ -1394,28 +1387,51 @@ function cellDateRangeHTML(id, field, isoMulai, isoSelesai, editable, waktuTextC
 
 
 function cellPegawaiMultiHTML(id, nips, names, editable) {
+  nips = Array.isArray(nips) ? nips : [];
+  names = Array.isArray(names) ? names : [];
+
   if (!editable) {
     if (!names.length) {
       return `<td class="col-nama">
         <div class="ro-text muted" tabindex="0" data-col-field="pegawai_multi">—</div>
       </td>`;
     }
+    if (names.length > 1) {
+      return `<td class="col-nama">
+        <div class="ro-text" tabindex="0" data-col-field="pegawai_multi">
+          <span class="apa-pg-badge-terlampir" title="${esc(names.join(', '))}">
+            <span class="icon">📎</span> Terlampir
+            <span class="count-pill">${names.length}</span>
+          </span>
+        </div>
+      </td>`;
+    }
     return `<td class="col-nama">
       <div class="ro-text" tabindex="0" data-col-field="pegawai_multi">${names.map(esc).join(', ')}</div>
     </td>`;
   }
-  const tags = nips.map((nip, i) => buildPegTag(nip, names[i] || nip, false)).join('');
+
+  let contentHtml = '';
+  if (!nips.length) {
+    contentHtml = `<span class="apa-pg-placeholder">Pilih pegawai / mitra...</span>`;
+  } else if (nips.length === 1) {
+    const nama = names[0] || nips[0];
+    contentHtml = `<span class="apa-pg-single-name" title="${esc(nama)}">${esc(nama)}</span>`;
+  } else {
+    contentHtml = `<span class="apa-pg-badge-terlampir" title="${esc(names.join(', '))}">
+      <span class="icon">📎</span> Terlampir
+      <span class="count-pill">${nips.length}</span>
+    </span>`;
+  }
+
   return `<td class="col-nama">
     <div class="pg-cell" data-field="pegawai_multi" data-col-field="pegawai_multi" data-id="${id}"
       data-nips='${escAttr(JSON.stringify(nips))}'
       data-names='${escAttr(JSON.stringify(names))}'
-      onclick="onPgCellClick(event, this)">
-      ${tags}
-      <input type="text" class="pg-input" placeholder="${tags ? '' : 'Ketik nama...'}"
-        oninput="onPgInput(event, this)"
-        onkeydown="onPgKeydown(event, this)"
-        onfocus="onPgInputFocus(this)"
-        onblur="onPgInputBlur(this)">
+      onclick="openAc(this, false)">
+      <div class="apa-pg-cell-wrapper">
+        ${contentHtml}
+      </div>
     </div>
   </td>`;
 }
@@ -1434,18 +1450,22 @@ function cellPenandatanganHTML(id, nip, nama, editable) {
       </div>
     </td>`;
   }
-  const tag = nip ? buildPegTag(nip, nama || nip, true) : '';
+
+  let contentHtml = '';
+  if (!nip) {
+    contentHtml = `<span class="apa-pg-placeholder">Pilih penandatangan...</span>`;
+  } else {
+    contentHtml = `<span class="apa-pg-single-name" title="${esc(nama || nip)}">${esc(nama || nip)}</span>`;
+  }
+
   return `<td class="col-ttd">
     <div class="pg-cell single" data-field="penandatangan" data-col-field="penandatangan" data-id="${id}"
       data-nip="${escAttr(nip)}"
       data-nama="${escAttr(nama)}"
-      onclick="onPgCellClick(event, this)">
-      ${tag}
-      <input type="text" class="pg-input" placeholder="${tag ? '' : 'Pilih nama...'}"
-        oninput="onPgInput(event, this)"
-        onkeydown="onPgKeydown(event, this)"
-        onfocus="onPgInputFocus(this)"
-        onblur="onPgInputBlur(this)">
+      onclick="openAc(this, true)">
+      <div class="apa-pg-cell-wrapper">
+        ${contentHtml}
+      </div>
     </div>
   </td>`;
 }
@@ -1455,7 +1475,6 @@ function buildPegTag(nip, nama, single) {
   const display = nama && nama.length > 22 ? nama.slice(0, 20) + '…' : nama;
   return `<span class="${cls}" data-nip="${escAttr(nip)}" title="${escAttr(nama)}">
     <span class="pg-tag-text">${esc(display)}</span>
-    <button type="button" class="pg-tag-x" onclick="onPgTagRemove(event, this)">×</button>
   </span>`;
 }
 
@@ -1536,311 +1555,31 @@ function closeCal() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   AUTOCOMPLETE PEGAWAI
+   AUTOCOMPLETE PEGAWAI & MITRA (Global apaPegawai bridge)
 ═══════════════════════════════════════════════════════════════════════ */
 let acState = {
-  cellEl:    null,
-  inputEl:   null,
-  filtered:  [],
-  focusIdx:  -1,
-  isSingle:  false,
+  cellEl: null,
+  isSingle: false,
 };
 
-function onPgCellClick(e, cellEl) {
-  if (e.target === cellEl) {
-    const inp = cellEl.querySelector('.pg-input');
-    if (inp) inp.focus();
+function openAc(cellEl, isSingle) {
+  closeCal();
+  closeMakAc();
+  closeTpAc();
+  if (window.apaPegawai) {
+    window.apaPegawai.open(cellEl, isSingle, () => {
+      const tr = cellEl.closest('tr[data-surat-id]');
+      if (tr) snapshotAdminDraft(tr.dataset.suratId);
+    });
   }
-}
-
-function onPgInputFocus(inp) {
-  const cellEl = inp.closest('.pg-cell');
-  if (!cellEl) return;
-  cellEl.classList.add('focused');
-  openAc(cellEl, inp);
-}
-
-function onPgInputBlur(inp) {
-  const cellEl = inp.closest('.pg-cell');
-  if (cellEl) cellEl.classList.remove('focused');
-  setTimeout(() => {
-    if (!document.activeElement || !document.getElementById('ac-popup').contains(document.activeElement)) {
-      if (!document.activeElement || !document.activeElement.classList.contains('pg-input')) {
-        closeAc();
-      }
-    }
-  }, 150);
-}
-
-function onPgInput(e, inp) {
-  acState.inputEl = inp;
-  acState.cellEl  = inp.closest('.pg-cell');
-  acState.isSingle = acState.cellEl.classList.contains('single');
-  acFilter(inp.value);
-}
-
-function onPgKeydown(e, inp) {
-  const cellEl = inp.closest('.pg-cell');
-  if (!cellEl) return;
-
-  if (e.key === 'Backspace' && inp.value === '') {
-    const tags = cellEl.querySelectorAll('.pg-tag');
-    if (tags.length) {
-      e.preventDefault();
-      const lastTag = tags[tags.length - 1];
-      removePegTag(cellEl, lastTag.dataset.nip);
-    }
-    return;
-  }
-
-  if (!document.getElementById('ac-popup').classList.contains('open')) {
-    if (e.key === 'ArrowDown' || e.key === 'Enter') {
-      e.preventDefault();
-      openAc(cellEl, inp);
-      acFilter(inp.value);
-    }
-    return;
-  }
-
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    acState.focusIdx = Math.min(acState.focusIdx + 1, acState.filtered.length - 1);
-    acRenderFocus();
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    acState.focusIdx = Math.max(acState.focusIdx - 1, 0);
-    acRenderFocus();
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    if (acState.focusIdx >= 0 && acState.filtered[acState.focusIdx]) {
-      const p = acState.filtered[acState.focusIdx];
-      pickPegawai(cellEl, String(pegawaiNip(p)).trim(), pegawaiNama(p) || '');
-      inp.value = '';
-      acFilter('');
-    }
-  } else if (e.key === 'Escape') {
-    e.preventDefault();
-    closeAc();
-  } else if (e.key === 'Tab') {
-    closeAc();
-  }
-}
-
-function openAc(cellEl, inp) {
-  acState.cellEl  = cellEl;
-  acState.inputEl = inp;
-  acState.isSingle = cellEl.classList.contains('single');
-  acState.focusIdx = -1;
-  const popup = document.getElementById('ac-popup');
-  popup.classList.add('open');
-  positionPopup(popup, cellEl);
-  acFilter(inp.value);
 }
 
 function closeAc() {
-  document.getElementById('ac-popup').classList.remove('open');
-  acState.cellEl = null;
-  acState.inputEl = null;
-  acState.filtered = [];
-  acState.focusIdx = -1;
-}
-
-function getRowTanggalSuratForCell(cellEl) {
-  const tr = cellEl ? cellEl.closest('tr[data-surat-id]') : null;
-  const el = tr ? tr.querySelector('[data-field="tanggal_surat"]') : null;
-  return (el && el.dataset && el.dataset.iso) ? el.dataset.iso : todayISO();
-}
-
-function acFilter(q) {
-  q = (q || '').toLowerCase().trim();
-  const cellEl = acState.cellEl;
-  const refDate = getRowTanggalSuratForCell(cellEl);
-  let selectedNips = [];
-  if (cellEl) {
-    if (acState.isSingle) {
-      const nip = cellEl.dataset.nip;
-      if (nip) selectedNips = [nip];
-    } else {
-      try { selectedNips = JSON.parse(cellEl.dataset.nips || '[]'); } catch(_) {}
-    }
-  }
-
-  // Build combined pool: pegawai (existing) + mitra (filtered ke tahun aktif).
-  // Mitra ditandai _isMitra=true supaya picker bisa render badge "Mitra".
-  // NIP placeholder MITRA-{tahun}-{id} di-generate via formatMitraNip().
-  //
-  // Mitra hanya dari "tahun aktif" (= tahun saat ini) supaya picker bersih.
-  // Mitra tahun lama tetap di mitraList & mitraByNip untuk lookup record
-  // surat lama, tapi tidak muncul di dropdown form baru.
-  //
-  // EXCLUDE MITRA UNTUK SINGLE PICKER (penandatangan): mitra tidak boleh
-  // jadi penandatangan surat tugas, jadi pool-nya cuma pegawai.
-  // acState.isSingle = true → cell adalah penandatangan; false → pegawai_multi.
-  let combinedPool;
-  if (acState.isSingle) {
-    combinedPool = pegawaiList.map(p => ({
-      ...p,
-      _disabled: isPegawaiPensiunAt(p, refDate),
-      _disabledReason: statusPegawaiLabel(p, refDate),
-    }));
-  } else {
-    const tahunAktif = new Date().getFullYear();
-    const mitraPool = mitraList
-      .filter(m => m.tahun === tahunAktif)
-      .map(m => ({
-        pegawai_nip: formatMitraNip(m.tahun, m.id),
-        nama: m.nama,
-        _isMitra: true,
-        _mitraTahun: m.tahun,
-      }));
-    const pegawaiPool = pegawaiList.map(p => ({
-      ...p,
-      _disabled: isPegawaiPensiunAt(p, refDate),
-      _disabledReason: statusPegawaiLabel(p, refDate),
-    }));
-    combinedPool = pegawaiPool.concat(mitraPool);
-  }
-
-  acState.filtered = combinedPool.filter(p => {
-    if (!q) return true;
-    const nama = (pegawaiNama(p) || '').toLowerCase();
-    const nip  = String(pegawaiNip(p) || '').toLowerCase();
-    return nama.includes(q) || nip.includes(q);
-  }).slice(0, 50);
-  acRenderList(selectedNips);
-  document.getElementById('ac-count').textContent = `${acState.filtered.length} hasil`;
-}
-
-function acRenderList(selectedNips) {
-  const list = document.getElementById('ac-list');
-  // Cek apakah pool kosong: pegawai DAN mitra dua-duanya kosong
-  if (!pegawaiList.length && !mitraList.length) {
-    list.innerHTML = `<div class="ac-empty">Data pegawai/mitra belum dimuat.</div>`;
-    return;
-  }
-  if (!acState.filtered.length) {
-    list.innerHTML = `<div class="ac-empty">Tidak ada hasil — coba ketik nama lain</div>`;
-    return;
-  }
-  list.innerHTML = acState.filtered.map((p, i) => {
-    const nip   = String(pegawaiNip(p) || '').trim();
-    const nama  = pegawaiNama(p) || '-';
-    const isSel = selectedNips.includes(nip);
-    // Badge "Mitra" di samping nama untuk membedakan dari pegawai biasa.
-    // Untuk pegawai biasa, tampilkan badge "Pegawai" supaya konsisten —
-    // user-side tidak perlu nebak mana mitra mana bukan.
-    const badge = p._isMitra
-      ? `<span class="ac-badge mitra">MITRA</span>`
-      : (p._disabled
-          ? `<span class="ac-badge pensiun">PENSIUN</span>`
-          : `<span class="ac-badge pegawai">PEGAWAI</span>`);
-    // Untuk mitra: tampilkan "Mitra Tahun YYYY" di tempat NIP (NIP placeholder
-    // tidak menarik untuk admin — tahunnya lebih informatif).
-    const subLine = p._isMitra
-      ? `Mitra Tahun ${p._mitraTahun}`
-      : (p._disabledReason || `NIP ${nip || '-'}`);
-    return `<div class="ac-item${isSel ? ' selected' : ''}${i === acState.focusIdx ? ' focused' : ''}${p._disabled ? ' disabled' : ''}"
-      data-nip="${escAttr(nip)}" data-idx="${i}"
-      onmousedown="event.preventDefault();acPick(${i})">
-      <div class="ac-check">${isSel ? '✓' : ''}</div>
-      <div style="flex:1">
-        <div class="ac-name">${esc(nama)}${badge}</div>
-        <div class="ac-nip">${esc(subLine)}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function acRenderFocus() {
-  const items = document.querySelectorAll('#ac-list .ac-item');
-  items.forEach((el, i) => el.classList.toggle('focused', i === acState.focusIdx));
-  if (acState.focusIdx >= 0 && items[acState.focusIdx]) {
-    items[acState.focusIdx].scrollIntoView({ block: 'nearest' });
+  if (window.apaPegawai) {
+    window.apaPegawai.close();
   }
 }
 
-function acPick(idx) {
-  const p = acState.filtered[idx];
-  if (!p || !acState.cellEl) return;
-  if (p._disabled) {
-    showPageAlert(p._disabledReason || 'Pegawai ini tidak bisa dipilih untuk tanggal surat tersebut.', 'error');
-    return;
-  }
-  pickPegawai(acState.cellEl, String(pegawaiNip(p)).trim(), pegawaiNama(p) || '');
-  if (acState.inputEl) {
-    acState.inputEl.value = '';
-    acState.inputEl.focus();
-  }
-  acFilter('');
-}
-
-function pickPegawai(cellEl, nip, nama) {
-  if (acState.isSingle) {
-    cellEl.querySelectorAll('.pg-tag').forEach(t => t.remove());
-    cellEl.dataset.nip = nip;
-    cellEl.dataset.nama = nama;
-    const tagHtml = buildPegTag(nip, nama, true);
-    const inp = cellEl.querySelector('.pg-input');
-    inp.insertAdjacentHTML('beforebegin', tagHtml);
-    inp.placeholder = '';
-    closeAc();
-  } else {
-    let nips = [];
-    let names = [];
-    try { nips  = JSON.parse(cellEl.dataset.nips  || '[]'); } catch(_) {}
-    try { names = JSON.parse(cellEl.dataset.names || '[]'); } catch(_) {}
-    if (nips.includes(nip)) {
-      const existing = cellEl.querySelector(`.pg-tag[data-nip="${CSS.escape(nip)}"]`);
-      if (existing) {
-        existing.style.transition = 'background .3s';
-        existing.style.background = '#fef3c7';
-        setTimeout(() => { existing.style.background = ''; }, 400);
-      }
-      return;
-    }
-    nips.push(nip);
-    names.push(nama);
-    cellEl.dataset.nips  = JSON.stringify(nips);
-    cellEl.dataset.names = JSON.stringify(names);
-    const tagHtml = buildPegTag(nip, nama, false);
-    const inp = cellEl.querySelector('.pg-input');
-    inp.insertAdjacentHTML('beforebegin', tagHtml);
-    inp.placeholder = '';
-  }
-}
-
-function onPgTagRemove(e, btn) {
-  e.stopPropagation();
-  const tag = btn.closest('.pg-tag');
-  const cellEl = btn.closest('.pg-cell');
-  if (!tag || !cellEl) return;
-  removePegTag(cellEl, tag.dataset.nip);
-}
-
-function removePegTag(cellEl, nip) {
-  const isSingle = cellEl.classList.contains('single');
-  const tag = cellEl.querySelector(`.pg-tag[data-nip="${CSS.escape(nip)}"]`);
-  if (tag) tag.remove();
-  if (isSingle) {
-    cellEl.dataset.nip = '';
-    cellEl.dataset.nama = '';
-  } else {
-    let nips = [];
-    let names = [];
-    try { nips  = JSON.parse(cellEl.dataset.nips  || '[]'); } catch(_) {}
-    try { names = JSON.parse(cellEl.dataset.names || '[]'); } catch(_) {}
-    const idx = nips.indexOf(nip);
-    if (idx >= 0) { nips.splice(idx, 1); names.splice(idx, 1); }
-    cellEl.dataset.nips  = JSON.stringify(nips);
-    cellEl.dataset.names = JSON.stringify(names);
-  }
-  const inp = cellEl.querySelector('.pg-input');
-  if (inp) {
-    const stillHasTags = cellEl.querySelectorAll('.pg-tag').length > 0;
-    inp.placeholder = stillHasTags ? '' : (isSingle ? 'Pilih nama...' : 'Ketik nama...');
-    inp.focus();
-  }
-}
 
 /* ════════════════════════════════════════════════════════════════════
    AUTOCOMPLETE POK (MAK PEMBEBANAN)
@@ -2478,6 +2217,7 @@ function navFocusCell(grid, r, c) {
 document.addEventListener('keydown', (e) => {
 
   if (window.apaCalendar && window.apaCalendar.isOpen() && e.key !== 'Escape') return;
+  if (window.apaPegawai && window.apaPegawai.isOpen() && e.key !== 'Escape') return;
 
   /* ── Escape ─────────────────────────────────────────────────────── */
   if (e.key === 'Escape') {
@@ -3263,25 +3003,17 @@ function reapplyMenungguDirty(snapshot) {
       }
     }
 
-    // Re-apply pegawai (re-render visual tag-tag)
+    // Re-apply pegawai (re-render visual cell)
     if (entry.pegawai) {
       const pg = tr.querySelector('.pg-cell');
       if (pg) {
         const nips  = entry.pegawai.nips  || [];
         const names = entry.pegawai.names || [];
-        pg.dataset.nips  = JSON.stringify(nips);
-        pg.dataset.names = JSON.stringify(names);
-
-        // Hapus tag-tag lama
-        pg.querySelectorAll('.pg-tag').forEach(t => t.remove());
-        // Insert tag baru SEBELUM input
-        const inp = pg.querySelector('.pg-input');
-        const tagsHTML = nips.map((nip, i) => buildPegTag(nip, names[i] || nip, false)).join('');
-        if (inp) {
-          inp.insertAdjacentHTML('beforebegin', tagsHTML);
-          inp.placeholder = nips.length ? '' : 'Ketik nama...';
+        if (window.apaPegawai) {
+          window.apaPegawai.renderCell(pg, nips, names);
         } else {
-          pg.insertAdjacentHTML('afterbegin', tagsHTML);
+          pg.dataset.nips  = JSON.stringify(nips);
+          pg.dataset.names = JSON.stringify(names);
         }
       }
     }
