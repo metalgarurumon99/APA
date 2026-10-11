@@ -323,12 +323,8 @@
     cursor:pointer;user-select:none;transition:background .15s;
   }
   table.list-table thead th.sortable:hover{background:#efece4}
-  table.list-table thead th.sortable .sort-arrow{
-    display:inline-block;margin-left:5px;font-size:10px;color:var(--border2);
-    transition:color .15s,transform .15s;vertical-align:baseline;
-  }
+  table.list-table thead th.sortable .sort-arrow{display:none !important}
   table.list-table thead th.sortable.sorted{background:var(--gold-light);color:var(--navy)}
-  table.list-table thead th.sortable.sorted .sort-arrow{color:var(--gold)}
 
   table.list-table tbody tr{transition:background .15s}
   table.list-table tbody tr:hover{background:#fafaf8}

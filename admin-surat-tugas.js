@@ -772,9 +772,8 @@ function setSort(col) {
 
 function sortHeader(col, label, cssClass) {
   const isActive = sortState.col === col;
-  const arrow = isActive ? (sortState.dir === 'asc' ? '▴' : '▾') : '↕';
   const activeCls = isActive ? ' sorted' : '';
-  return `<th class="${cssClass} sortable${activeCls}" onclick="setSort('${col}')" title="Klik untuk mengurutkan">${label}<span class="sort-arrow">${arrow}</span></th>`;
+  return `<th class="${cssClass} sortable${activeCls}" onclick="setSort('${col}')" title="Klik untuk mengurutkan">${label}</th>`;
 }
 
 /* ════════════════════════════════════════════════════════════════════
