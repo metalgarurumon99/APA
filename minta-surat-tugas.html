@@ -529,7 +529,20 @@ function roCell(field,val){
 }
 function submittedRowHTML(s){
   suratMap[s.id]=s;
-  const pegawai=(s.pegawai_list||[]).join(', ');
+  const names = s.pegawai_list || [];
+  const nips = s.pegawai_nip || [];
+  let pegawaiHtml = '\u2014';
+  if (names.length === 1) {
+    pegawaiHtml = esc(names[0]);
+  } else if (names.length > 1) {
+    pegawaiHtml = `<span class="apa-pg-badge-terlampir" title="Klik untuk melihat petugas terlampir"
+      data-nips='${escAttr(JSON.stringify(nips))}'
+      data-names='${escAttr(JSON.stringify(names))}'
+      onclick="event.stopPropagation(); window.apaPegawai.openPreview(this)">
+      <span class="icon">📎</span> Terlampir
+      <span class="count-pill">${names.length}</span>
+    </span>`;
+  }
   const urutNo=suratOrderMap[s.id]||'\u2014';
   return`<tr class="submitted-row" data-surat-id="${escAttr(s.id)}" data-status="${escAttr(s.status||'')}">
     <td class="col-check"></td>
@@ -537,7 +550,7 @@ function submittedRowHTML(s){
     <td class="col-perihal">${roCell('perihal',s.perihal)}</td>
     <td class="col-waktu">${roCell('waktu',fmtWaktu(s.tanggal_berangkat,s.tanggal_kembali))}</td>
     <td class="col-tujuan">${roCell('tujuan',s.tujuan)}</td>
-    <td class="col-nama">${roCell('pegawai_multi',pegawai||'Belum ada pegawai')}</td>
+    <td class="col-nama"><div class="readonly-cell ro-text${names.length?'':' muted'}" tabindex="0" data-col-field="pegawai_multi">${pegawaiHtml}</div></td>
     <td class="col-pok">${roCell('pembebanan',s.pembebanan)}</td>
     <td class="col-status"><div class="ro-text" tabindex="0" data-col-field="status">${badgeHTML(s.status)}</div></td>
     <td class="col-aksi"><div class="action-buttons"><button class="btn-sm" onclick="showDetail(${JSON.stringify(s.id)})">Detail</button>${s.status==='selesai'?'':`<button class="btn-sm danger" onclick="deleteSubmittedSurat(${JSON.stringify(s.id)})">Delete</button>`}</div></td>

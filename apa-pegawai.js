@@ -74,6 +74,7 @@
   const state = {
     cellEl: null,
     isSingle: false, // true = penandatangan (hanya Pegawai organik, tanpa Terlampir)
+    isReadOnly: false, // true = preview mode (hanya melihat daftar petugas terlampir)
     activeView: 'main', // 'main' | 'terlampir'
     terlampirTab: 'all', // 'all' | 'pegawai' | 'mitra'
     selectedNips: [],
@@ -374,6 +375,60 @@
     if (!popupEl) return;
     const listEl = popupEl.querySelector('#apa-pg-terlampir-list');
     const q = (state.terlampirQuery || '').toLowerCase().trim();
+    const btnBack = popupEl.querySelector('#apa-pg-btn-back');
+    const saveBtn = popupEl.querySelector('#apa-pg-btn-save-terlampir');
+
+    if (btnBack) btnBack.style.display = state.isReadOnly ? 'none' : 'flex';
+    if (saveBtn) {
+      saveBtn.innerHTML = state.isReadOnly ? '✕ Tutup' : '<span>✓</span> Simpan Terlampir';
+    }
+
+    // MODE READ-ONLY (PREVIEW): Tampilkan hanya petugas yang dilampirkan
+    if (state.isReadOnly) {
+      let pool = state.selectedNips.map((nip, idx) => {
+        const name = state.selectedNames[idx] || nip;
+        const pFound = masterPegawai.find(p => p.nip === nip);
+        const mFound = masterMitra.find(m => m.nip === nip);
+        const isM = isMitraNip(nip) || Boolean(mFound);
+        return {
+          nip,
+          nama: name,
+          sub: isM ? (mFound && mFound.instansi ? mFound.instansi : nip) : (pFound && pFound.jabatan ? pFound.jabatan : (nip ? 'NIP ' + nip : 'Pegawai')),
+          badge: isM ? 'Mitra' : 'Pegawai',
+          badgeCls: isM ? 'mitra' : 'pegawai',
+          isMitra: isM
+        };
+      });
+
+      if (state.terlampirTab === 'pegawai') pool = pool.filter(x => !x.isMitra);
+      if (state.terlampirTab === 'mitra') pool = pool.filter(x => x.isMitra);
+
+      state.terlampirFiltered = pool.filter(item => {
+        if (!q) return true;
+        return item.nama.toLowerCase().includes(q) || item.nip.toLowerCase().includes(q);
+      });
+
+      if (!state.terlampirFiltered.length) {
+        listEl.innerHTML = '<div class="apa-pg-empty">Tidak ada petugas ditemukan.</div>';
+        return;
+      }
+
+      listEl.innerHTML = state.terlampirFiltered.map((item, idx) => `
+        <div class="apa-pg-check-item readonly checked" style="cursor: default;" data-nip="${item.nip}">
+          <div class="apa-pg-checkbox" style="background:#0284c7;color:#fff;border-color:#0284c7;font-size:10px;font-weight:700;">${idx + 1}</div>
+          <div class="apa-pg-item-content">
+            <div class="apa-pg-item-nama" style="font-weight:600;">${item.nama}</div>
+            <div class="apa-pg-item-sub">
+              <span>${item.sub}</span>
+              <span class="apa-pg-badge ${item.badgeCls}">${item.badge}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      updateTerlampirCountUI();
+      return;
+    }
 
     let pool = [];
     const curYear = new Date().getFullYear();
@@ -495,14 +550,20 @@
   }
 
   // ── Buka Pop-up ──────────────────────────────────────────────
-  function openPopup(cellEl, isSingle, onSelect) {
+  function openPopup(cellEl, isSingle, onSelect, isReadOnly) {
     if (!cellEl) return;
     ensureCSS();
     ensurePopupHTML();
 
+    if (typeof onSelect === 'boolean') {
+      isReadOnly = onSelect;
+      onSelect = null;
+    }
+
     state.openedAt = Date.now();
     state.cellEl = cellEl;
     state.isSingle = Boolean(isSingle);
+    state.isReadOnly = Boolean(isReadOnly);
     state.onSelectCallback = onSelect || null;
     state.query = '';
     state.terlampirQuery = '';
@@ -529,7 +590,7 @@
 
     // Tombol Kosongkan Pilihan
     const clearBtn = popupEl.querySelector('#apa-pg-clear-btn');
-    if (clearBtn) clearBtn.style.display = existingNips.length > 0 ? 'flex' : 'none';
+    if (clearBtn) clearBtn.style.display = (!state.isReadOnly && existingNips.length > 0) ? 'flex' : 'none';
 
     // Konfigurasi mode Single (penandatangan) vs Multi
     const terlampirBtn = popupEl.querySelector('#apa-pg-terlampir-btn');
@@ -539,14 +600,19 @@
 
     popupEl.classList.add('open');
 
-    // Rule 2 & 3: Jika cell sudah berstatus Terlampir (> 1 orang), buka langsung ke view Terlampir
-    if (!state.isSingle && state.selectedNips.length > 1) {
+    // Rule 2 & 3: Jika mode read-only ATAU cell sudah berstatus Terlampir (> 1 orang), buka langsung ke view Terlampir
+    if (state.isReadOnly || (!state.isSingle && state.selectedNips.length > 1)) {
       switchView('terlampir');
     } else {
       switchView('main');
     }
 
     positionPopup(popupEl, cellEl);
+  }
+
+  function openPreview(targetEl) {
+    if (!targetEl) return;
+    openPopup(targetEl, false, null, true);
   }
 
   function closePopup() {
@@ -655,6 +721,7 @@
     const terlampirList = popupEl.querySelector('#apa-pg-terlampir-list');
     if (terlampirList) {
       terlampirList.addEventListener('click', function (e) {
+        if (state.isReadOnly) return; // Mode preview read-only tidak merubah centang
         const checkItem = e.target.closest('.apa-pg-check-item');
         if (!checkItem) return;
         const nip = checkItem.dataset.nip;
@@ -676,11 +743,15 @@
       });
     }
 
-    // Tombol Simpan Terlampir
+    // Tombol Simpan Terlampir / Tutup
     const saveTerlampirBtn = popupEl.querySelector('#apa-pg-btn-save-terlampir');
     if (saveTerlampirBtn) {
       saveTerlampirBtn.addEventListener('click', function (e) {
         e.stopPropagation();
+        if (state.isReadOnly) {
+          closePopup();
+          return;
+        }
         commitSelection();
       });
     }
@@ -749,6 +820,7 @@
 
   return {
     open: openPopup,
+    openPreview: openPreview,
     close: closePopup,
     isOpen: function () {
       return !!(popupEl && popupEl.classList.contains('open'));

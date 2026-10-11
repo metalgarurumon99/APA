@@ -1399,7 +1399,10 @@ function cellPegawaiMultiHTML(id, nips, names, editable) {
     if (names.length > 1) {
       return `<td class="col-nama">
         <div class="ro-text" tabindex="0" data-col-field="pegawai_multi">
-          <span class="apa-pg-badge-terlampir" title="${esc(names.join(', '))}">
+          <span class="apa-pg-badge-terlampir" title="Klik untuk melihat petugas terlampir"
+            data-nips='${escAttr(JSON.stringify(nips))}'
+            data-names='${escAttr(JSON.stringify(names))}'
+            onclick="event.stopPropagation(); window.apaPegawai.openPreview(this)">
             <span class="icon">📎</span> Terlampir
             <span class="count-pill">${names.length}</span>
           </span>
