@@ -531,7 +531,7 @@ async function addNewSurat() {
 
   // Disable tombol selama proses agar tidak double-click
   const btn = document.querySelector('button[onclick="addNewSurat()"]');
-  if (btn) { btn.disabled = true; btn.textContent = '… Menambahkan'; }
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
 
   // Payload minimal — sesuai pattern dari surat-tugas.html (user side).
   // Field-field detail (nomor_surat, penandatangan_*, tipe, dll.) di-NULL
@@ -593,9 +593,23 @@ async function addNewSurat() {
   } catch(e) {
     showPageAlert(`Gagal menambahkan: ${e.message}`, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '+ Tambah Surat'; }
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
   }
 }
+
+function setFilterStatus(status) {
+  const sel = document.getElementById('filter-status');
+  if (sel) sel.value = status;
+  document.querySelectorAll('.stat-card').forEach(card => {
+    if ((card.dataset.status || '') === (status || '')) {
+      card.classList.add('active');
+    } else {
+      card.classList.remove('active');
+    }
+  });
+  filterTable({ resetPage: true });
+}
+window.setFilterStatus = setFilterStatus;
 
 function updateStats() {
   document.getElementById('st-total').textContent    = allSurat.length;
@@ -4510,14 +4524,17 @@ function updateBulkDownloadCounter() {
   const checked  = document.querySelectorAll('.bulk-dl-check:checked');
   const btn      = document.getElementById('btn-bulk-download');
   const master   = document.getElementById('bulk-dl-master');
+  const badge    = document.getElementById('bulk-dl-badge');
 
   if (btn) {
     if (checked.length === 0) {
-      btn.textContent = '📥 Download';
       btn.disabled    = true;
+      btn.title       = 'Pilih dulu surat selesai yang ingin di-download (.docx)';
+      if (badge) { badge.style.display = 'none'; badge.textContent = '0'; }
     } else {
-      btn.textContent = `📥 Download (${checked.length})`;
       btn.disabled    = false;
+      btn.title       = `Download ${checked.length} dokumen terpilih (.docx)`;
+      if (badge) { badge.style.display = 'inline-flex'; badge.textContent = checked.length; }
     }
   }
 
@@ -4575,14 +4592,17 @@ function updateBulkApproveCounter() {
   const checked = document.querySelectorAll('.bulk-approve-check:checked');
   const btn     = document.getElementById('btn-bulk-approve');
   const master  = document.getElementById('bulk-ap-master');
+  const badge   = document.getElementById('bulk-ap-badge');
 
   if (btn) {
     if (checked.length === 0) {
-      btn.textContent = '✅ Setujui';
       btn.disabled    = true;
+      btn.title       = 'Pilih dulu surat menunggu yang ingin disetujui';
+      if (badge) { badge.style.display = 'none'; badge.textContent = '0'; }
     } else {
-      btn.textContent = `✅ Setujui (${checked.length})`;
       btn.disabled    = false;
+      btn.title       = `Setujui ${checked.length} surat terpilih`;
+      if (badge) { badge.style.display = 'inline-flex'; badge.textContent = checked.length; }
     }
   }
 
@@ -4784,7 +4804,7 @@ async function bulkDownloadSelected() {
   }
 
   const btn = document.getElementById('btn-bulk-download');
-  const originalLabel = btn ? btn.textContent : '';
+  const badge = document.getElementById('bulk-dl-badge');
   if (btn) { btn.disabled = true; }
 
   let success = 0;
@@ -4814,8 +4834,9 @@ async function bulkDownloadSelected() {
     const id    = ids[i];
     const surat = suratMap[id];
 
-    // Update progress di tombol
-    if (btn) btn.textContent = `📥 ${i + 1}/${ids.length}…`;
+    // Update progress di badge & title tombol
+    if (badge) { badge.style.display = 'inline-flex'; badge.textContent = `${i + 1}/${ids.length}`; }
+    if (btn) { btn.title = `Mendownload ${i + 1} dari ${ids.length}…`; }
 
     if (!surat || surat.status !== 'selesai') {
       failures.push(`#${id}: status bukan 'selesai'`);
@@ -4842,7 +4863,6 @@ async function bulkDownloadSelected() {
   }
 
   // Restore tombol & uncheck semua checkbox setelah selesai
-  if (btn) { btn.textContent = originalLabel; btn.disabled = false; }
   document.querySelectorAll('.bulk-dl-check:checked').forEach(c => { c.checked = false; });
   updateBulkDownloadCounter();
 

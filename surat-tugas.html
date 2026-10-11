@@ -50,28 +50,84 @@
 
   .main{flex:1;overflow-y:auto;padding:32px 36px}
   .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:24px;flex-wrap:wrap}
-  .page-eyebrow{font-size:11px;font-weight:600;color:var(--gold);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:6px}
-  .page-eyebrow::before{content:'';width:16px;height:2px;background:var(--gold)}
+  .page-eyebrow{font-size:11px;font-weight:600;color:var(--gold);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:6px}
   .page-title{font-family:'Fraunces',serif;font-size:clamp(22px,2.5vw,30px);font-weight:300;color:var(--navy);line-height:1.2}
   .page-title em{font-style:italic;color:var(--gold)}
   .page-desc{font-size:13px;color:var(--muted);margin-top:5px;line-height:1.7}
 
-  /* STATS */
-  .stats-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-  .stat-pill{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:11px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:120px}
-  .stat-pill-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
-  .stat-pill-num{font-size:18px;font-weight:700;color:var(--navy);line-height:1}
-  .stat-pill-label{font-size:11px;color:var(--muted);margin-top:1px}
+  /* ════════════════════════════════════════════════════
+     DASHBOARD BAR: Compact Modern Cards + Search on Right
+  ════════════════════════════════════════════════════ */
+  .dashboard-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    margin-bottom:20px;flex-wrap:wrap;
+  }
+  .stats-cards-group{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  }
+  .stat-card{
+    background:#fff;border:1.5px solid #e8ecf4;border-radius:16px;
+    padding:10px 18px;display:inline-flex;align-items:center;gap:12px;
+    cursor:pointer;user-select:none;
+    transition:all .2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow:0 1px 3px rgba(0,0,0,.02);
+    min-width:175px;
+  }
+  .stat-card:hover{
+    border-color:#cbd5e1;transform:translateY(-1px);
+    box-shadow:0 6px 16px rgba(0,0,0,.05);
+  }
+  .stat-card.active{
+    border-color:#0284c7;background:#f0f9ff;
+    box-shadow:0 4px 14px rgba(2,132,199,.14);
+  }
+  .stat-card-icon{
+    width:38px;height:38px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .stat-card-icon img{
+    width:20px;height:20px;object-fit:contain;display:block;
+  }
+  .stat-icon-blue{background:#eff6ff}
+  .stat-icon-amber{background:#fffbeb}
+  .stat-icon-green{background:#ecfdf5}
 
-  /* FILTER BAR */
-  .filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-  .search-wrap{position:relative;flex:1;min-width:200px}
-  .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none}
-  .search-input{width:100%;padding:8px 12px 8px 32px;background:var(--white);border:1.5px solid var(--border2);border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s}
-  .search-input:focus{border-color:var(--navy)}
-  .search-input::placeholder{color:#b8b3ac}
-  .filter-select{padding:8px 12px;background:var(--white);border:1.5px solid var(--border2);border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--text);outline:none;cursor:pointer;transition:border-color .2s}
-  .filter-select:focus{border-color:var(--navy)}
+  .stat-card-body{display:flex;flex-direction:column}
+  .stat-card-title{
+    font-size:13px;font-weight:700;color:var(--navy);line-height:1.2;
+  }
+  .stat-card-sub{
+    font-size:11.5px;font-weight:600;color:var(--muted);line-height:1.2;margin-top:2px;
+  }
+  .stat-card-arrow{
+    font-size:18px;font-weight:700;color:#94a3b8;line-height:1;margin-left:auto;
+    padding-left:6px;transition:transform .15s,color .15s;
+  }
+  .stat-card:hover .stat-card-arrow{transform:translateX(2px);color:var(--navy)}
+  .stat-card.active .stat-card-arrow{color:#0284c7;transform:translateX(1px)}
+
+  /* Compact Search Wrap (Di sebelah kanan sejajar cards) */
+  .search-wrap-compact{
+    display:flex;align-items:center;background:#fff;
+    border:1.5px solid #e2e8f0;border-radius:14px;
+    padding:0 14px;height:52px;min-width:240px;max-width:300px;
+    margin-left:auto;box-shadow:0 1px 3px rgba(0,0,0,.02);
+    transition:border-color .2s,box-shadow .2s;
+  }
+  .search-wrap-compact:focus-within{
+    border-color:#0284c7;box-shadow:0 0 0 3px rgba(2,132,199,.12);
+  }
+  .search-icon-compact{font-size:13px;color:#94a3b8;pointer-events:none}
+  .search-input-compact{
+    border:none;outline:none;background:transparent;
+    font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;color:var(--text);
+    width:100%;padding:6px 0 6px 8px;
+  }
+  .search-input-compact::placeholder{color:#94a3b8;font-size:12px}
+  @media(max-width:960px){
+    .search-wrap-compact{margin-left:0;width:100%;max-width:100%}
+  }
 
   /* BUTTONS */
   .btn-primary{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:var(--navy);color:white;border:none;border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s,transform .15s;white-space:nowrap;position:relative}
@@ -121,10 +177,6 @@
   .btn-sm:hover{background:var(--gold-light);border-color:var(--gold)}
   @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 
-  /* HINT BAR */
-  .hint-bar{background:#eff6ff;border:1px solid #bfdbfe;border-radius:7px;padding:10px 14px;font-size:12px;color:#1e40af;line-height:1.55;margin-bottom:14px;display:flex;gap:8px;align-items:flex-start}
-  .hint-bar kbd{background:white;border:1px solid #bfdbfe;border-bottom-width:2px;border-radius:3px;padding:1px 5px;font-family:ui-monospace,monospace;font-size:10.5px;color:var(--navy);margin:0 1px}
-
   /* ════════════════════════════════════════════════════
      EXCEL-LIKE TABLE
   ════════════════════════════════════════════════════ */
@@ -132,23 +184,37 @@
   .table-head{background:var(--navy);padding:11px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:80;border-radius:10px 10px 0 0}
   .table-head-title{font-size:12px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:.8px;text-transform:uppercase}
   .table-head-count{font-size:11px;color:rgba(255,255,255,.35)}
-  /* #4: container tombol di sebelah kanan table-head */
-  .table-head-actions{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
-  /* Tombol kompak khusus untuk table-head — dark background context */
+  /* Container tombol icon di sebelah kanan table-head */
+  .table-head-actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  /* Tombol Icon-Only modern khusus table-head */
   .btn-table-head{
-    padding:6px 12px;border-radius:6px;
+    width:34px;height:34px;padding:0;border-radius:8px;
     background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
-    color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;
-    font-weight:600;cursor:pointer;transition:background .15s,border-color .15s;
-    white-space:nowrap;
+    color:#fff;cursor:pointer;transition:all .15s;
+    display:inline-flex;align-items:center;justify-content:center;
+    position:relative;flex-shrink:0;
   }
-  .btn-table-head:hover:not(:disabled){background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3)}
-  .btn-table-head:disabled{opacity:.4;cursor:not-allowed}
+  .btn-table-head:hover:not(:disabled){background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.35);transform:translateY(-1px)}
+  .btn-table-head:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .btn-table-head img{
+    width:18px;height:18px;object-fit:contain;display:block;
+  }
   .btn-table-head.btn-table-head-gold{
-    background:var(--gold);color:var(--navy);border-color:var(--gold);
+    background:var(--gold);border-color:var(--gold);
   }
   .btn-table-head.btn-table-head-gold:hover:not(:disabled){background:#b89438;border-color:#b89438}
-  .btn-table-head.btn-table-head-gold:disabled{opacity:.45}
+  .btn-table-head.btn-table-head-success{
+    background:#1a7a4a;border-color:#1a7a4a;
+  }
+  .btn-table-head.btn-table-head-success:hover:not(:disabled){background:#15643d;border-color:#15643d}
+  .btn-table-head .btn-badge{
+    position:absolute;top:-5px;right:-5px;
+    background:#ef4444;color:#fff;
+    font-size:9.5px;font-weight:700;
+    min-width:16px;height:16px;border-radius:8px;
+    display:inline-flex;align-items:center;justify-content:center;
+    padding:0 3px;border:1.5px solid #0d2340;line-height:1;
+  }
 
   .import-preview-panel{background:#f8fafc;border:1px solid #dbe4f0;border-radius:10px;padding:12px 14px;font-size:12px;color:#34445c;line-height:1.55;margin-bottom:14px}
   .import-preview-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
@@ -658,59 +724,90 @@
       <div>
         <div class="page-eyebrow">Administrasi</div>
         <h1 class="page-title">Surat <em>Tugas</em></h1>
-        <p class="page-desc">Kelola dan setujui surat tugas. Gunakan <kbd style="font-family:ui-monospace,monospace;font-size:11px;background:#f0efeb;border:1px solid var(--border);padding:1px 5px;border-radius:3px">Tab</kbd> dan tombol panah untuk pindah sel.</p>
+        <p class="page-desc">Kelola dan setujui surat tugas.</p>
       </div>
-      <!-- #4: tombol Tambah/Download/Reload dipindah ke table-head supaya
-           dekat dengan tabel. Lihat di .table-head di bawah. -->
     </div>
 
     <div id="page-alert" class="alert"><span id="page-alert-icon"></span><span id="page-alert-text"></span></div>
 
-    <div class="stats-row fade-in" style="animation-delay:.08s">
-      <div class="stat-pill"><div class="stat-pill-icon" style="background:#e8f0fe">📋</div><div><div class="stat-pill-num" id="st-total">—</div><div class="stat-pill-label">Total</div></div></div>
-      <div class="stat-pill"><div class="stat-pill-icon" style="background:#fef3c7">⏳</div><div><div class="stat-pill-num" id="st-menunggu">—</div><div class="stat-pill-label">Menunggu</div></div></div>
-      <div class="stat-pill"><div class="stat-pill-icon" style="background:#ecfdf5">✅</div><div><div class="stat-pill-num" id="st-selesai">—</div><div class="stat-pill-label">Selesai</div></div></div>
-    </div>
+    <!-- DASHBOARD BAR: Card-Card Kecil Modern (Sekaligus Filter) + Search di Kanan -->
+    <div class="dashboard-bar fade-in" style="animation-delay:.08s">
+      <div class="stats-cards-group">
+        <!-- Card 1: Total -->
+        <div class="stat-card active" data-status="" onclick="setFilterStatus('')" title="Tampilkan semua surat tugas">
+          <div class="stat-card-icon stat-icon-blue">
+            <img src="Assets/paper.png" alt="Total">
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-title">Total Surat</div>
+            <div class="stat-card-sub"><span id="st-total">—</span> Surat</div>
+          </div>
+          <span class="stat-card-arrow">›</span>
+        </div>
 
-    <div class="filter-bar fade-in" style="animation-delay:.1s">
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input class="search-input" type="text" id="search-input" placeholder="Cari perihal atau tujuan..." oninput="filterTable({ resetPage: true })">
+        <!-- Card 2: Menunggu -->
+        <div class="stat-card" data-status="menunggu" onclick="setFilterStatus('menunggu')" title="Saring: Menunggu Persetujuan">
+          <div class="stat-card-icon stat-icon-amber">
+            <img src="Assets/hour-glass.png" alt="Menunggu">
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-title">Menunggu</div>
+            <div class="stat-card-sub"><span id="st-menunggu">—</span> Surat</div>
+          </div>
+          <span class="stat-card-arrow">›</span>
+        </div>
+
+        <!-- Card 3: Selesai -->
+        <div class="stat-card" data-status="selesai" onclick="setFilterStatus('selesai')" title="Saring: Selesai / Disetujui">
+          <div class="stat-card-icon stat-icon-green">
+            <img src="Assets/checked.png" alt="Selesai">
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-title">Selesai</div>
+            <div class="stat-card-sub"><span id="st-selesai">—</span> Surat</div>
+          </div>
+          <span class="stat-card-arrow">›</span>
+        </div>
       </div>
-      <select class="filter-select" id="filter-status" onchange="filterTable({ resetPage: true })">
+
+      <!-- Hidden select for backward compatibility with filterTable() -->
+      <select id="filter-status" style="display:none" onchange="filterTable({ resetPage: true })">
         <option value="">Semua Status</option>
         <option value="menunggu">Menunggu Persetujuan</option>
         <option value="selesai">Selesai</option>
       </select>
-    </div>
 
-    <div class="hint-bar fade-in" style="animation-delay:.11s">
-      <span>⌨️</span>
-      <span>
-        <strong>Mode Excel:</strong>
-        <kbd>Tab</kbd> / <kbd>Enter</kbd> = pindah sel ·
-        <kbd>Shift</kbd>+<kbd>Tab</kbd> = ke kiri ·
-        Tanggal: ketik bebas (<em>2/1/26</em>, <em>02-01-2026</em>, <em>2 jan 2026</em>) atau klik untuk popup ·
-        Pegawai: ketik nama lalu Enter / klik dari saran ·
-        Paste dari Excel didukung (Tab-separated).
-      </span>
+      <!-- Field Search kecil di sebelah kanan sejajar dengan card-card dashboard -->
+      <div class="search-wrap-compact">
+        <span class="search-icon-compact">🔍</span>
+        <input class="search-input-compact" type="text" id="search-input" placeholder="Cari perihal atau tujuan..." oninput="filterTable({ resetPage: true })">
+      </div>
     </div>
 
     <div class="table-wrap fade-in" style="animation-delay:.12s">
       <div class="table-head">
         <span class="table-head-title">Daftar Pengajuan Surat Tugas</span>
         <span class="table-head-count" id="table-count">Memuat...</span>
-        <!-- #4: tombol-tombol aksi pindah ke sini supaya dekat tabel.
-             Pakai class .table-head-actions yang push ke kanan.
-             #5: tombol Export & Import Excel ditambah di sebelah Tambah. -->
+        <!-- Tombol Aksi Icon-Only dari folder Assets -->
         <div class="table-head-actions">
-          <button class="btn-table-head" onclick="addNewSurat()" title="Tambah surat tugas baru sebagai admin">+ Tambah</button>
-          <button class="btn-table-head" onclick="exportSuratToExcel()" title="Export semua surat ke file Excel (.xlsx)">⬇ Export</button>
-          <button class="btn-table-head" onclick="document.getElementById('inp-import-excel').click()" title="Import surat dari file Excel dan cek dulu sebelum diterapkan">⬆ Import</button>
+          <button class="btn-table-head" onclick="addNewSurat()" title="Tambah Surat Tugas Baru">
+            <img src="Assets/add.png" alt="Tambah">
+          </button>
+          <button class="btn-table-head" onclick="exportSuratToExcel()" title="Export Excel (.xlsx)">
+            <img src="Assets/export.png" alt="Export">
+          </button>
+          <button class="btn-table-head" onclick="document.getElementById('inp-import-excel').click()" title="Import Excel (.xlsx)">
+            <img src="Assets/import.png" alt="Import">
+          </button>
           <input type="file" id="inp-import-excel" accept=".xlsx,.xls" style="display:none" onchange="importSuratFromExcel(this)">
-          <button class="btn-table-head btn-table-head-gold" id="btn-bulk-download" onclick="bulkDownloadSelected()" disabled title="Pilih dulu surat yang ingin di-download">📥 Download</button>
-          <button class="btn-table-head" style="background:rgba(26,122,74,.9);border-color:rgba(26,122,74,.7);color:#fff" id="btn-bulk-approve" onclick="openBulkApprove()" disabled title="Pilih dulu surat menunggu yang ingin disetujui">✅ Setujui</button>
-          <button class="btn-table-head" onclick="loadSurat()" title="Muat ulang data">↺ Muat Ulang</button>
+          <button class="btn-table-head btn-table-head-gold" id="btn-bulk-download" onclick="bulkDownloadSelected()" disabled title="Download Dokumen Terpilih (.docx)">
+            <img src="Assets/paper.png" alt="Download">
+            <span class="btn-badge" id="bulk-dl-badge" style="display:none">0</span>
+          </button>
+          <button class="btn-table-head btn-table-head-success" id="btn-bulk-approve" onclick="openBulkApprove()" disabled title="Setujui Surat Terpilih">
+            <img src="Assets/checked.png" alt="Setujui">
+            <span class="btn-badge" id="bulk-ap-badge" style="display:none">0</span>
+          </button>
         </div>
       </div>
       <div class="table-scroll-top" id="table-scroll-top" aria-hidden="true">
