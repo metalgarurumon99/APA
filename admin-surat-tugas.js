@@ -1367,6 +1367,7 @@ function cellDateHTML(id, field, isoVal, editable, placeholder) {
       placeholder="${escAttr(placeholder)}"
       onblur="onDateBlur(this)"
       onfocus="onDateFocus(this)"
+      onclick="openCal(this, false)"
       ondblclick="openCal(this, false)"
       onkeydown="if(event.altKey&&event.key==='ArrowDown'){event.preventDefault();openCal(this,false);}">
   </td>`;
@@ -1400,6 +1401,7 @@ function cellDateRangeHTML(id, field, isoMulai, isoSelesai, editable, waktuTextC
       placeholder="tgl atau rentang"
       onblur="onRangeBlur(this)"
       onfocus="onDateFocus(this)"
+      onclick="openCal(this, true)"
       ondblclick="openCal(this, true)"
       onkeydown="if(event.altKey&&event.key==='ArrowDown'){event.preventDefault();openCal(this,true);}">
     <button type="button" class="waktu-toggle${hasCustom ? ' active' : ''}"
@@ -1565,7 +1567,9 @@ function onRangeBlur(el) {
    CALENDAR (Dikelola terpusat secara global oleh apa-calendar.js)
 ═══════════════════════════════════════════════════════════════════════ */
 function openCal(el, isRange) {
-  closeAllPopups();
+  closeAc();
+  closeMakAc();
+  closeTpAc();
   if (window.apaCalendar) {
     window.apaCalendar.open(el, isRange);
   }

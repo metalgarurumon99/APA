@@ -136,6 +136,20 @@
   cursor: default;
 }
 
+/* Tanggal yang dinonaktifkan (misal: melebihi waktu pelaksanaan) */
+.cal-day.cal-disabled {
+  opacity: 0.25 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  text-decoration: line-through;
+}
+
+.cal-day.cal-disabled::after {
+  display: none !important;
+}
+
 /* Dot tanda hari ini (today) */
 .cal-day.cal-today::after {
   content: '';

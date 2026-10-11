@@ -843,7 +843,7 @@ function onRangeBlur(el){
 
 /* ══ CALENDAR POPUP (Global apaCalendar bridge) ══ */
 function openCal(el, isRange) {
-  closeAllPopups();
+  closeAc();
   if (window.apaCalendar) { window.apaCalendar.open(el, isRange); }
 }
 function closeCal() {

@@ -55,7 +55,6 @@
 
   /**
    * Format satu rentang tanggal (mulai & selesai).
-   * withYear: boolean (apakah mencantumkan tahun di akhir rentang).
    */
   function formatSingleRange(mulai, selesai, withYear = true) {
     if (!mulai) return '';
@@ -85,11 +84,6 @@
 
   /**
    * Format rentang (single maupun multi-range 2 periode).
-   * Contoh:
-   *  - "1 Januari 2026"
-   *  - "22 s.d. 24 Januari 2026"
-   *  - "1 Januari & 2 s.d. 4 Februari 2026"
-   *  - "22 s.d. 24 Januari & 29 Januari s.d. 2 Februari 2026"
    */
   function formatWaktuCombined(r1, r2, isMulti) {
     const hasR1 = r1 && r1.start;
@@ -107,7 +101,6 @@
     const a2 = parseISODate(r2.end || r2.start);
     const sameYear = a1 && a2 && a1.getFullYear() === a2.getFullYear();
 
-    // Jika tahunnya sama, teks range 1 tidak perlu mencantumkan tahun (tahun ditulis di range 2)
     const txt1 = formatSingleRange(r1.start, r1.end || r1.start, !sameYear);
     const txt2 = formatSingleRange(r2.start, r2.end || r2.start, true);
 
@@ -127,6 +120,9 @@
     month: new Date().getMonth(),
     yearMode: false,
     focusedDay: '',
+    minDate: '',
+    maxDate: '',
+    openedAt: 0,
     onSelectCallback: null,
   };
 
@@ -203,7 +199,6 @@
     // Vertikal
     let top = rect.bottom + 6;
     if (top + popH > window.innerHeight - pad) {
-      // Flip ke atas jika tidak cukup tempat di bawah
       const topAbove = rect.top - popH - 6;
       if (topAbove >= pad) top = topAbove;
       else top = Math.max(pad, window.innerHeight - popH - pad);
@@ -211,6 +206,19 @@
 
     popup.style.left = `${Math.round(left)}px`;
     popup.style.top = `${Math.round(top)}px`;
+  }
+
+  // ── Urutkan Multi-Range Secara Kronologis (Poin 4) ────────────
+  function sortMultiRangesIfNeeded() {
+    if (!state.isMulti) return;
+    if (!state.r1.start || !state.r2.start) return;
+
+    // Jika tanggal range kedua lebih kecil dari range pertama, tukar agar R2 menjadi R1
+    if (state.r2.start < state.r1.start) {
+      const tmp = { ...state.r1 };
+      state.r1 = { ...state.r2 };
+      state.r2 = tmp;
+    }
   }
 
   // ── Render Kalender ──────────────────────────────────────────
@@ -233,8 +241,7 @@
       return;
     }
 
-    // Hitung slot hari
-    // Week starts on SEN (Senin = 0, ..., Minggu = 6)
+    // Hitung slot hari (Senin = 0, ..., Minggu = 6)
     const firstDay = new Date(state.year, state.month, 1).getDay();
     const emptyOffset = (firstDay + 6) % 7;
     const daysInMonth = new Date(state.year, state.month + 1, 0).getDate();
@@ -254,11 +261,17 @@
       const ds = `${state.year}-${pad2(state.month + 1)}-${pad2(d)}`;
       let cls = 'cal-day';
 
+      // Validasi disable tanggal (Poin 3)
+      const isDisabled = (state.maxDate && ds > state.maxDate) || (state.minDate && ds < state.minDate);
+      if (isDisabled) {
+        cls += ' cal-disabled';
+      }
+
       if (ds === today) cls += ' cal-today';
       if (ds === state.focusedDay) cls += ' cal-focused';
 
       // Status Range 1
-      if (hasR1) {
+      if (hasR1 && !isDisabled) {
         const s1 = r1.start;
         const e1 = r1.end || r1.start;
         if (s1 === e1 && ds === s1) {
@@ -271,7 +284,7 @@
       }
 
       // Status Range 2 (Multi)
-      if (hasR2) {
+      if (hasR2 && !isDisabled) {
         const s2 = r2.start;
         const e2 = r2.end || r2.start;
         if (s2 === e2 && ds === s2) {
@@ -289,7 +302,7 @@
     const daysEl = popupEl.querySelector('#cal-days');
     if (daysEl) daysEl.innerHTML = html;
 
-    // Update Footer Text & Multi button state
+    // Update Footer UI
     updateFooterUI();
   }
 
@@ -313,15 +326,16 @@
 
     if (multiBtn) {
       multiBtn.classList.toggle('active', state.isMulti);
-      // Sembunyikan tombol Multi jika input hanya mode single-date murni (isRange === false)
+      // Poin 2: Sembunyikan tombol Multi jika mode tanggal tunggal murni
       multiBtn.style.display = state.isRange ? 'inline-block' : 'none';
     }
 
     if (!footerTextEl) return;
+    footerTextEl.style.color = '';
 
     if (!state.isRange) {
-      // Single date
-      footerTextEl.textContent = state.r1.start ? fmtTglIndo(state.r1.start, true) : 'Pilih tanggal';
+      // Poin 2: Single date murni (misal tanggal surat)
+      footerTextEl.textContent = state.r1.start ? fmtTglIndo(state.r1.start, true) : 'Pilih tanggal surat';
       return;
     }
 
@@ -349,19 +363,37 @@
       if (state.r2.start) {
         footerTextEl.textContent = txt;
       } else {
-        footerTextEl.textContent = `Range 1 terkunci. Pilih Range 2...`;
+        footerTextEl.textContent = 'Range 1 terkunci. Pilih Range 2...';
       }
     }
   }
 
-  // ── Penanganan Klik Tanggal (Auto-Close Rule) ─────────────────
+  // ── Penanganan Klik Tanggal ──────────────────────────────────
   function handleDateClick(ds) {
+    // Poin 3: Validasi batas tanggal (Tanggal surat <= Waktu pelaksanaan)
+    if (state.maxDate && ds > state.maxDate) {
+      const footerTextEl = popupEl.querySelector('#cal-footer-text');
+      if (footerTextEl) {
+        footerTextEl.textContent = 'Tanggal surat tidak boleh melebihi waktu pelaksanaan!';
+        footerTextEl.style.color = '#e11d48';
+      }
+      return;
+    }
+    if (state.minDate && ds < state.minDate) {
+      const footerTextEl = popupEl.querySelector('#cal-footer-text');
+      if (footerTextEl) {
+        footerTextEl.textContent = 'Waktu pelaksanaan tidak boleh sebelum tanggal surat!';
+        footerTextEl.style.color = '#e11d48';
+      }
+      return;
+    }
+
     state.focusedDay = ds;
 
-    // ── KASUS A: Single Date (Bukan rentang) ──
+    // ── KASUS A: Single Date (Poin 2 - Bukan rentang / Tanggal Surat) ──
     if (!state.isRange) {
       if (state.r1.start === ds && state.lastClickedDate === ds) {
-        // Klik 2x pada tanggal yang sama -> Kunci & Tutup
+        // Klik 2x pada tanggal yang sama -> Kunci & Tutup!
         state.r1.start = ds;
         state.r1.end = ds;
         state.r1.locked = true;
@@ -376,53 +408,50 @@
       return;
     }
 
-    // ── KASUS B: Single Range Mode (Default) ──
+    // ── KASUS B: Single Range Mode ──
     if (!state.isMulti) {
       if (!state.r1.start || state.r1.locked) {
-        // Klik pertama tanggal awal
+        // Klik pertama: tanggal awal
         state.r1 = { start: ds, end: '', locked: false };
         state.lastClickedDate = ds;
         render();
         return;
       }
 
-      // Sudah ada start, user memilih tanggal lagi
+      // ds sama dengan start
       if (ds === state.r1.start) {
         if (state.lastClickedDate === ds) {
-          // Klik tanggal yang sama 2x berturut-turut!
-          // Rentang 1 hari (contoh 2 Feb s.d. 2 Feb) -> Kunci & Tutup!
+          // Klik 2x pada tanggal yang sama -> Rentang 1 hari terkunci & Tutup!
           state.r1.end = ds;
           state.r1.locked = true;
           saveAndClose();
           return;
         }
-        // Klik kembali ke tanggal start
         state.r1.end = ds;
         state.lastClickedDate = ds;
         render();
         return;
       }
 
-      // ds berbeda dengan start
+      // Poin 5: Tanggal kedua < tanggal pertama -> Perlakukan seperti tombol RESET
+      if (ds < state.r1.start) {
+        state.r1 = { start: ds, end: '', locked: false };
+        state.lastClickedDate = ds;
+        render();
+        return;
+      }
+
+      // ds > start
       if (state.lastClickedDate === ds) {
-        // Tanggal endpoint ini diklik untuk KEDUA kalinya!
-        // Kunci rentang dan otomatis tutup pop-up!
-        let s = state.r1.start;
-        let e = ds;
-        if (e < s) { const tmp = s; s = e; e = tmp; }
-        state.r1.start = s;
-        state.r1.end = e;
+        // Klik kedua pada endpoint akhir -> Kunci rentang dan otomatis tutup!
+        state.r1.end = ds;
         state.r1.locked = true;
         saveAndClose();
         return;
       }
 
-      // Klik PERTAMA pada tanggal endpoint (preview terbentuk, pop-up BELUM tertutup)
-      let s = state.r1.start;
-      let e = ds;
-      if (e < s) { const tmp = s; s = e; e = tmp; }
-      state.r1.start = s;
-      state.r1.end = e;
+      // Klik pertama pada tanggal akhir
+      state.r1.end = ds;
       state.lastClickedDate = ds;
       render();
       return;
@@ -440,7 +469,7 @@
       if (ds === state.r1.start) {
         if (state.lastClickedDate === ds) {
           // Klik 2x pada tanggal yang sama -> Range 1 terkunci (1 hari)
-          // POP-UP TIDAK BOLEH TERTUTUP! Bersiap untuk Range 2!
+          // Pop-up tetap terbuka, lanjut ke Range 2
           state.r1.end = ds;
           state.r1.locked = true;
           state.activeRange = 2;
@@ -454,15 +483,18 @@
         return;
       }
 
-      // ds berbeda dengan start (rentang range 1)
+      // Poin 5: Tanggal kedua < tanggal pertama di Range 1 -> Reset Range 1
+      if (ds < state.r1.start) {
+        state.r1 = { start: ds, end: '', locked: false };
+        state.lastClickedDate = ds;
+        render();
+        return;
+      }
+
+      // ds > start di Range 1
       if (state.lastClickedDate === ds) {
-        // Tanggal akhir Range 1 diklik ke-2 kalinya -> Range 1 terkunci!
-        // POP-UP TIDAK BOLEH TERTUTUP! Lanjut ke Range 2!
-        let s = state.r1.start;
-        let e = ds;
-        if (e < s) { const tmp = s; s = e; e = tmp; }
-        state.r1.start = s;
-        state.r1.end = e;
+        // Klik kedua pada tanggal akhir Range 1 -> Range 1 terkunci! Lanjut ke Range 2
+        state.r1.end = ds;
         state.r1.locked = true;
         state.activeRange = 2;
         state.lastClickedDate = '';
@@ -470,62 +502,65 @@
         return;
       }
 
-      // Klik ke-1 pada tgl akhir Range 1
-      let s = state.r1.start;
-      let e = ds;
-      if (e < s) { const tmp = s; s = e; e = tmp; }
-      state.r1.start = s;
-      state.r1.end = e;
+      // Klik pertama pada tanggal akhir Range 1
+      state.r1.end = ds;
       state.lastClickedDate = ds;
       render();
       return;
     }
 
-    // Active Range == 2
+    // Active Range == 2 (Range 1 sudah terkunci)
     if (state.activeRange === 2) {
       if (!state.r2.start || state.r2.locked) {
+        // Klik pertama di Range 2
         state.r2 = { start: ds, end: '', locked: false };
         state.lastClickedDate = ds;
+        // Poin 4: Jika tanggal range kedua < range pertama, tukar agar menjadi Range 1
+        sortMultiRangesIfNeeded();
         render();
         return;
       }
 
       if (ds === state.r2.start) {
         if (state.lastClickedDate === ds) {
-          // Klik 2x pada tanggal yang sama di Range 2 -> Range 2 terkunci (1 hari)!
-          // POP-UP OTOMATIS TERTUTUP!
+          // Klik 2x pada tanggal yang sama di Range 2 -> Range 2 terkunci & TUTUP!
           state.r2.end = ds;
           state.r2.locked = true;
+          sortMultiRangesIfNeeded();
           saveAndClose();
           return;
         }
         state.r2.end = ds;
         state.lastClickedDate = ds;
+        sortMultiRangesIfNeeded();
         render();
         return;
       }
 
-      // ds berbeda dengan start di Range 2
+      // Poin 5: Tanggal kedua < tanggal pertama di Range 2 -> Perlakukan seperti tombol RESET
+      // *khusus multi range jika Range 1 sudah terkunci, yang di-reset HANYA Range 2!
+      if (ds < state.r2.start) {
+        state.r2 = { start: ds, end: '', locked: false };
+        state.lastClickedDate = ds;
+        sortMultiRangesIfNeeded();
+        render();
+        return;
+      }
+
+      // ds > start di Range 2
       if (state.lastClickedDate === ds) {
-        // Tanggal akhir Range 2 diklik ke-2 kalinya -> Range 2 terkunci!
-        // POP-UP OTOMATIS TERTUTUP!
-        let s = state.r2.start;
-        let e = ds;
-        if (e < s) { const tmp = s; s = e; e = tmp; }
-        state.r2.start = s;
-        state.r2.end = e;
+        // Klik kedua pada tanggal akhir Range 2 -> Range 2 terkunci & TUTUP!
+        state.r2.end = ds;
         state.r2.locked = true;
+        sortMultiRangesIfNeeded();
         saveAndClose();
         return;
       }
 
-      // Klik ke-1 pada tgl akhir Range 2 (preview terbentuk)
-      let s = state.r2.start;
-      let e = ds;
-      if (e < s) { const tmp = s; s = e; e = tmp; }
-      state.r2.start = s;
-      state.r2.end = e;
+      // Klik pertama pada tanggal akhir Range 2
+      state.r2.end = ds;
       state.lastClickedDate = ds;
+      sortMultiRangesIfNeeded();
       render();
     }
   }
@@ -537,6 +572,9 @@
       return;
     }
 
+    // Pastikan urutan multi range rapi secara kronologis sebelum disimpan (Poin 4)
+    sortMultiRangesIfNeeded();
+
     const r1 = state.r1;
     const r2 = state.r2;
     const isMulti = state.isMulti;
@@ -545,11 +583,10 @@
     if (r1.start && !r1.end) r1.end = r1.start;
     if (r2.start && !r2.end) r2.end = r2.start;
 
-    const formattedText = formatWaktuCombined(r1, r2, isMulti);
+    const formattedText = state.isRange ? formatWaktuCombined(r1, r2, isMulti) : (r1.start ? fmtTglIndo(r1.start, true) : '');
     const el = state.targetEl;
 
     if (!r1.start && !r2.start) {
-      // Tidak ada tanggal
       if ('value' in el) el.value = '';
       else el.textContent = '';
       el.dataset.isoMulai = '';
@@ -561,7 +598,6 @@
       if ('value' in el) el.value = formattedText;
       else el.textContent = formattedText;
 
-      // Dataset terstruktur untuk database & form (kompatibel penuh dengan Supabase / Docx)
       el.dataset.isoMulai = r1.start || r2.start || '';
       el.dataset.isoSelesai = (isMulti && r2.end) ? r2.end : (r1.end || r1.start || '');
       el.dataset.iso = r1.start || '';
@@ -578,7 +614,6 @@
       }
     }
 
-    // Trigger event agar listener otomatis menyimpan data (di admin-surat-tugas atau minta-surat)
     el.dispatchEvent(new Event('input', { bubbles: true }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
 
@@ -601,6 +636,8 @@
     popupEl.classList.remove('open');
     state.targetEl = null;
     state.lastClickedDate = '';
+    state.minDate = '';
+    state.maxDate = '';
   }
 
   // ── Buka Kalender ────────────────────────────────────────────
@@ -609,15 +646,40 @@
     ensureCSS();
     ensurePopupHTML();
 
+    state.openedAt = Date.now(); // Poin 1: Debounce guard penutupan instan
     state.targetEl = targetEl;
-    state.isRange = Boolean(isRange);
     state.onSelectCallback = onSelect;
     state.yearMode = false;
     state.lastClickedDate = '';
 
+    // Poin 2: Cek field tanggal surat (hanya 1 tanggal, bukan rentang)
+    const field = targetEl.dataset.field || targetEl.dataset.colField || '';
+    const isTanggalSurat = field === 'tanggal_surat' || isRange === false;
+    state.isRange = !isTanggalSurat;
+
+    // Poin 3: Hitung batasan tanggal (Tanggal surat <= Waktu pelaksanaan)
+    state.minDate = '';
+    state.maxDate = '';
+    const tr = targetEl.closest('tr');
+    if (tr) {
+      if (isTanggalSurat) {
+        // Tanggal surat tidak boleh > waktu pelaksanaan mulai
+        const waktuEl = tr.querySelector('[data-field="waktu"], [data-col-field="waktu"]');
+        if (waktuEl && waktuEl.dataset.isoMulai) {
+          state.maxDate = waktuEl.dataset.isoMulai;
+        }
+      } else {
+        // Waktu pelaksanaan tidak boleh < tanggal surat
+        const tglSuratEl = tr.querySelector('[data-field="tanggal_surat"], [data-col-field="tanggal_surat"]');
+        if (tglSuratEl && tglSuratEl.dataset.iso) {
+          state.minDate = tglSuratEl.dataset.iso;
+        }
+      }
+    }
+
     // Ambil data yang sudah ada di elemen
     let initMulti = null;
-    if (targetEl.dataset.multiRanges) {
+    if (state.isRange && targetEl.dataset.multiRanges) {
       try {
         initMulti = JSON.parse(targetEl.dataset.multiRanges);
       } catch (e) {
@@ -633,13 +695,13 @@
     } else {
       state.isMulti = false;
       state.activeRange = 1;
-      const s = isRange ? (targetEl.dataset.isoMulai || targetEl.dataset.iso || '') : (targetEl.dataset.iso || '');
-      const e = isRange ? (targetEl.dataset.isoSelesai || s) : s;
+      const s = state.isRange ? (targetEl.dataset.isoMulai || targetEl.dataset.iso || '') : (targetEl.dataset.iso || '');
+      const e = state.isRange ? (targetEl.dataset.isoSelesai || s) : s;
       state.r1 = { start: s, end: e, locked: !!s };
       state.r2 = { start: '', end: '', locked: false };
     }
 
-    // Tentukan bulan & tahun yang dibuka pertama kali
+    // Tentukan bulan & tahun awal
     const refIso = state.r1.start || targetEl.dataset.isoMulai || targetEl.dataset.iso || todayISO();
     const d = parseISODate(refIso);
     if (d) {
@@ -706,7 +768,7 @@
     if (daysContainer) {
       daysContainer.onclick = function (e) {
         e.stopPropagation();
-        const cell = e.target.closest('.cal-day:not(.cal-empty)');
+        const cell = e.target.closest('.cal-day:not(.cal-empty):not(.cal-disabled)');
         if (!cell || !cell.dataset.date) return;
         handleDateClick(cell.dataset.date);
       };
@@ -725,28 +787,25 @@
       };
     }
 
-    // Tombol "Multi"
+    // Tombol Multi (Toggle Single Range / Multi Range)
     const multiBtn = popupEl.querySelector('#cal-btn-multi');
     if (multiBtn) {
       multiBtn.onclick = function (e) {
         e.stopPropagation();
-        if (!state.isRange) return;
-        state.isMulti = !state.isMulti;
+        if (!state.isRange) return; // Non-range tidak boleh multi
 
-        if (!state.isMulti) {
-          // Kembali ke Single Range: hapus Range 2
-          state.r2 = { start: '', end: '', locked: false };
-          state.activeRange = 1;
-          state.lastClickedDate = '';
-        } else {
-          // Masuk ke Multi Range
+        state.isMulti = !state.isMulti;
+        if (state.isMulti) {
           if (state.r1.start) {
             state.r1.locked = true;
             state.activeRange = 2;
           } else {
             state.activeRange = 1;
           }
-          state.lastClickedDate = '';
+          state.r2 = { start: '', end: '', locked: false };
+        } else {
+          state.r2 = { start: '', end: '', locked: false };
+          state.activeRange = 1;
         }
         render();
       };
@@ -759,11 +818,11 @@
         e.stopPropagation();
         if (state.isMulti) {
           if (state.activeRange === 2 && state.r2.start) {
-            // Reset Range 2 yang sedang dipilih
+            // Poin 5: Jika Range 1 sudah terkunci, yang di-reset hanya Range 2
             state.r2 = { start: '', end: '', locked: false };
             state.lastClickedDate = '';
           } else {
-            // Reset Range 1 (dan Range 2) sehingga user bisa memilih ulang Range 1
+            // Reset Range 1 & 2
             state.r1 = { start: '', end: '', locked: false };
             state.r2 = { start: '', end: '', locked: false };
             state.activeRange = 1;
@@ -794,12 +853,25 @@
 
   // ── Global Outside Click & Auto-Trigger Listeners ────────────
   function initGlobalListeners() {
-    // 1. Klik di luar kalender: Simpan & Tutup
+    // 1. Klik di luar kalender: Simpan & Tutup (Poin 1 Fix)
     document.addEventListener('click', function (e) {
       if (!popupEl || !popupEl.classList.contains('open')) return;
       if (popupEl.contains(e.target)) return;
-      if (state.targetEl && state.targetEl.contains(e.target)) return;
-      // Klik di mana saja di luar kalender
+
+      // Poin 1: Jika klik berada di elemen target atau di dalam sel (TD) milik target -> BUKAN klik luar!
+      if (state.targetEl) {
+        if (state.targetEl === e.target || state.targetEl.contains(e.target)) return;
+        const targetTd = state.targetEl.closest('td');
+        if (targetTd && (targetTd === e.target || targetTd.contains(e.target))) return;
+      }
+
+      // Poin 1: Debounce guard: Abaikan klik jika pop-up baru dibuka dalam 200ms terakhir
+      if (state.openedAt && (Date.now() - state.openedAt < 200)) return;
+
+      // Jangan tutup jika klik terjadi pada elemen pemicu tanggal lain (biarkan listener buka yang menangani)
+      const otherTrigger = e.target.closest('[data-iso-mulai], [data-iso], input.xls-cell[data-col-field="waktu"], input.xls-cell[data-field="waktu"], input.xls-cell[data-field="tanggal_surat"], input.xls-cell[data-field="tanggal_berangkat"]');
+      if (otherTrigger) return;
+
       saveAndClose();
     });
 
@@ -807,10 +879,11 @@
     document.addEventListener('click', function (e) {
       const el = e.target.closest('[data-iso-mulai], [data-iso], input.xls-cell[data-col-field="waktu"], input.xls-cell[data-field="waktu"], input.xls-cell[data-field="tanggal_surat"], input.xls-cell[data-field="tanggal_berangkat"]');
       if (el && !el.disabled && !el.readOnly) {
-        const isRange = el.dataset.isoMulai !== undefined ||
-                        el.dataset.colField === 'waktu' ||
-                        el.dataset.field === 'waktu' ||
-                        el.dataset.field === 'tanggal_berangkat';
+        // Jika sudah terbuka untuk elemen yang sama, tidak perlu buka ulang
+        if (state.targetEl === el && popupEl && popupEl.classList.contains('open')) return;
+
+        const field = el.dataset.field || el.dataset.colField || '';
+        const isRange = !(field === 'tanggal_surat' || el.dataset.iso !== undefined && el.dataset.isoMulai === undefined);
         openPopup(el, isRange);
       }
     });
@@ -819,10 +892,10 @@
     document.addEventListener('focusin', function (e) {
       const el = e.target.closest('[data-iso-mulai], [data-iso], input.xls-cell[data-col-field="waktu"], input.xls-cell[data-field="waktu"], input.xls-cell[data-field="tanggal_surat"], input.xls-cell[data-field="tanggal_berangkat"]');
       if (el && !el.disabled && !el.readOnly) {
-        const isRange = el.dataset.isoMulai !== undefined ||
-                        el.dataset.colField === 'waktu' ||
-                        el.dataset.field === 'waktu' ||
-                        el.dataset.field === 'tanggal_berangkat';
+        if (state.targetEl === el && popupEl && popupEl.classList.contains('open')) return;
+
+        const field = el.dataset.field || el.dataset.colField || '';
+        const isRange = !(field === 'tanggal_surat' || el.dataset.iso !== undefined && el.dataset.isoMulai === undefined);
         openPopup(el, isRange);
       }
     });
@@ -889,6 +962,9 @@
   return {
     open: openPopup,
     close: closePopup,
+    isOpen: function () {
+      return !!(popupEl && popupEl.classList.contains('open'));
+    },
     formatWaktu: function (mulai, selesai) {
       return formatSingleRange(mulai, selesai, true);
     },
