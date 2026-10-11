@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS public.surat_tugas (
     pok_id TEXT,
     penandatangan_nip TEXT,
     penandatangan_nama TEXT,
+    penandatangan_jabatan TEXT,
     tipe TEXT DEFAULT 'surat_tugas',
     tipe_surat TEXT DEFAULT 'surat_tugas',
     jumlah_responden INT DEFAULT 1,
@@ -108,6 +109,7 @@ ALTER TABLE public.surat_tugas ADD COLUMN IF NOT EXISTS pembebanan TEXT;
 ALTER TABLE public.surat_tugas ADD COLUMN IF NOT EXISTS pok_id TEXT;
 ALTER TABLE public.surat_tugas ADD COLUMN IF NOT EXISTS penandatangan_nip TEXT;
 ALTER TABLE public.surat_tugas ADD COLUMN IF NOT EXISTS penandatangan_nama TEXT;
+ALTER TABLE public.surat_tugas ADD COLUMN IF NOT EXISTS penandatangan_jabatan TEXT;
 ALTER TABLE public.surat_tugas ADD COLUMN IF NOT EXISTS tipe TEXT DEFAULT 'surat_tugas';
 ALTER TABLE public.surat_tugas ADD COLUMN IF NOT EXISTS tipe_surat TEXT DEFAULT 'surat_tugas';
 ALTER TABLE public.surat_tugas ADD COLUMN IF NOT EXISTS jumlah_responden INT DEFAULT 1;

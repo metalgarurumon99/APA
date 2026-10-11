@@ -3020,6 +3020,41 @@ function reapplyMenungguDirty(snapshot) {
   });
 }
 
+/**
+ * Helper untuk PATCH record surat_tugas ke Supabase dengan auto-retry resilience.
+ * Jika kolom penandatangan_jabatan belum ada di database,
+ * otomatis coba lagi tanpa kolom tersebut agar user tidak gagal approve.
+ */
+async function patchSuratTugas(id, payload) {
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { ...H, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try { const j = await res.json(); msg = j.message || msg; } catch(_) {}
+    if (msg.includes('penandatangan_jabatan') && 'penandatangan_jabatan' in payload) {
+      console.warn('[APA] Kolom penandatangan_jabatan belum ada di schema database, auto-retry tanpa kolom tersebut...');
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.penandatangan_jabatan;
+      res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: { ...H, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(fallbackPayload)
+      });
+      if (!res.ok) {
+        let msg2 = `HTTP ${res.status}`;
+        try { const j2 = await res.json(); msg2 = j2.message || msg2; } catch(_) {}
+        throw new Error(msg2);
+      }
+      return res;
+    }
+    throw new Error(msg);
+  }
+  return res;
+}
+
 async function submitApprove() {
   const values = collectRowFields(selectedId);
   if (!values) return;
@@ -3090,16 +3125,7 @@ async function submitApprove() {
   const btn = document.getElementById('btn-approve-submit');
   btn.disabled = true; btn.classList.add('loading');
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas?id=eq.${selectedId}`, {
-      method: 'PATCH',
-      headers: { ...H, 'Prefer': 'return=minimal' },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) {
-      let msg = `HTTP ${res.status}`;
-      try { const j = await res.json(); msg = j.message || msg; } catch(_) {}
-      throw new Error(msg);
-    }
+    await patchSuratTugas(selectedId, payload);
 
     // Auto-save defaults (alat_angkutan/POK/penandatangan) tanpa checkbox.
     // Sebelumnya ada checkbox "Simpan default" yang dihapus dari UI —
@@ -3268,16 +3294,7 @@ async function saveRowEdit(id) {
   if (btn) { btn.disabled = true; btn.classList.add('loading'); }
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { ...H, 'Prefer': 'return=minimal' },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) {
-      let msg = `HTTP ${res.status}`;
-      try { const j = await res.json(); msg = j.message || msg; } catch(_) {}
-      throw new Error(msg);
-    }
+    await patchSuratTugas(id, payload);
 
     // Sukses — exit edit mode & reload data dari server agar in-memory
     // suratMap ter-sinkron (termasuk updated_at, dll).
@@ -4661,16 +4678,7 @@ async function submitBulkApprove() {
     };
 
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas?id=eq.${id}`, {
-        method: 'PATCH',
-        headers: { ...H, 'Prefer': 'return=minimal' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        let msg = `HTTP ${res.status}`;
-        try { const j = await res.json(); msg = j.message || msg; } catch(_) {}
-        throw new Error(msg);
-      }
+      await patchSuratTugas(id, payload);
       clearAdminDraft(id);
       // Auto-save defaults dari surat pertama yang berhasil
       if (success === 0) {
