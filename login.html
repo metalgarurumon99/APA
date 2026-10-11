@@ -230,6 +230,14 @@
             padding-right: 3rem;
         }
 
+        /* Sembunyikan ikon intip sandi bawaan browser (Edge/IE) agar tidak dobel dengan tombol custom */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+
         /* Styling Input Invalid & Pesan Error */
         .input-field.is-invalid {
             border-color: #f43f5e !important;
