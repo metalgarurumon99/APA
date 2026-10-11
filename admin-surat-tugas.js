@@ -3322,86 +3322,135 @@ async function saveRowEdit(id) {
 /* ════════════════════════════════════════════════════════════════════
    LOOKUP JABATAN dari riwayat_jabatan
 ═══════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Normalisasi format tanggal TMT ke string ISO (YYYY-MM-DD).
+ * Mendukung format:
+ *   - YYYY-MM-DD (ISO standard)
+ *   - M/D/YYYY atau D/M/YYYY (format export Excel BPS, mis. "7/1/2026", "6/29/2020")
+ */
+function normTmtIso(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const parts = s.split(/[\/\-\.]/);
+  if (parts.length === 3) {
+    let [p1, p2, p3] = parts;
+    if (p1.length === 4) {
+      return `${p1}-${p2.padStart(2, '0')}-${p3.padStart(2, '0')}`;
+    }
+    let mo = parseInt(p1, 10);
+    let d = parseInt(p2, 10);
+    let y = parseInt(p3, 10);
+    if (y < 100) y = y < 50 ? 2000 + y : 1900 + y;
+    if (mo > 12 && d <= 12) {
+      const tmp = mo; mo = d; d = tmp;
+    }
+    if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && y) {
+      return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+  }
+  return s;
+}
+
 function lookupJabatan(nip, tglSuratIso) {
-  if (!nip || !tglSuratIso) return '';
+  if (!nip) return '';
   // Early exit untuk mitra — mitra tidak punya riwayat_jabatan (selalu "Mitra").
-  // Caller (buildPegawaiRow) akan handle jabatan mitra dari record mitra
-  // sendiri. Skip filter array supaya hemat compute.
   if (isMitraNip(nip)) return '';
-  // Filter jenis='utama' — jabatan struktural sehari-hari pegawai. Jabatan
-  // jenis='lainnya' (Plt., PPK, dll) di-lookup terpisah via lookupJabatanLainnya.
-  // Defensive: kalau row tidak punya kolom jenis (kompatibel data lama),
-  // anggap 'utama' (cocokkan dengan default DB).
-  const candidates = riwayatJabatan
+
+  // 1. Ambil semua riwayat jabatan utama pegawai ini
+  let candidates = riwayatJabatan
     .filter(r => String(r.pegawai_nip || '').trim() === String(nip).trim())
     .filter(r => (r.jenis || 'utama') === 'utama')
-    .filter(r => r.tmt && r.tmt <= tglSuratIso)
-    .sort((a, b) => (b.tmt || '').localeCompare(a.tmt || ''));
-  if (candidates.length) return candidates[0].jabatan || '';
-  const peg = pegawaiByNIP[nip];
-  const pegNama = pegawaiNama(peg);
-  if (peg && pegNama) {
-    const candByName = riwayatJabatan
-      .filter(r => (r.nama || '').trim().toLowerCase() === pegNama.trim().toLowerCase())
-      .filter(r => (r.jenis || 'utama') === 'utama')
-      .filter(r => r.tmt && r.tmt <= tglSuratIso)
-      .sort((a, b) => (b.tmt || '').localeCompare(a.tmt || ''));
-    if (candByName.length) return candByName[0].jabatan || '';
+    .map(r => ({ ...r, _isoTmt: normTmtIso(r.tmt) }))
+    .sort((a, b) => (b._isoTmt || '').localeCompare(a._isoTmt || ''));
+
+  // 2. Fallback pencarian by nama jika by NIP tidak ditemukan
+  if (!candidates.length) {
+    const peg = pegawaiByNIP[nip];
+    const pegNama = pegawaiNama(peg);
+    if (peg && pegNama) {
+      candidates = riwayatJabatan
+        .filter(r => (r.nama || '').trim().toLowerCase() === pegNama.trim().toLowerCase())
+        .filter(r => (r.jenis || 'utama') === 'utama')
+        .map(r => ({ ...r, _isoTmt: normTmtIso(r.tmt) }))
+        .sort((a, b) => (b._isoTmt || '').localeCompare(a._isoTmt || ''));
+    }
   }
-  return '';
+
+  if (!candidates.length) return '';
+
+  // 3. Filter yang TMT-nya <= tglSuratIso (berlaku pada tanggal surat)
+  if (tglSuratIso) {
+    const valid = candidates.filter(r => r._isoTmt && r._isoTmt <= tglSuratIso);
+    if (valid.length) return valid[0].jabatan || '';
+  }
+
+  // 4. Fallback: jika tanggal surat sebelum TMT pelantikan (mis. surat dibuat sebelum 1 Juli 2026),
+  // tetap gunakan jabatan terkini yang terdaftar agar tidak muncul pesan error kosong
+  return candidates[0].jabatan || '';
 }
 
 /**
  * Lookup jabatan_lainnya (Plt., PPK, dll) by nama jabatan & tanggal surat.
  * Return record terbaru yang TMT-nya <= tanggal_surat.
- *
- * Pattern paralel dengan lookupJabatan tapi:
- *   - Filter jenis='lainnya'
- *   - Filter jabatan = nama yang dicari (mis. 'Pejabat Pembuat Komitmen')
- *
- * Dipakai untuk:
- *   - {nama_ppk} & {nip_ppk} → cari "Pejabat Pembuat Komitmen"
- *   - Detect apakah pegawai sedang Plt. (untuk transformJabatanPenandatangan)
- *
- * @param {string} jabatanLainnya  Nama jabatan persis (case-sensitive)
- * @param {string} tglSuratIso     Tanggal surat (YYYY-MM-DD)
- * @returns {object|null} record riwayat_jabatan, atau null kalau tidak ketemu
  */
 function lookupJabatanLainnya(jabatanLainnya, tglSuratIso) {
-  if (!jabatanLainnya || !tglSuratIso) return null;
+  if (!jabatanLainnya) return null;
   const candidates = riwayatJabatan
     .filter(r => (r.jenis || '') === 'lainnya')
     .filter(r => (r.jabatan || '') === jabatanLainnya)
-    .filter(r => r.tmt && r.tmt <= tglSuratIso)
-    .filter(r => !r.tmt_selesai || r.tmt_selesai >= tglSuratIso)
-    .sort((a, b) => (b.tmt || '').localeCompare(a.tmt || ''));
+    .map(r => ({ ...r, _isoTmt: normTmtIso(r.tmt), _isoSelesai: normTmtIso(r.tmt_selesai) }))
+    .sort((a, b) => (b._isoTmt || '').localeCompare(a._isoTmt || ''));
+
+  if (!candidates.length) return null;
+
+  if (tglSuratIso) {
+    const valid = candidates
+      .filter(r => r._isoTmt && r._isoTmt <= tglSuratIso)
+      .filter(r => !r._isoSelesai || r._isoSelesai >= tglSuratIso);
+    if (valid.length) return valid[0];
+  }
+
   return candidates[0] || null;
 }
 
 /**
  * Lookup pangkat & golongan terbaru per pegawai by NIP & tanggal surat.
  * Return record dari riwayat_pangkat_golongan, atau null.
- *
- * @param {string} nip          NIP pegawai (skip kalau mitra)
- * @param {string} tglSuratIso  Tanggal surat (YYYY-MM-DD)
- * @returns {object|null} {pangkat, golongan, tmt, ...} atau null
  */
 function lookupPangkatGolongan(nip, tglSuratIso) {
-  if (!nip || !tglSuratIso || isMitraNip(nip)) return null;
+  if (!nip || isMitraNip(nip)) return null;
   const candidates = riwayatPangkatGolongan
     .filter(r => String(r.pegawai_nip || '').trim() === String(nip).trim())
-    .filter(r => r.tmt && r.tmt <= tglSuratIso)
-    .sort((a, b) => (b.tmt || '').localeCompare(a.tmt || ''));
+    .map(r => ({ ...r, _isoTmt: normTmtIso(r.tmt) }))
+    .sort((a, b) => (b._isoTmt || '').localeCompare(a._isoTmt || ''));
+
+  if (!candidates.length) return null;
+
+  if (tglSuratIso) {
+    const valid = candidates.filter(r => r._isoTmt && r._isoTmt <= tglSuratIso);
+    if (valid.length) return valid[0];
+  }
+
   return candidates[0] || null;
 }
 
 function lookupGelar(nip, tglSuratIso) {
-  if (!nip || !tglSuratIso || isMitraNip(nip)) return '';
+  if (!nip || isMitraNip(nip)) return '';
   const candidates = riwayatGelar
     .filter(r => String(r.pegawai_nip || '').trim() === String(nip).trim())
-    .filter(r => r.tmt && r.tmt <= tglSuratIso)
-    .sort((a, b) => (b.tmt || '').localeCompare(a.tmt || ''));
-  return candidates[0] ? (candidates[0].gelar || '') : '';
+    .map(r => ({ ...r, _isoTmt: normTmtIso(r.tmt) }))
+    .sort((a, b) => (b._isoTmt || '').localeCompare(a._isoTmt || ''));
+
+  if (!candidates.length) return '';
+
+  if (tglSuratIso) {
+    const valid = candidates.filter(r => r._isoTmt && r._isoTmt <= tglSuratIso);
+    if (valid.length) return valid[0].gelar || '';
+  }
+
+  return candidates[0].gelar || '';
 }
 
 /**
