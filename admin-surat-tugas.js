@@ -877,11 +877,9 @@ function renderRowHTML(s) {
       ${cellTextareaHTML(s.id, 'perihal', perihal, editable, 'Perihal surat')}
       ${cellTextareaHTML(s.id, 'tujuan', tujuan, editable, 'Kota/instansi')}
       ${cellPegawaiMultiHTML(s.id, pegNips, pegNames, editable)}
-      ${cellTextareaHTML(s.id, 'menimbang_custom', menimbang, editable, 'cth: pelaksanaan Survei...')}
-      ${cellTextareaHTML(s.id, 'alat_angkutan', alat, editable, 'cth: Kendaraan Darat')}
+      ${cellAlatHTML(s.id, alat, editable)}
       ${cellMAKHTML(s.id, mak, editable)}
       ${cellPenandatanganHTML(s.id, ttdNip, ttdNama, editable)}
-      ${cellTipeHTML(s.id, s.tipe, editable)}
 
       <td class="col-aksi"><div class="aksi-wrap">${aksi}</div></td>
       <td class="col-status">${badgeHTML(s.status)}</td>
@@ -1016,9 +1014,10 @@ function applyAdminDraftToRow(suratId) {
   setVal('nomor_surat',      v.nomor_surat);
   setVal('perihal',          v.perihal);
   setVal('tujuan',           v.tujuan);
-  setVal('menimbang_custom', v.menimbang_custom);
-  setVal('alat_angkutan',    v.alat_angkutan);
   setVal('pembebanan',       v.pembebanan);
+  const alatCell = row.querySelector('.alat-cell[data-field="alat_angkutan"]');
+  if (alatCell) setAlatCellValue(alatCell, v.alat_angkutan);
+  else setVal('alat_angkutan', v.alat_angkutan);
   // Tanggal
   const tglSurat = row.querySelector('[data-field="tanggal_surat"]');
   if (tglSurat && v.tanggal_surat) {
@@ -1123,11 +1122,9 @@ function renderTable(data, totalFiltered = data.length) {
         ${sortHeader('perihal',       'Perihal',           'col-perihal')}
         ${sortHeader('tujuan',        'Tempat Tujuan',     'col-tujuan')}
         <th class="col-nama">Nama</th>
-        <th class="col-menimbang">Menimbang</th>
         <th class="col-alat">Alat Angkutan</th>
         <th class="col-mak">POK</th>
         <th class="col-ttd">Penandatangan</th>
-        <th class="col-tipe">Tipe</th>
         <th class="col-aksi">Aksi</th>
         ${sortHeader('status',        'Status',            'col-status')}
         ${sortHeader('pengaju',       'Diajukan oleh',     'col-pengaju')}
@@ -1293,6 +1290,47 @@ function cellTextareaHTML(id, field, val, editable, placeholder) {
       placeholder="${escAttr(placeholder)}">${esc(val)}</textarea>
   </td>`;
 }
+
+const ALAT_ANGKUTAN_OPTIONS = [
+  { value: 'Angkutan Darat', label: 'Angkutan Darat', icon: '🚗', desc: 'Mobil dinas, motor, travel, dll' },
+  { value: 'Angkutan Udara', label: 'Angkutan Udara', icon: '✈️', desc: 'Pesawat komersial' },
+  { value: 'Angkutan Laut',  label: 'Angkutan Laut',  icon: '🚢', desc: 'Kapal cepat, ferry, speedboat' },
+  { value: 'Angkutan Umum',  label: 'Angkutan Umum',  icon: '🚌', desc: 'Transportasi umum / lokal' },
+];
+
+function cellAlatHTML(id, val, editable) {
+  if (!editable) {
+    return `<td class="col-alat">
+      <div class="ro-text${val ? '' : ' muted'}"
+           tabindex="0" data-col-field="alat_angkutan">${val ? esc(val) : '—'}</div>
+    </td>`;
+  }
+  const display = val || 'Pilih alat...';
+  const isEmpty = !val;
+  return `<td class="col-alat">
+    <div class="alat-cell${isEmpty ? ' is-empty' : ' has-value'}"
+      data-field="alat_angkutan" data-col-field="alat_angkutan" data-id="${id}"
+      data-value="${escAttr(val || '')}"
+      tabindex="0"
+      onclick="openAlatDropdown(this)"
+      onkeydown="onAlatCellKeydown(event, this)">
+      <span class="alat-cell-text">${esc(display)}</span>
+    </div>
+  </td>`;
+}
+
+function setAlatCellValue(cellEl, value) {
+  if (!cellEl) return;
+  const clean = (value || '').trim();
+  cellEl.dataset.value = clean;
+  const textEl = cellEl.querySelector('.alat-cell-text');
+  if (textEl) {
+    textEl.textContent = clean || 'Pilih alat...';
+  }
+  cellEl.classList.toggle('is-empty', !clean);
+  cellEl.classList.toggle('has-value', !!clean);
+}
+
 
 /* Cell khusus utk kolom Tipe — render <select> dengan 7 pilihan kalau
    editable, atau ro-text kalau status sudah selesai.
@@ -1555,6 +1593,7 @@ function openCal(el, isRange) {
   closeAc();
   closeMakAc();
   closeTpAc();
+  closeAlatDropdown();
   if (window.apaCalendar) {
     window.apaCalendar.open(el, isRange);
   }
@@ -1578,6 +1617,7 @@ function openAc(cellEl, isSingle) {
   closeCal();
   closeMakAc();
   closeTpAc();
+  closeAlatDropdown();
   if (window.apaPegawai) {
     window.apaPegawai.open(cellEl, isSingle, () => {
       const tr = cellEl.closest('tr[data-surat-id]');
@@ -1751,6 +1791,10 @@ function onMAKKeydown(e, inp) {
 }
 
 function openMakAc(inp) {
+  closeCal();
+  closeAc();
+  closeTpAc();
+  closeAlatDropdown();
   makACState.inputEl = inp;
   makACState.cellEl = inp.closest('td');
   makACState.focusIdx = -1;
@@ -1854,6 +1898,174 @@ function pickMAKForId(id, mak) {
 
 function pickMAK(mak) {
   pickMAKForInput(makACState.inputEl, mak);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   DROPDOWN ALAT ANGKUTAN (single-select 4 pilihan)
+   Pola mirip dengan apaPegawai & apaCalendar (floating popup)
+═══════════════════════════════════════════════════════════════════════ */
+let alatState = {
+  cellEl: null,
+  focusIdx: -1,
+};
+
+function openAlatDropdown(cellEl) {
+  if (!cellEl) return;
+  closeCal();
+  closeAc();
+  closeMakAc();
+  closeTpAc();
+  if (alatState.cellEl && alatState.cellEl !== cellEl) {
+    alatState.cellEl.classList.remove('active');
+  }
+  alatState.cellEl = cellEl;
+  cellEl.classList.add('active');
+
+  const popup = document.getElementById('alat-popup');
+  if (!popup) return;
+  popup.classList.add('open');
+
+  const curVal = (cellEl.dataset.value || '').trim();
+  const idx = ALAT_ANGKUTAN_OPTIONS.findIndex(o => o.value.toLowerCase() === curVal.toLowerCase());
+  alatState.focusIdx = idx >= 0 ? idx : 0;
+
+  renderAlatPopupList();
+  positionAlatPopup(cellEl, popup);
+}
+
+function closeAlatDropdown() {
+  const popup = document.getElementById('alat-popup');
+  if (popup) popup.classList.remove('open');
+  if (alatState.cellEl) {
+    alatState.cellEl.classList.remove('active');
+    alatState.cellEl = null;
+  }
+  alatState.focusIdx = -1;
+}
+
+function positionAlatPopup(cellEl, popup) {
+  const rect = cellEl.getBoundingClientRect();
+  const popH = 220;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const above = spaceBelow < popH && rect.top > popH;
+
+  let left = rect.left + (rect.width / 2) - 120;
+  if (left < 8) left = 8;
+  if (left + 245 > window.innerWidth) left = window.innerWidth - 250;
+
+  popup.style.left = `${left}px`;
+  if (above) {
+    popup.style.top = '';
+    popup.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+  } else {
+    popup.style.bottom = '';
+    popup.style.top = `${rect.bottom + 4}px`;
+  }
+}
+
+function renderAlatPopupList() {
+  const list = document.getElementById('alat-popup-list');
+  if (!list) return;
+  const curVal = alatState.cellEl ? (alatState.cellEl.dataset.value || '').trim().toLowerCase() : '';
+
+  list.innerHTML = ALAT_ANGKUTAN_OPTIONS.map((opt, i) => {
+    const isSelected = opt.value.toLowerCase() === curVal;
+    const isFocused = i === alatState.focusIdx;
+    const cls = [
+      'alat-popup-item',
+      isSelected ? 'selected' : '',
+      isFocused ? 'focused' : '',
+    ].filter(Boolean).join(' ');
+
+    return `
+      <div class="${cls}" data-idx="${i}" data-value="${escAttr(opt.value)}"
+           onmousedown="onAlatOptionMouseDown(event, this)">
+        <div class="alat-item-icon">${opt.icon}</div>
+        <div class="alat-item-content">
+          <div class="alat-item-label">${esc(opt.label)}</div>
+          <div class="alat-item-desc">${esc(opt.desc)}</div>
+        </div>
+        <span class="alat-item-check">✓</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function onAlatOptionMouseDown(e, itemEl) {
+  e.preventDefault();
+  e.stopPropagation();
+  const val = itemEl.getAttribute('data-value');
+  pickAlatOption(val);
+}
+
+function pickAlatOption(val) {
+  if (!alatState.cellEl) {
+    closeAlatDropdown();
+    return;
+  }
+  const cellEl = alatState.cellEl;
+  setAlatCellValue(cellEl, val);
+  const tr = cellEl.closest('tr[data-surat-id]');
+  if (tr) snapshotAdminDraft(tr.dataset.suratId);
+  closeAlatDropdown();
+  cellEl.focus();
+}
+
+function clearAlatSelection() {
+  if (alatState.cellEl) {
+    const cellEl = alatState.cellEl;
+    setAlatCellValue(cellEl, '');
+    const tr = cellEl.closest('tr[data-surat-id]');
+    if (tr) snapshotAdminDraft(tr.dataset.suratId);
+    cellEl.focus();
+  }
+  closeAlatDropdown();
+}
+
+function onAlatCellKeydown(e, cellEl) {
+  const popup = document.getElementById('alat-popup');
+  const isOpen = popup && popup.classList.contains('open');
+
+  if (!isOpen) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      openAlatDropdown(cellEl);
+    }
+    return;
+  }
+
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    closeAlatDropdown();
+    cellEl.focus();
+    return;
+  }
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    alatState.focusIdx = Math.min(alatState.focusIdx + 1, ALAT_ANGKUTAN_OPTIONS.length - 1);
+    renderAlatPopupList();
+    return;
+  }
+
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    alatState.focusIdx = Math.max(alatState.focusIdx - 1, 0);
+    renderAlatPopupList();
+    return;
+  }
+
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    if (alatState.focusIdx >= 0 && ALAT_ANGKUTAN_OPTIONS[alatState.focusIdx]) {
+      pickAlatOption(ALAT_ANGKUTAN_OPTIONS[alatState.focusIdx].value);
+    }
+    return;
+  }
+
+  if (e.key === 'Tab') {
+    closeAlatDropdown();
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2118,11 +2330,9 @@ const NAV_FIELDS = [
   'perihal',
   'tujuan',
   'pegawai_multi',
-  'menimbang_custom',
   'alat_angkutan',
   'pembebanan',
   'penandatangan',
-  'tipe',
 ];
 
 /**
@@ -2147,13 +2357,17 @@ function buildNavGrid() {
         return pgCell.querySelector('.pg-input') || pgCell;
       }
 
-      // 3) Editable tp-cell (tipe) → kembalikan tp-input di dalamnya
+      // 3) Editable alat-cell
+      const alatCell = row.querySelector(`.alat-cell[data-col-field="${field}"]`);
+      if (alatCell) return alatCell;
+
+      // 4) Editable tp-cell (tipe) → kembalikan tp-input di dalamnya
       const tpCell = row.querySelector(`.tp-cell[data-col-field="${field}"]`);
       if (tpCell) {
         return tpCell.querySelector('.tp-input') || tpCell;
       }
 
-      // 4) Readonly div (ro-text atau ro-ttd)
+      // 5) Readonly div (ro-text atau ro-ttd)
       el = row.querySelector(`[data-col-field="${field}"]`);
       return el || null;
     });
@@ -2381,7 +2595,7 @@ document.addEventListener('keydown', (e) => {
  */
 function moveCellFocus(currentEl, direction) {
   const allCells = Array.from(document.querySelectorAll(
-    'tr[data-status="menunggu"] .xls-cell, tr[data-status="menunggu"] .pg-input, tr[data-status="menunggu"] .tp-input'
+    'tr[data-status="menunggu"] .xls-cell, tr[data-status="menunggu"] .pg-input, tr[data-status="menunggu"] .alat-cell, tr[data-status="menunggu"] .tp-input'
   ));
   const idx  = allCells.indexOf(currentEl);
   if (idx < 0) return;
@@ -2412,6 +2626,11 @@ document.addEventListener('click', (e) => {
     const inAnyTpCell = e.target.closest && e.target.closest('.tp-cell');
     if (!inAnyTpCell) closeTpAc();
   }
+  const alatPop = document.getElementById('alat-popup');
+  if (alatPop && alatPop.classList.contains('open') && !alatPop.contains(e.target)) {
+    const inAlatCell = e.target.closest && e.target.closest('.alat-cell');
+    if (!inAlatCell) closeAlatDropdown();
+  }
   // Hapus highlight baris jika klik di luar tabel
   if (!e.target.closest('tr[data-surat-id]')) {
     document.querySelectorAll('tr.row-focused').forEach(tr => tr.classList.remove('row-focused'));
@@ -2441,6 +2660,7 @@ function closeAllPopups() {
   closeAc();
   closeMakAc();
   closeTpAc();
+  closeAlatDropdown();
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2452,7 +2672,9 @@ function collectRowFields(suratId) {
 
   const get = (field) => {
     const el = row.querySelector(`[data-field="${field}"]`);
-    return el ? (el.value || '').trim() : '';
+    if (!el) return '';
+    if (el.dataset && el.dataset.value !== undefined) return el.dataset.value.trim();
+    return (el.value || '').trim();
   };
   const getISO = (field) => {
     const el = row.querySelector(`[data-field="${field}"]`);
@@ -2492,6 +2714,8 @@ function collectRowFields(suratId) {
   const waktuInp = row.querySelector('.xls-cell[data-field="waktu"]');
   const waktuTextCustom = waktuInp ? (waktuInp.dataset.waktuTextCustom || (waktuInp.value && waktuInp.value.includes('&') ? waktuInp.value.trim() : '')) : '';
 
+  const sOrig = suratMap[suratId];
+
   return {
     nomor_surat:       get('nomor_surat'),
     tanggal_surat:     getISO('tanggal_surat'),
@@ -2502,13 +2726,13 @@ function collectRowFields(suratId) {
     tujuan:            get('tujuan'),
     pegawai_nip:       peg.nips,
     pegawai_list:      peg.names,
-    menimbang_custom:  get('menimbang_custom'),
+    menimbang_custom:  get('menimbang_custom') || (sOrig && sOrig.menimbang_custom) || '',
     alat_angkutan:     get('alat_angkutan'),
     pembebanan:        get('pembebanan'),
     penandatangan_nip:    ttd.nip,
     penandatangan_nama:   ttd.nama,
     tempat_terbit:        'Waisai',
-    tipe:                 getTipe() || null,
+    tipe:                 (sOrig && sOrig.tipe) || 't1',
   };
 }
 
@@ -2522,9 +2746,8 @@ function validateApproveFields(values) {
     //  - tujuan kosong       → {untuk_text} fallback ke "{perihal} pada tanggal ..."
     //  - pembebanan kosong   → kolom MAK di template render kosong
     //  - alat_angkutan kosong → kolom alat angkutan render kosong
-    ['menimbang_custom',   'Menimbang'],
+    //  - menimbang & tipe diatur otomatis oleh sistem
     ['penandatangan_nama', 'Penandatangan'],
-    ['tipe',               'Tipe Surat'],
   ];
   const errors = [], errFields = [];
   checks.forEach(([k, label]) => {
