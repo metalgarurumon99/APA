@@ -622,7 +622,15 @@ function filterTable(options = {}) {
   const q  = document.getElementById('search-input').value.toLowerCase();
   const st = document.getElementById('filter-status').value;
   let f = allSurat;
-  if (q)  f = f.filter(s => (s.perihal||'').toLowerCase().includes(q) || (s.tujuan||'').toLowerCase().includes(q));
+  if (q)  f = f.filter(s =>
+    (s.perihal || '').toLowerCase().includes(q) ||
+    (s.tujuan || '').toLowerCase().includes(q) ||
+    (s.alat_angkutan || '').toLowerCase().includes(q) ||
+    (s.nomor_surat || '').toLowerCase().includes(q) ||
+    (s.pembebanan || '').toLowerCase().includes(q) ||
+    (s.penandatangan_nama || '').toLowerCase().includes(q) ||
+    (getPengajuNama(s) || '').toLowerCase().includes(q)
+  );
   if (st) f = f.filter(s => s.status === st);
   f = sortData(f);
   filteredSurat = f;
@@ -1057,6 +1065,8 @@ function applyAdminDraftToRow(suratId) {
   if (tpCell && v.tipe) {
     setTipeCellValue(tpCell, v.tipe);
   }
+  // Auto-grow textarea di row setelah draft di-apply
+  row.querySelectorAll('textarea.xls-cell').forEach(autoGrow);
   return true;
 }
 /* Restore semua draft yang ada untuk surat-surat yang lagi tampil. */
@@ -1080,7 +1090,8 @@ function restoreAllAdminDrafts() {
       if (applyAdminDraftToRow(id)) restoredCount++;
     }
   });
-  // Draft berhasil dimuat diam-diam (banner draft dimuat dihilangkan sesuai UI requirement)
+  // Pastikan tinggi semua textarea sinkron setelah draft di-restore
+  autoGrowAll();
 }
 
 function renderTable(data, totalFiltered = data.length) {
@@ -1142,7 +1153,12 @@ function renderTable(data, totalFiltered = data.length) {
     // #8: Restore admin drafts (kalau ada) untuk row-row yang lagi tampil.
     // Dipanggil setelah attachEditableListeners supaya MutationObserver-nya
     // tidak trigger save saat applying draft (bisa kena race condition).
-    setTimeout(() => restoreAllAdminDrafts(), 50);
+    setTimeout(() => {
+      restoreAllAdminDrafts();
+      autoGrowAll();
+    }, 50);
+    setTimeout(autoGrowAll, 150);
+    setTimeout(autoGrowAll, 350);
   });
 }
 
@@ -1232,6 +1248,7 @@ function bindMainScrollForStickyHeader() {
 window.addEventListener('resize', () => {
   setupTopScrollbar();
   updateTableStickyState();
+  autoGrowAll();
 });
 window.addEventListener('scroll', updateTableStickyState, true);
 
@@ -1239,7 +1256,16 @@ function autoGrow(el) {
   if (!el || !el.style) return;
   el.style.height = 'auto';
   const h = el.scrollHeight;
-  if (h > 0) el.style.height = h + 'px';
+  if (h > 0) el.style.height = Math.max(h, 38) + 'px';
+}
+
+function autoGrowAll(scope) {
+  const root = scope || document;
+  root.querySelectorAll('textarea.xls-cell').forEach(ta => autoGrow(ta));
+}
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => autoGrowAll());
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -1292,10 +1318,10 @@ function cellTextareaHTML(id, field, val, editable, placeholder) {
 }
 
 const ALAT_ANGKUTAN_OPTIONS = [
-  { value: 'Angkutan Darat', label: 'Angkutan Darat', icon: '🚗', desc: 'Mobil dinas, motor, travel, dll' },
-  { value: 'Angkutan Udara', label: 'Angkutan Udara', icon: '✈️', desc: 'Pesawat komersial' },
-  { value: 'Angkutan Laut',  label: 'Angkutan Laut',  icon: '🚢', desc: 'Kapal cepat, ferry, speedboat' },
-  { value: 'Angkutan Umum',  label: 'Angkutan Umum',  icon: '🚌', desc: 'Transportasi umum / lokal' },
+  { value: 'Angkutan Darat', label: 'Angkutan Darat', icon: '🚗' },
+  { value: 'Angkutan Udara', label: 'Angkutan Udara', icon: '✈️' },
+  { value: 'Angkutan Laut',  label: 'Angkutan Laut',  icon: '🚢' },
+  { value: 'Angkutan Umum',  label: 'Angkutan Umum',  icon: '🚌' },
 ];
 
 function cellAlatHTML(id, val, editable) {
@@ -1487,31 +1513,29 @@ function cellPegawaiMultiHTML(id, nips, names, editable) {
 }
 
 function cellPenandatanganHTML(id, nip, nama, editable) {
+  const displayName = nama || (nip ? 'Pegawai ' + nip : '');
   if (!editable) {
-    if (!nama && !nip) {
+    if (!displayName) {
       return `<td class="col-ttd">
         <div class="ro-text muted" tabindex="0" data-col-field="penandatangan">—</div>
       </td>`;
     }
     return `<td class="col-ttd">
-      <div class="ro-ttd" tabindex="0" data-col-field="penandatangan">
-        ${nama ? `<div class="ro-ttd-name">${esc(nama)}</div>` : ''}
-        ${nip  ? `<div class="ro-ttd-nip">NIP. ${esc(nip)}</div>` : ''}
-      </div>
+      <div class="ro-text" tabindex="0" data-col-field="penandatangan">${esc(displayName)}</div>
     </td>`;
   }
 
   let contentHtml = '';
-  if (!nip) {
+  if (!displayName) {
     contentHtml = `<span class="apa-pg-placeholder">Pilih penandatangan...</span>`;
   } else {
-    contentHtml = `<span class="apa-pg-single-name" title="${esc(nama || nip)}">${esc(nama || nip)}</span>`;
+    contentHtml = `<span class="apa-pg-single-name" title="${esc(displayName)}">${esc(displayName)}</span>`;
   }
 
   return `<td class="col-ttd">
     <div class="pg-cell single" data-field="penandatangan" data-col-field="penandatangan" data-id="${id}"
-      data-nip="${escAttr(nip)}"
-      data-nama="${escAttr(nama)}"
+      data-nip="${escAttr(nip || '')}"
+      data-nama="${escAttr(nama || '')}"
       onclick="openAc(this, true)">
       <div class="apa-pg-cell-wrapper">
         ${contentHtml}
@@ -1907,6 +1931,8 @@ function pickMAK(mak) {
 let alatState = {
   cellEl: null,
   focusIdx: -1,
+  query: '',
+  filtered: [...ALAT_ANGKUTAN_OPTIONS],
 };
 
 function openAlatDropdown(cellEl) {
@@ -1925,12 +1951,69 @@ function openAlatDropdown(cellEl) {
   if (!popup) return;
   popup.classList.add('open');
 
-  const curVal = (cellEl.dataset.value || '').trim();
-  const idx = ALAT_ANGKUTAN_OPTIONS.findIndex(o => o.value.toLowerCase() === curVal.toLowerCase());
-  alatState.focusIdx = idx >= 0 ? idx : 0;
+  alatState.query = '';
+  const searchInp = document.getElementById('alat-popup-search');
+  if (searchInp) {
+    searchInp.value = '';
+    wireAlatSearchInput(searchInp);
+    setTimeout(() => searchInp.focus(), 30);
+  }
+
+  filterAlatOptions('');
+  positionAlatPopup(cellEl, popup);
+}
+
+function wireAlatSearchInput(searchInp) {
+  if (searchInp.dataset.wired) return;
+  searchInp.dataset.wired = '1';
+  searchInp.addEventListener('input', (e) => {
+    filterAlatOptions(e.target.value);
+  });
+  searchInp.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeAlatDropdown();
+      if (alatState.cellEl) alatState.cellEl.focus();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (alatState.filtered.length) {
+        alatState.focusIdx = Math.min(alatState.focusIdx + 1, alatState.filtered.length - 1);
+        renderAlatPopupList();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (alatState.filtered.length) {
+        alatState.focusIdx = Math.max(alatState.focusIdx - 1, 0);
+        renderAlatPopupList();
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (alatState.focusIdx >= 0 && alatState.filtered[alatState.focusIdx]) {
+        pickAlatOption(alatState.filtered[alatState.focusIdx].value);
+      }
+    } else if (e.key === 'Tab') {
+      closeAlatDropdown();
+    }
+  });
+}
+
+function filterAlatOptions(q) {
+  alatState.query = (q || '').trim().toLowerCase();
+  if (!alatState.query) {
+    alatState.filtered = [...ALAT_ANGKUTAN_OPTIONS];
+  } else {
+    alatState.filtered = ALAT_ANGKUTAN_OPTIONS.filter(o =>
+      o.label.toLowerCase().includes(alatState.query) ||
+      o.value.toLowerCase().includes(alatState.query)
+    );
+  }
+
+  const curVal = alatState.cellEl ? (alatState.cellEl.dataset.value || '').trim().toLowerCase() : '';
+  let idx = alatState.filtered.findIndex(o => o.value.toLowerCase() === curVal);
+  if (idx < 0 && alatState.filtered.length) idx = 0;
+  alatState.focusIdx = idx;
 
   renderAlatPopupList();
-  positionAlatPopup(cellEl, popup);
 }
 
 function closeAlatDropdown() {
@@ -1941,17 +2024,19 @@ function closeAlatDropdown() {
     alatState.cellEl = null;
   }
   alatState.focusIdx = -1;
+  alatState.query = '';
+  alatState.filtered = [...ALAT_ANGKUTAN_OPTIONS];
 }
 
 function positionAlatPopup(cellEl, popup) {
   const rect = cellEl.getBoundingClientRect();
-  const popH = 220;
+  const popH = 240;
   const spaceBelow = window.innerHeight - rect.bottom;
   const above = spaceBelow < popH && rect.top > popH;
 
-  let left = rect.left + (rect.width / 2) - 120;
+  let left = rect.left + (rect.width / 2) - 130;
   if (left < 8) left = 8;
-  if (left + 245 > window.innerWidth) left = window.innerWidth - 250;
+  if (left + 260 > window.innerWidth) left = window.innerWidth - 265;
 
   popup.style.left = `${left}px`;
   if (above) {
@@ -1966,9 +2051,13 @@ function positionAlatPopup(cellEl, popup) {
 function renderAlatPopupList() {
   const list = document.getElementById('alat-popup-list');
   if (!list) return;
+  if (!alatState.filtered.length) {
+    list.innerHTML = `<div class="alat-popup-empty">Tidak ada pilihan yang cocok</div>`;
+    return;
+  }
   const curVal = alatState.cellEl ? (alatState.cellEl.dataset.value || '').trim().toLowerCase() : '';
 
-  list.innerHTML = ALAT_ANGKUTAN_OPTIONS.map((opt, i) => {
+  list.innerHTML = alatState.filtered.map((opt, i) => {
     const isSelected = opt.value.toLowerCase() === curVal;
     const isFocused = i === alatState.focusIdx;
     const cls = [
@@ -1981,10 +2070,7 @@ function renderAlatPopupList() {
       <div class="${cls}" data-idx="${i}" data-value="${escAttr(opt.value)}"
            onmousedown="onAlatOptionMouseDown(event, this)">
         <div class="alat-item-icon">${opt.icon}</div>
-        <div class="alat-item-content">
-          <div class="alat-item-label">${esc(opt.label)}</div>
-          <div class="alat-item-desc">${esc(opt.desc)}</div>
-        </div>
+        <div class="alat-item-label">${esc(opt.label)}</div>
         <span class="alat-item-check">✓</span>
       </div>
     `;
@@ -2043,22 +2129,26 @@ function onAlatCellKeydown(e, cellEl) {
 
   if (e.key === 'ArrowDown') {
     e.preventDefault();
-    alatState.focusIdx = Math.min(alatState.focusIdx + 1, ALAT_ANGKUTAN_OPTIONS.length - 1);
-    renderAlatPopupList();
+    if (alatState.filtered.length) {
+      alatState.focusIdx = Math.min(alatState.focusIdx + 1, alatState.filtered.length - 1);
+      renderAlatPopupList();
+    }
     return;
   }
 
   if (e.key === 'ArrowUp') {
     e.preventDefault();
-    alatState.focusIdx = Math.max(alatState.focusIdx - 1, 0);
-    renderAlatPopupList();
+    if (alatState.filtered.length) {
+      alatState.focusIdx = Math.max(alatState.focusIdx - 1, 0);
+      renderAlatPopupList();
+    }
     return;
   }
 
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
-    if (alatState.focusIdx >= 0 && ALAT_ANGKUTAN_OPTIONS[alatState.focusIdx]) {
-      pickAlatOption(ALAT_ANGKUTAN_OPTIONS[alatState.focusIdx].value);
+    if (alatState.focusIdx >= 0 && alatState.filtered[alatState.focusIdx]) {
+      pickAlatOption(alatState.filtered[alatState.focusIdx].value);
     }
     return;
   }
