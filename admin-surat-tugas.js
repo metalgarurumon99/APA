@@ -680,13 +680,8 @@ async function batalSelesaiSuratTugas(id) {
   const s = suratMap[id];
   if (!s || s.status !== 'selesai') return;
 
-  const noSurat = s.nomor_surat ? `No. ${s.nomor_surat}` : 'surat tugas ini';
-  const konfirmasi = confirm(`Kembalikan status ${noSurat} menjadi "Menunggu"?\n\nSurat akan dapat diedit kembali dan statusnya berubah menjadi Menunggu.`);
-  if (!konfirmasi) return;
-
   try {
     await patchSuratTugas(id, { status: 'menunggu' });
-    showPageAlert('✅ Status surat berhasil dikembalikan ke "Menunggu".', 'info');
     const dirtySnapshot = captureMenungguDirty(null);
     await loadSurat();
     reapplyMenungguDirty(dirtySnapshot);
