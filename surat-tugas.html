@@ -164,17 +164,19 @@
   .btn-cancel-edit:hover{background:#fef2f2;color:var(--red);border-color:#fecaca}
   .btn-duplicate{background:#f8fafc;color:var(--navy);border:1.5px solid var(--border2);border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
   .btn-duplicate:hover{background:#e2e8f0;border-color:var(--navy)}
+  .btn-batal-selesai{background:#fff1f2;color:#be123c;border:1.5px solid #fecdd3;border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+  .btn-batal-selesai:hover{background:#ffe4e6;border-color:#f43f5e}
   .btn-edit-role{background:#f5f3ff;color:#5b21b6;border:1.5px solid #ddd6fe;border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
   .btn-edit-role:hover{background:#ede9fe;border-color:#8b5cf6}
 
-
   /* MODIFIER .btn-icon — bikin tombol jadi square compact (logo-only).
-     Diapply ke btn-edit-row, btn-preview, btn-download di kolom Aksi
+     Diapply ke btn-batal-selesai, btn-duplicate, btn-preview, btn-download di kolom Aksi
      supaya kolom lebih hemat ruang. Tooltip via attribute title. */
   .btn-action-icon{width:13px;height:13px;object-fit:contain;vertical-align:middle;display:inline-block;pointer-events:none}
   .btn-approve .btn-action-icon,
   .btn-save-edit .btn-action-icon{filter:brightness(0) invert(1)}
   .btn-edit-row.btn-icon,
+  .btn-batal-selesai.btn-icon,
   .btn-edit-role.btn-icon,
   .btn-preview.btn-icon,
   .btn-download.btn-icon,
@@ -890,7 +892,7 @@
         <span class="search-icon-compact">
           <img src="Assets/search.png" alt="Cari">
         </span>
-        <input class="search-input-compact" type="text" id="search-input" placeholder="Cari no surat, perihal, tujuan, nama, POK..." oninput="filterTable({ resetPage: true })">
+        <input class="search-input-compact" type="text" id="search-input" oninput="filterTable({ resetPage: true })">
       </div>
 
       <div class="stats-cards-group">
@@ -941,7 +943,7 @@
 
     <div class="table-wrap fade-in" style="animation-delay:.12s">
       <div class="table-head">
-        <span class="table-head-title">Daftar Pengajuan Surat Tugas</span>
+        <span class="table-head-title">Daftar Surat Tugas</span>
         <span class="table-head-count" id="table-count">Memuat...</span>
         <!-- Tombol Aksi Icon-Only dari folder Assets -->
         <div class="table-head-actions">

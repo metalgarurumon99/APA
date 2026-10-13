@@ -672,6 +672,30 @@ async function duplicateSuratTugas(id) {
 }
 window.duplicateSuratTugas = duplicateSuratTugas;
 
+/**
+ * Mengembalikan status surat tugas dari 'selesai' ke 'menunggu'.
+ * Row otomatis menjadi editable inline kembali seperti sedia kala.
+ */
+async function batalSelesaiSuratTugas(id) {
+  const s = suratMap[id];
+  if (!s || s.status !== 'selesai') return;
+
+  const noSurat = s.nomor_surat ? `No. ${s.nomor_surat}` : 'surat tugas ini';
+  const konfirmasi = confirm(`Kembalikan status ${noSurat} menjadi "Menunggu"?\n\nSurat akan dapat diedit kembali dan statusnya berubah menjadi Menunggu.`);
+  if (!konfirmasi) return;
+
+  try {
+    await patchSuratTugas(id, { status: 'menunggu' });
+    showPageAlert('✅ Status surat berhasil dikembalikan ke "Menunggu".', 'info');
+    const dirtySnapshot = captureMenungguDirty(null);
+    await loadSurat();
+    reapplyMenungguDirty(dirtySnapshot);
+  } catch (err) {
+    showPageAlert(`Gagal membatalkan status selesai: ${err.message}`, 'error');
+  }
+}
+window.batalSelesaiSuratTugas = batalSelesaiSuratTugas;
+
 function setFilterStatus(status) {
   const sel = document.getElementById('filter-status');
   if (sel) sel.value = status;
@@ -934,18 +958,11 @@ function renderRowHTML(s) {
         <button class="btn-save-edit" onclick="saveRowEdit(${s.id})"><img src="Assets/checked.png" class="btn-action-icon" alt=""> Simpan</button>
         <button class="btn-cancel-edit btn-icon" onclick="cancelRowEdit(${s.id})" title="Batal edit"><img src="Assets/undo.png" class="btn-action-icon" alt="Batal"></button>`;
     } else {
-      // Tombol "Edit Role" muncul kalau tipe ada lampiran (T2/T3V) DAN
-      // ≥ 2 pegawai. Sama dengan kondisi show-bertugas di modal Approve.
-      // Semua tombol pakai LOGO ONLY dari folder assets supaya kolom aksi compact.
-      const showEditRole = tipeHasLampiran(s.tipe)
-                           && Array.isArray(s.pegawai_list)
-                           && s.pegawai_list.length >= 2;
-      const btnEditRole = showEditRole
-        ? `<button class="btn-edit-role btn-icon" onclick="openEditBertugas(${s.id})" title="Edit role per pegawai"><img src="Assets/writing.png" class="btn-action-icon" alt="Edit Role"></button>`
-        : '';
+      // Tombol Aksi status selesai: Batal Selesai (revert ke menunggu), Duplikat, Preview, Download.
+      // Semua tombol pakai LOGO ONLY dari folder assets (30x30 compact).
+      const btnBatalSelesai = `<button class="btn-batal-selesai btn-icon" onclick="batalSelesaiSuratTugas(${s.id})" title="Batal Selesai (Kembalikan ke status Menunggu)"><img src="Assets/undo.png" class="btn-action-icon" alt="Batal Selesai"></button>`;
       aksi = `
-        <button class="btn-edit-row btn-icon" onclick="enableRowEdit(${s.id})" title="Edit field surat ini"><img src="Assets/edit.png" class="btn-action-icon" alt="Edit"></button>
-        ${btnEditRole}
+        ${btnBatalSelesai}
         ${btnDuplicate}
         <button class="btn-preview btn-icon" onclick="openPreview(${s.id})" title="Preview surat"><img src="Assets/preview.png" class="btn-action-icon" alt="Preview"></button>
         <button class="btn-download btn-icon" onclick="downloadSuratTugas(${s.id})" title="Download .docx"><img src="Assets/export.png" class="btn-action-icon" alt="Download"></button>`;
