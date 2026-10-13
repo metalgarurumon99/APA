@@ -77,6 +77,7 @@
     isReadOnly: false, // true = preview mode (hanya melihat daftar petugas terlampir)
     activeView: 'main', // 'main' | 'terlampir'
     terlampirTab: 'semua', // 'semua' | 'peran'
+    placement: null, // 'bottom' | 'top'
     selectedNips: [],
     selectedNames: [],
     selectedRolesMap: {},
@@ -154,22 +155,26 @@
           <button type="button" class="apa-pg-tab" data-tab="peran">Peran</button>
         </div>
 
-        <div id="apa-pg-terlampir-search-header" class="apa-pg-header" style="border-bottom: none; padding-top: 6px;">
-          <div class="apa-pg-search-wrap">
-            <span class="apa-pg-search-icon">🔍</span>
-            <input type="text" id="apa-pg-terlampir-search" class="apa-pg-search-input" placeholder="Saring petugas terlampir..." autocomplete="off">
+        <!-- PANE TAB SEMUA (Tinggi sama persis dengan tab peran) -->
+        <div id="apa-pg-pane-semua" class="apa-pg-tab-pane active">
+          <div id="apa-pg-terlampir-search-header" class="apa-pg-header" style="border-bottom: none; padding: 6px 10px; flex-shrink: 0;">
+            <div class="apa-pg-search-wrap">
+              <span class="apa-pg-search-icon">🔍</span>
+              <input type="text" id="apa-pg-terlampir-search" class="apa-pg-search-input" placeholder="Saring petugas terlampir..." autocomplete="off">
+            </div>
           </div>
+          <div id="apa-pg-terlampir-list" class="apa-pg-list"></div>
         </div>
 
-        <div id="apa-pg-terlampir-list" class="apa-pg-list" style="max-height: 240px;"></div>
-
-        <!-- PANEL PERAN / ROLE (TAB PERAN) -->
-        <div id="apa-pg-roles-container" class="apa-pg-roles-container" style="display: none;">
-          <div class="apa-pg-roles-header">
-            <span class="apa-pg-roles-title">📋 Peran Petugas (Opsional)</span>
-            <span class="apa-pg-roles-sub">Bisa diisi atau dikosongkan</span>
+        <!-- PANE TAB PERAN (Tinggi sama persis dengan tab semua) -->
+        <div id="apa-pg-pane-peran" class="apa-pg-tab-pane">
+          <div id="apa-pg-roles-container" class="apa-pg-roles-container">
+            <div class="apa-pg-roles-header">
+              <span class="apa-pg-roles-title">📋 Peran Petugas (Opsional)</span>
+              <span class="apa-pg-roles-sub">Bisa diisi atau dikosongkan</span>
+            </div>
+            <div id="apa-pg-roles-list" class="apa-pg-roles-list"></div>
           </div>
-          <div id="apa-pg-roles-list" class="apa-pg-roles-list"></div>
         </div>
 
         <div class="apa-pg-footer">
@@ -187,11 +192,11 @@
   }
 
   // ── Penempatan Posisi Adaptif (Bawah / Atas) ─────────────────
-  function positionPopup(popup, targetEl) {
+  function positionPopup(popup, targetEl, forceRecalculateOrientation = false) {
     if (!targetEl) return;
     const rect = targetEl.getBoundingClientRect();
     const popW = 360;
-    const popH = popup.offsetHeight || 380;
+    const popH = popup.offsetHeight || 390;
     const pad = 8;
 
     let left = rect.left;
@@ -200,11 +205,30 @@
     }
     if (left < pad) left = pad;
 
-    let top = rect.bottom + 4;
-    if (top + popH > window.innerHeight - pad) {
-      const topAbove = rect.top - popH - 4;
-      if (topAbove >= pad) top = topAbove;
-      else top = Math.max(pad, window.innerHeight - popH - pad);
+    // Tentukan arah penempatan (bawah vs atas)
+    if (forceRecalculateOrientation || !state.placement) {
+      const spaceBelow = window.innerHeight - rect.bottom - pad;
+      const spaceAbove = rect.top - pad;
+      if (rect.bottom + 4 + popH <= window.innerHeight - pad) {
+        state.placement = 'bottom';
+      } else if (spaceAbove >= popH) {
+        state.placement = 'top';
+      } else {
+        state.placement = spaceBelow >= spaceAbove ? 'bottom' : 'top';
+      }
+    }
+
+    let top;
+    if (state.placement === 'bottom') {
+      top = rect.bottom + 4;
+      if (top + popH > window.innerHeight - pad) {
+        top = Math.max(pad, window.innerHeight - popH - pad);
+      }
+    } else {
+      top = rect.top - popH - 4;
+      if (top < pad) {
+        top = pad;
+      }
     }
 
     popup.style.left = Math.round(left) + 'px';
@@ -518,7 +542,7 @@
     if (!container || !listEl) return;
 
     if (!state.selectedNips.length) {
-      listEl.innerHTML = '<div class="apa-pg-empty">Belum ada petugas yang dipilih.<br><span style="font-size:11px;color:#94a3b8;margin-top:4px;display:inline-block;">Pilih petugas terlebih dahulu di tab Semua.</span></div>';
+      listEl.innerHTML = '<div class="apa-pg-empty" style="padding-top:40px;">Belum ada petugas yang dipilih.<br><span style="font-size:11px;color:#94a3b8;margin-top:6px;display:inline-block;">Pilih petugas terlebih dahulu di tab Semua.</span></div>';
       return;
     }
 
@@ -564,26 +588,23 @@
       else t.classList.remove('active');
     });
 
-    const searchHeader = popupEl.querySelector('#apa-pg-terlampir-search-header');
-    const terlampirList = popupEl.querySelector('#apa-pg-terlampir-list');
-    const rolesContainer = popupEl.querySelector('#apa-pg-roles-container');
+    const paneSemua = popupEl.querySelector('#apa-pg-pane-semua');
+    const panePeran = popupEl.querySelector('#apa-pg-pane-peran');
 
     if (state.terlampirTab === 'peran') {
-      if (searchHeader) searchHeader.style.display = 'none';
-      if (terlampirList) terlampirList.style.display = 'none';
-      if (rolesContainer) rolesContainer.style.display = 'block';
+      if (paneSemua) paneSemua.classList.remove('active');
+      if (panePeran) panePeran.classList.add('active');
       renderRolesPanel();
     } else {
-      if (searchHeader) searchHeader.style.display = '';
-      if (terlampirList) terlampirList.style.display = '';
-      if (rolesContainer) rolesContainer.style.display = 'none';
+      if (panePeran) panePeran.classList.remove('active');
+      if (paneSemua) paneSemua.classList.add('active');
       renderTerlampirList();
       const sInp = popupEl.querySelector('#apa-pg-terlampir-search');
       if (sInp) setTimeout(() => sInp.focus(), 60);
     }
 
     if (state.cellEl) {
-      positionPopup(popupEl, state.cellEl);
+      positionPopup(popupEl, state.cellEl, false);
     }
   }
 
@@ -606,7 +627,7 @@
     }
 
     if (state.cellEl) {
-      positionPopup(popupEl, state.cellEl);
+      positionPopup(popupEl, state.cellEl, false);
     }
   }
 
@@ -668,6 +689,7 @@
     state.query = '';
     state.terlampirQuery = '';
     state.focusIdx = -1;
+    state.placement = null;
 
     let existingNips = [];
     let existingNames = [];
@@ -715,7 +737,7 @@
       switchView('main');
     }
 
-    positionPopup(popupEl, cellEl);
+    positionPopup(popupEl, cellEl, true);
   }
 
   function openPreview(targetEl) {
