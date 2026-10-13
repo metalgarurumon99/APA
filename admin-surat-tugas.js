@@ -563,7 +563,7 @@ async function addNewSurat() {
     const inserted = await res.json();
     const newId = Array.isArray(inserted) && inserted.length ? inserted[0].id : null;
 
-    showPageAlert('✅ Baris baru ditambahkan. Lengkapi data lalu klik Setujui.', 'success');
+    showPageAlert('✅ Baris baru ditambahkan. Lengkapi data lalu klik Selesai.', 'success');
 
     // Reload tabel — pakai pattern dirty-preserve yg sama dgn submitApprove
     // supaya edit di baris menunggu lain (kalau ada) tidak hilang.
@@ -831,31 +831,31 @@ function renderRowHTML(s) {
 
   let aksi;
   if (isMenunggu) {
-    // Tombol utama "Setujui" tetap pakai label — eye-catching karena ini
+    // Tombol utama "Selesai" tetap pakai label — eye-catching karena ini
     // aksi paling penting di row status menunggu.
     aksi = `
-      <button class="btn-approve" onclick="openApprove(${s.id})">✅ Setujui</button>`;
+      <button class="btn-approve" onclick="openApprove(${s.id})"><img src="Assets/checked.png" class="btn-action-icon" alt=""> Selesai</button>`;
   } else if (isSelesai) {
     if (isEditing) {
       // Mode edit aktif — Simpan (label) & Batal (logo only).
       aksi = `
-        <button class="btn-save-edit" onclick="saveRowEdit(${s.id})">💾 Simpan</button>
-        <button class="btn-cancel-edit" onclick="cancelRowEdit(${s.id})" title="Batal edit">✕</button>`;
+        <button class="btn-save-edit" onclick="saveRowEdit(${s.id})"><img src="Assets/checked.png" class="btn-action-icon" alt=""> Simpan</button>
+        <button class="btn-cancel-edit btn-icon" onclick="cancelRowEdit(${s.id})" title="Batal edit"><img src="Assets/undo.png" class="btn-action-icon" alt="Batal"></button>`;
     } else {
       // Tombol "Edit Role" muncul kalau tipe ada lampiran (T2/T3V) DAN
       // ≥ 2 pegawai. Sama dengan kondisi show-bertugas di modal Approve.
-      // Semua tombol pakai LOGO ONLY supaya kolom aksi compact.
+      // Semua tombol pakai LOGO ONLY dari folder assets supaya kolom aksi compact.
       const showEditRole = tipeHasLampiran(s.tipe)
                            && Array.isArray(s.pegawai_list)
                            && s.pegawai_list.length >= 2;
       const btnEditRole = showEditRole
-        ? `<button class="btn-edit-row btn-icon" onclick="openEditBertugas(${s.id})" title="Edit role per pegawai" style="background:#5b3a8a;color:#fff;border-color:#5b3a8a">✏️</button>`
+        ? `<button class="btn-edit-row btn-icon" onclick="openEditBertugas(${s.id})" title="Edit role per pegawai" style="background:#5b3a8a;color:#fff;border-color:#5b3a8a"><img src="Assets/writing.png" class="btn-action-icon" style="filter:brightness(0) invert(1)" alt="Edit Role"></button>`
         : '';
       aksi = `
-        <button class="btn-edit-row btn-icon" onclick="enableRowEdit(${s.id})" title="Edit field surat ini">✏️</button>
+        <button class="btn-edit-row btn-icon" onclick="enableRowEdit(${s.id})" title="Edit field surat ini"><img src="Assets/edit.png" class="btn-action-icon" alt="Edit"></button>
         ${btnEditRole}
-        <button class="btn-preview btn-icon" onclick="openPreview(${s.id})" title="Preview surat">👁</button>
-        <button class="btn-download btn-icon" onclick="downloadSuratTugas(${s.id})" title="Download .docx">📥</button>`;
+        <button class="btn-preview btn-icon" onclick="openPreview(${s.id})" title="Preview surat"><img src="Assets/preview.png" class="btn-action-icon" alt="Preview"></button>
+        <button class="btn-download btn-icon" onclick="downloadSuratTugas(${s.id})" title="Download .docx"><img src="Assets/export.png" class="btn-action-icon" alt="Download"></button>`;
     }
   } else {
     // Status tidak dikenal — tampilkan placeholder
@@ -870,7 +870,7 @@ function renderRowHTML(s) {
   // cukup tambahkan class .ck-success untuk varian hijau.
   const checkCell = isSelesai
     ? `<td class="col-check"><input type="checkbox" class="bulk-dl-check" data-surat-id="${s.id}" onchange="updateBulkDownloadCounter()"></td>`
-    : `<td class="col-check"><input type="checkbox" class="bulk-approve-check ck-success" data-surat-id="${s.id}" onchange="updateBulkApproveCounter()" title="Pilih untuk bulk approve"></td>`;
+    : `<td class="col-check"><input type="checkbox" class="bulk-approve-check ck-success" data-surat-id="${s.id}" onchange="updateBulkApproveCounter()" title="Pilih untuk bulk selesai"></td>`;
 
   // data-editing sebagai marker tambahan agar styling/CSS bisa membedakan
   // baris yg sedang di-edit (ditambah border kuning di seksi CSS).
@@ -1476,7 +1476,7 @@ function cellPegawaiMultiHTML(id, nips, names, editable) {
             data-nips='${escAttr(JSON.stringify(nips))}'
             data-names='${escAttr(JSON.stringify(names))}'
             onclick="event.stopPropagation(); window.apaPegawai.openPreview(this)">
-            <span class="icon">📎</span> Terlampir
+            Terlampir
             <span class="count-pill">${names.length}</span>
           </span>
         </div>
@@ -1495,13 +1495,14 @@ function cellPegawaiMultiHTML(id, nips, names, editable) {
     contentHtml = `<span class="apa-pg-single-name" title="${esc(nama)}">${esc(nama)}</span>`;
   } else {
     contentHtml = `<span class="apa-pg-badge-terlampir" title="${esc(names.join(', '))}">
-      <span class="icon">📎</span> Terlampir
+      Terlampir
       <span class="count-pill">${nips.length}</span>
     </span>`;
   }
 
   return `<td class="col-nama">
     <div class="pg-cell" data-field="pegawai_multi" data-col-field="pegawai_multi" data-id="${id}"
+      tabindex="0"
       data-nips='${escAttr(JSON.stringify(nips))}'
       data-names='${escAttr(JSON.stringify(names))}'
       onclick="openAc(this, false)">
@@ -1534,6 +1535,7 @@ function cellPenandatanganHTML(id, nip, nama, editable) {
 
   return `<td class="col-ttd">
     <div class="pg-cell single" data-field="penandatangan" data-col-field="penandatangan" data-id="${id}"
+      tabindex="0"
       data-nip="${escAttr(nip || '')}"
       data-nama="${escAttr(nama || '')}"
       onclick="openAc(this, true)">
@@ -2113,10 +2115,19 @@ function onAlatCellKeydown(e, cellEl) {
   const isOpen = popup && popup.classList.contains('open');
 
   if (!isOpen) {
-    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+    if (e.key === 'Enter' || e.key === ' ' || (e.altKey && e.key === 'ArrowDown')) {
       e.preventDefault();
       openAlatDropdown(cellEl);
+      return;
     }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      setAlatCellValue(cellEl, '');
+      const tr = cellEl.closest('tr[data-surat-id]');
+      if (tr) snapshotAdminDraft(tr.dataset.suratId);
+      return;
+    }
+    // Biarkan ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Tab bubble ke global keydown listener
     return;
   }
 
@@ -2441,11 +2452,9 @@ function buildNavGrid() {
       );
       if (el) return el;
 
-      // 2) Editable pg-cell → kembalikan pg-input di dalamnya
+      // 2) Editable pg-cell (Nama / Penandatangan)
       const pgCell = row.querySelector(`.pg-cell[data-col-field="${field}"]`);
-      if (pgCell) {
-        return pgCell.querySelector('.pg-input') || pgCell;
-      }
+      if (pgCell) return pgCell;
 
       // 3) Editable alat-cell
       const alatCell = row.querySelector(`.alat-cell[data-col-field="${field}"]`);
@@ -2466,14 +2475,14 @@ function buildNavGrid() {
 
 /**
  * Cari posisi elemen dalam grid.
- * Jika elemen adalah pg-input/tp-input, cari parent pg-cell/tp-cell-nya di grid.
+ * Jika elemen adalah anak dari sel, cari container selnya di grid.
  */
 function findInGrid(grid, target) {
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       const el = grid[r][c];
       if (!el) continue;
-      if (el === target) return { r, c };
+      if (el === target || (el.contains && el.contains(target))) return { r, c };
       // pg-input → cek apakah parent pg-cell ada di grid
       if (target.classList && target.classList.contains('pg-input')) {
         const parentPg = target.closest('.pg-cell');
@@ -2528,7 +2537,7 @@ function navFocusCell(grid, r, c) {
 
 /* ════════════════════════════════════════════════════════════════════
    GLOBAL KEYDOWN — Tab/Enter (navigasi linear) + Arrow (navigasi grid)
-   + Escape (tutup popup/modal)
+   + Delete/Backspace (batalkan pilihan) + Escape (tutup popup/modal)
 ═══════════════════════════════════════════════════════════════════════ */
 document.addEventListener('keydown', (e) => {
 
@@ -2544,20 +2553,64 @@ document.addEventListener('keydown', (e) => {
   }
 
   const target = e.target;
+  const cellTarget = (target.classList && (
+    target.classList.contains('xls-cell') ||
+    target.classList.contains('pg-cell') ||
+    target.classList.contains('alat-cell') ||
+    target.classList.contains('tp-cell') ||
+    target.classList.contains('ro-text') ||
+    target.classList.contains('ro-ttd')
+  )) ? target : (target.closest ? target.closest('.xls-cell, .pg-cell, .alat-cell, .tp-cell, .ro-text, .ro-ttd') : null);
 
-  // Tentukan tipe elemen yang sedang difokus
-  const isXlsCell  = target.classList && target.classList.contains('xls-cell');
-  const isPgInput  = target.classList && target.classList.contains('pg-input');
-  const isTpInput  = target.classList && target.classList.contains('tp-input');
-  const isRoText   = target.classList && (
-    target.classList.contains('ro-text') || target.classList.contains('ro-ttd')
-  );
-  const isNavTarget = isXlsCell || isPgInput || isTpInput || isRoText;
+  if (!cellTarget) return;
 
-  if (!isNavTarget) return;
+  const isXlsCell  = cellTarget.classList.contains('xls-cell');
+  const isPgCell   = cellTarget.classList.contains('pg-cell');
+  const isAlatCell = cellTarget.classList.contains('alat-cell');
+  const isTpInput  = cellTarget.classList.contains('tp-input');
+  const isRoText   = cellTarget.classList.contains('ro-text') || cellTarget.classList.contains('ro-ttd');
 
-  const isTextarea  = target.tagName === 'TEXTAREA';
-  const isReadonly  = isRoText;
+  const isTextarea = cellTarget.tagName === 'TEXTAREA';
+  const isReadonly = isRoText;
+
+  /* ── Shortcut Pembatalan Pilihan (Delete / Backspace di sel non-teks) ── */
+  if (!isReadonly && (e.key === 'Delete' || e.key === 'Backspace')) {
+    if (isAlatCell) {
+      e.preventDefault();
+      setAlatCellValue(cellTarget, '');
+      const tr = cellTarget.closest('tr[data-surat-id]');
+      if (tr) snapshotAdminDraft(tr.dataset.suratId);
+      return;
+    }
+    if (isPgCell) {
+      e.preventDefault();
+      cellTarget.dataset.nips = '[]';
+      cellTarget.dataset.names = '[]';
+      delete cellTarget.dataset.nip;
+      delete cellTarget.dataset.nama;
+      if (window.apaPegawai) {
+        window.apaPegawai.renderCell(cellTarget, [], []);
+      }
+      const tr = cellTarget.closest('tr[data-surat-id]');
+      if (tr) snapshotAdminDraft(tr.dataset.suratId);
+      return;
+    }
+  }
+
+  /* ── Enter / Space pada sel dropdown (Pegawai / Alat Angkutan) ── */
+  if (!isReadonly && (e.key === 'Enter' || e.key === ' ')) {
+    if (isPgCell) {
+      e.preventDefault();
+      const isSingle = cellTarget.classList.contains('single') || cellTarget.dataset.field === 'penandatangan';
+      openAc(cellTarget, isSingle);
+      return;
+    }
+    if (isAlatCell) {
+      e.preventDefault();
+      openAlatDropdown(cellTarget);
+      return;
+    }
+  }
 
   /* ── Arrow keys: navigasi grid ──────────────────────────────────── */
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
@@ -2565,24 +2618,19 @@ document.addEventListener('keydown', (e) => {
     // Alt+ArrowDown di date cell = buka kalender, jangan intercept
     if (e.altKey && e.key === 'ArrowDown') return;
 
-    // ArrowUp/Down di autocomplete pegawai = biarkan handler onPgKeydown handle
-    if (isPgInput && document.getElementById('ac-popup').classList.contains('open')) {
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') return;
-    }
-
     // ArrowUp/Down di MAK typeahead = biarkan onMAKKeydown handle navigate item
-    if (target.classList && target.classList.contains('mak-input') &&
-        document.getElementById('mak-ac-popup').classList.contains('open')) {
+    if (cellTarget.classList && cellTarget.classList.contains('mak-input') &&
+        document.getElementById('mak-ac-popup') && document.getElementById('mak-ac-popup').classList.contains('open')) {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') return;
     }
 
     // ArrowUp/Down di Tipe autocomplete = biarkan handler onTpKeydown handle navigate item
-    if (isTpInput && document.getElementById('tp-ac-popup').classList.contains('open')) {
+    if (isTpInput && document.getElementById('tp-ac-popup') && document.getElementById('tp-ac-popup').classList.contains('open')) {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') return;
     }
 
     const grid = buildNavGrid();
-    const pos  = findInGrid(grid, target);
+    const pos  = findInGrid(grid, cellTarget);
     if (!pos) return;
 
     const { r, c } = pos;
@@ -2606,9 +2654,9 @@ document.addEventListener('keydown', (e) => {
     }
 
     if (e.key === 'ArrowLeft') {
-      // Readonly: selalu pindah kolom
-      // Editable: pindah kolom hanya jika kursor di posisi paling kiri (0)
-      const cursorAtStart = isReadonly || (
+      // Readonly / pg-cell / alat-cell: selalu pindah kolom
+      // Editable text input: pindah kolom hanya jika kursor di posisi paling kiri (0)
+      const cursorAtStart = isReadonly || isPgCell || isAlatCell || (
         target.selectionStart === 0 && target.selectionEnd === 0
       );
       if (cursorAtStart) {
@@ -2628,10 +2676,10 @@ document.addEventListener('keydown', (e) => {
     }
 
     if (e.key === 'ArrowRight') {
-      // Readonly: selalu pindah kolom
-      // Editable: pindah kolom hanya jika kursor di posisi paling kanan (akhir teks)
+      // Readonly / pg-cell / alat-cell: selalu pindah kolom
+      // Editable text input: pindah kolom hanya jika kursor di posisi paling kanan (akhir teks)
       const valLen = (target.value || '').length;
-      const cursorAtEnd = isReadonly || (
+      const cursorAtEnd = isReadonly || isPgCell || isAlatCell || (
         target.selectionStart === valLen && target.selectionEnd === valLen
       );
       if (cursorAtEnd) {
@@ -2653,11 +2701,8 @@ document.addEventListener('keydown', (e) => {
 
   /* ── Tab: navigasi linear (hanya untuk sel editable) ─────────────
      ENTER di textarea: plain Enter = pindah ke sel berikutnya (Tab),
-     Alt+Enter = newline. Sebelumnya Enter di textarea = newline default
-     browser, sekarang diubah atas permintaan user.
-     ENTER di input single-line: no-op (tidak ada newline, tidak navigasi)
-     karena field-field seperti nomor_surat, tanggal_surat, MAK
-     sudah punya handler Tab sendiri.                                   */
+     Alt+Enter = newline.
+     ENTER di input single-line: no-op                                  */
   if (isReadonly) return; // readonly: biarkan Tab default browser
 
   // Enter di textarea.xls-cell
@@ -2669,30 +2714,41 @@ document.addEventListener('keydown', (e) => {
     // Plain Enter (tanpa Alt/Ctrl/Shift): pindah ke sel berikutnya
     e.preventDefault();
     closeAllPopups();
-    moveCellFocus(target, 1);
+    moveCellFocus(cellTarget, 1);
     return;
   }
 
   if (e.key === 'Tab') {
     e.preventDefault();
-    moveCellFocus(target, e.shiftKey ? -1 : 1);
+    moveCellFocus(cellTarget, e.shiftKey ? -1 : 1);
   }
 });
 
 /**
  * Navigasi linear Tab/Enter di sel editable.
- * Meliputi semua xls-cell dan pg-input di baris menunggu.
+ * Meliputi semua xls-cell, pg-cell, alat-cell di baris menunggu & editing.
  */
 function moveCellFocus(currentEl, direction) {
+  const targetCell = (currentEl && currentEl.closest)
+    ? currentEl.closest('.xls-cell, .pg-cell, .alat-cell, .tp-cell, .ro-text, .ro-ttd') || currentEl
+    : currentEl;
   const allCells = Array.from(document.querySelectorAll(
-    'tr[data-status="menunggu"] .xls-cell, tr[data-status="menunggu"] .pg-input, tr[data-status="menunggu"] .alat-cell, tr[data-status="menunggu"] .tp-input'
+    'tr:is([data-status="menunggu"], [data-editing="1"]) .xls-cell, ' +
+    'tr:is([data-status="menunggu"], [data-editing="1"]) .pg-cell, ' +
+    'tr:is([data-status="menunggu"], [data-editing="1"]) .alat-cell, ' +
+    'tr:is([data-status="menunggu"], [data-editing="1"]) .tp-cell'
   ));
-  const idx  = allCells.indexOf(currentEl);
+  let idx = allCells.indexOf(targetCell);
+  if (idx < 0) {
+    idx = allCells.findIndex(c => c.contains(targetCell));
+  }
   if (idx < 0) return;
   const next = allCells[idx + direction];
   if (next) {
     next.focus();
-    if (next.tagName === 'INPUT' && next.type === 'text') next.select();
+    if (next.tagName === 'INPUT' && next.type === 'text') {
+      try { next.select(); } catch(_) {}
+    }
   }
 }
 
@@ -4902,11 +4958,11 @@ function updateBulkApproveCounter() {
   if (btn) {
     if (checked.length === 0) {
       btn.disabled    = true;
-      btn.title       = 'Pilih dulu surat menunggu yang ingin disetujui';
+      btn.title       = 'Pilih dulu surat menunggu yang ingin diselesaikan';
       if (badge) { badge.style.display = 'none'; badge.textContent = '0'; }
     } else {
       btn.disabled    = false;
-      btn.title       = `Setujui ${checked.length} surat terpilih`;
+      btn.title       = `Selesai ${checked.length} surat terpilih`;
       if (badge) { badge.style.display = 'inline-flex'; badge.textContent = checked.length; }
     }
   }
@@ -4933,7 +4989,7 @@ function openBulkApprove() {
   const checkeds = Array.from(document.querySelectorAll('.bulk-approve-check:checked'));
   const ids = checkeds.map(c => parseInt(c.dataset.suratId, 10)).filter(Number.isFinite);
   if (!ids.length) {
-    showPageAlert('Pilih minimal 1 surat menunggu untuk disetujui.', 'error');
+    showPageAlert('Pilih minimal 1 surat menunggu untuk diselesaikan.', 'error');
     return;
   }
 
@@ -5079,7 +5135,7 @@ async function submitBulkApprove() {
 
   closeModal('modal-bulk-approve');
   if (failures.length === 0) {
-    showPageAlert(`✅ ${success} surat berhasil disetujui.`, 'success');
+    showPageAlert(`✅ ${success} surat berhasil diselesaikan.`, 'success');
   } else {
     showPageAlert(`⚠️ ${success} berhasil, ${failures.length} gagal: ${failures.slice(0,2).join('; ')}${failures.length > 2 ? '…' : ''}`, 'error');
     console.warn('[APA Bulk Approve] failures:', failures);

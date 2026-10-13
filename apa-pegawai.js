@@ -276,6 +276,10 @@
       delete cellEl.dataset.nama;
     }
 
+    if (!cellEl.hasAttribute('tabindex')) {
+      cellEl.setAttribute('tabindex', '0');
+    }
+
     cellEl.innerHTML = '';
     const wrapper = document.createElement('div');
     wrapper.className = 'apa-pg-cell-wrapper';
@@ -290,11 +294,10 @@
       const nama = names[0] || nips[0];
       wrapper.innerHTML = '<span class="apa-pg-single-name" title="' + nama.replace(/"/g, '&quot;') + '">' + nama + '</span>';
     } else {
-      // Terlampir (Rule 1 & 3: Nama-nama tersembunyi, hanya badge ringkas)
+      // Terlampir (Rule 1 & 3: Nama-nama tersembunyi, hanya badge ringkas tanpa logo)
       wrapper.innerHTML = `
         <span class="apa-pg-badge-terlampir" title="${names.join(', ').replace(/"/g, '&quot;')}">
-          <span class="icon">📎</span> Terlampir
-          <span class="count-pill">${nips.length}</span>
+          Terlampir <span class="count-pill">${nips.length}</span>
         </span>
       `;
     }
