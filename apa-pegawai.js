@@ -76,7 +76,7 @@
     isSingle: false, // true = penandatangan (hanya Pegawai organik, tanpa Terlampir)
     isReadOnly: false, // true = preview mode (hanya melihat daftar petugas terlampir)
     activeView: 'main', // 'main' | 'terlampir'
-    terlampirTab: 'all', // 'all' | 'pegawai' | 'mitra'
+    terlampirTab: 'semua', // 'semua' | 'peran'
     selectedNips: [],
     selectedNames: [],
     selectedRolesMap: {},
@@ -150,21 +150,20 @@
         </div>
 
         <div class="apa-pg-filter-tabs">
-          <button type="button" class="apa-pg-tab active" data-tab="all">Semua</button>
-          <button type="button" class="apa-pg-tab" data-tab="pegawai">Pegawai</button>
-          <button type="button" class="apa-pg-tab" data-tab="mitra">Mitra</button>
+          <button type="button" class="apa-pg-tab active" data-tab="semua">Semua</button>
+          <button type="button" class="apa-pg-tab" data-tab="peran">Peran</button>
         </div>
 
-        <div class="apa-pg-header" style="border-bottom: none; padding-top: 6px;">
+        <div id="apa-pg-terlampir-search-header" class="apa-pg-header" style="border-bottom: none; padding-top: 6px;">
           <div class="apa-pg-search-wrap">
             <span class="apa-pg-search-icon">🔍</span>
             <input type="text" id="apa-pg-terlampir-search" class="apa-pg-search-input" placeholder="Saring petugas terlampir..." autocomplete="off">
           </div>
         </div>
 
-        <div id="apa-pg-terlampir-list" class="apa-pg-list" style="max-height: 180px;"></div>
+        <div id="apa-pg-terlampir-list" class="apa-pg-list" style="max-height: 240px;"></div>
 
-        <!-- PANEL PERAN / ROLE (OPSIONAL - Opsi A) -->
+        <!-- PANEL PERAN / ROLE (TAB PERAN) -->
         <div id="apa-pg-roles-container" class="apa-pg-roles-container" style="display: none;">
           <div class="apa-pg-roles-header">
             <span class="apa-pg-roles-title">📋 Peran Petugas (Opsional)</span>
@@ -454,27 +453,23 @@
     let pool = [];
     const curYear = new Date().getFullYear();
 
-    if (state.terlampirTab === 'all' || state.terlampirTab === 'pegawai') {
-      pool = pool.concat(masterPegawai.filter(p => p.status !== 'pensiun').map(p => ({
-        nip: p.nip,
-        nama: p.nama,
-        sub: p.nip ? 'NIP ' + p.nip : p.jabatan,
-        badge: 'Pegawai',
-        badgeCls: 'pegawai',
-        isMitra: false
-      })));
-    }
+    pool = pool.concat(masterPegawai.filter(p => p.status !== 'pensiun').map(p => ({
+      nip: p.nip,
+      nama: p.nama,
+      sub: p.nip ? 'NIP ' + p.nip : p.jabatan,
+      badge: 'Pegawai',
+      badgeCls: 'pegawai',
+      isMitra: false
+    })));
 
-    if (state.terlampirTab === 'all' || state.terlampirTab === 'mitra') {
-      pool = pool.concat(masterMitra.filter(m => m.tahun === curYear || !m.tahun).map(m => ({
-        nip: m.nip,
-        nama: m.nama,
-        sub: m.nip,
-        badge: 'Mitra',
-        badgeCls: 'mitra',
-        isMitra: true
-      })));
-    }
+    pool = pool.concat(masterMitra.filter(m => m.tahun === curYear || !m.tahun).map(m => ({
+      nip: m.nip,
+      nama: m.nama,
+      sub: m.nip,
+      badge: 'Mitra',
+      badgeCls: 'mitra',
+      isMitra: true
+    })));
 
     state.terlampirFiltered = pool.filter(item => {
       if (!q) return true;
@@ -511,7 +506,9 @@
     if (countEl) {
       countEl.textContent = state.selectedNips.length + ' Petugas Terpilih';
     }
-    renderRolesPanel();
+    if (state.terlampirTab === 'peran') {
+      renderRolesPanel();
+    }
   }
 
   function renderRolesPanel() {
@@ -520,39 +517,73 @@
     const listEl = popupEl.querySelector('#apa-pg-roles-list');
     if (!container || !listEl) return;
 
-    if (state.selectedNips.length >= 2) {
-      container.style.display = 'block';
-      listEl.innerHTML = state.selectedNips.map((nip, idx) => {
-        const name = state.selectedNames[idx] || nip;
-        const roleVal = (state.selectedRolesMap[nip] || '').replace(/"/g, '&quot;');
-        const isRo = state.isReadOnly;
-        return `
-          <div class="apa-pg-role-row">
-            <span class="apa-pg-role-num">${idx + 1}.</span>
-            <span class="apa-pg-role-name" title="${name.replace(/"/g, '&quot;')}">${name}</span>
-            <input type="text"
-                   class="apa-pg-role-input"
-                   data-nip="${nip}"
-                   value="${roleVal}"
-                   placeholder="Peran (opsional)"
-                   ${isRo ? 'readonly disabled' : ''}>
-          </div>
-        `;
-      }).join('');
+    if (!state.selectedNips.length) {
+      listEl.innerHTML = '<div class="apa-pg-empty">Belum ada petugas yang dipilih.<br><span style="font-size:11px;color:#94a3b8;margin-top:4px;display:inline-block;">Pilih petugas terlebih dahulu di tab Semua.</span></div>';
+      return;
+    }
 
-      if (!state.isReadOnly) {
-        listEl.querySelectorAll('.apa-pg-role-input').forEach(input => {
-          input.addEventListener('input', function () {
-            const n = this.dataset.nip;
-            if (n) state.selectedRolesMap[n] = this.value;
-          });
-          input.addEventListener('keydown', function (e) {
-            e.stopPropagation();
-          });
+    listEl.innerHTML = state.selectedNips.map((nip, idx) => {
+      const name = state.selectedNames[idx] || nip;
+      const roleVal = (state.selectedRolesMap[nip] || '').replace(/"/g, '&quot;');
+      const isRo = state.isReadOnly;
+      return `
+        <div class="apa-pg-role-row">
+          <span class="apa-pg-role-num">${idx + 1}.</span>
+          <span class="apa-pg-role-name" title="${name.replace(/"/g, '&quot;')}">${name}</span>
+          <input type="text"
+                 class="apa-pg-role-input"
+                 data-nip="${nip}"
+                 value="${roleVal}"
+                 placeholder="Peran (opsional)"
+                 ${isRo ? 'readonly disabled' : ''}>
+        </div>
+      `;
+    }).join('');
+
+    if (!state.isReadOnly) {
+      listEl.querySelectorAll('.apa-pg-role-input').forEach(input => {
+        input.addEventListener('input', function () {
+          const n = this.dataset.nip;
+          if (n) state.selectedRolesMap[n] = this.value;
         });
-      }
+        input.addEventListener('keydown', function (e) {
+          e.stopPropagation();
+        });
+      });
+    }
+  }
+
+  // ── Switch Tab di View Terlampir (Semua vs Peran) ────────────
+  function switchTerlampirTab(tabName) {
+    state.terlampirTab = tabName || 'semua';
+    if (!popupEl) return;
+
+    const tabs = popupEl.querySelectorAll('.apa-pg-tab');
+    tabs.forEach(t => {
+      if (t.dataset.tab === state.terlampirTab) t.classList.add('active');
+      else t.classList.remove('active');
+    });
+
+    const searchHeader = popupEl.querySelector('#apa-pg-terlampir-search-header');
+    const terlampirList = popupEl.querySelector('#apa-pg-terlampir-list');
+    const rolesContainer = popupEl.querySelector('#apa-pg-roles-container');
+
+    if (state.terlampirTab === 'peran') {
+      if (searchHeader) searchHeader.style.display = 'none';
+      if (terlampirList) terlampirList.style.display = 'none';
+      if (rolesContainer) rolesContainer.style.display = 'block';
+      renderRolesPanel();
     } else {
-      container.style.display = 'none';
+      if (searchHeader) searchHeader.style.display = '';
+      if (terlampirList) terlampirList.style.display = '';
+      if (rolesContainer) rolesContainer.style.display = 'none';
+      renderTerlampirList();
+      const sInp = popupEl.querySelector('#apa-pg-terlampir-search');
+      if (sInp) setTimeout(() => sInp.focus(), 60);
+    }
+
+    if (state.cellEl) {
+      positionPopup(popupEl, state.cellEl);
     }
   }
 
@@ -565,9 +596,7 @@
     if (viewName === 'terlampir') {
       mainView.style.display = 'none';
       terlampirView.classList.add('active');
-      renderTerlampirList();
-      const sInp = terlampirView.querySelector('#apa-pg-terlampir-search');
-      if (sInp) setTimeout(() => sInp.focus(), 60);
+      switchTerlampirTab('semua');
     } else {
       terlampirView.classList.remove('active');
       mainView.style.display = 'flex';
@@ -779,15 +808,12 @@
       });
     }
 
-    // Filter Tabs Terlampir
+    // Filter Tabs Terlampir (Semua / Peran)
     const tabs = popupEl.querySelectorAll('.apa-pg-tab');
     tabs.forEach(tab => {
       tab.addEventListener('click', function (e) {
         e.stopPropagation();
-        tabs.forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        state.terlampirTab = this.dataset.tab;
-        renderTerlampirList();
+        switchTerlampirTab(this.dataset.tab);
       });
     });
 
