@@ -941,7 +941,7 @@ function renderRowHTML(s) {
                            && Array.isArray(s.pegawai_list)
                            && s.pegawai_list.length >= 2;
       const btnEditRole = showEditRole
-        ? `<button class="btn-edit-role btn-icon" onclick="openEditBertugas(${s.id})" title="Edit role per pegawai" style="background:#5b3a8a;color:#fff;border-color:#5b3a8a"><img src="Assets/writing.png" class="btn-action-icon" style="filter:brightness(0) invert(1)" alt="Edit Role"></button>`
+        ? `<button class="btn-edit-role btn-icon" onclick="openEditBertugas(${s.id})" title="Edit role per pegawai"><img src="Assets/writing.png" class="btn-action-icon" alt="Edit Role"></button>`
         : '';
       aksi = `
         <button class="btn-edit-row btn-icon" onclick="enableRowEdit(${s.id})" title="Edit field surat ini"><img src="Assets/edit.png" class="btn-action-icon" alt="Edit"></button>
