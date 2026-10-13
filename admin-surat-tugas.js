@@ -3361,7 +3361,6 @@ async function submitApprove() {
     }
 
     closeModal('modal-approve');
-    showPageAlert('✅ Surat tugas berhasil ditandai selesai.', 'success');
     // #8: cleanup draft surat ini setelah sukses approve.
     clearAdminDraft(selectedId);
     // BUG FIX (#5): preserve edit di baris menunggu lain — capture sebelum
