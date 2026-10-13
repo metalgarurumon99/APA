@@ -989,7 +989,7 @@ function renderRowHTML(s) {
       ${cellDateRangeHTML(s.id, 'waktu', waktuMulai, waktuSelesai, editable, s.waktu_pelaksanaan_text)}
       ${cellTextareaHTML(s.id, 'perihal', perihal, editable, 'Perihal surat')}
       ${cellTextareaHTML(s.id, 'tujuan', tujuan, editable, 'Kota/instansi')}
-      ${cellPegawaiMultiHTML(s.id, pegNips, pegNames, editable)}
+      ${cellPegawaiMultiHTML(s.id, pegNips, pegNames, editable, s.bertugas_sebagai)}
       ${cellAlatHTML(s.id, alat, editable)}
       ${cellMAKHTML(s.id, mak, editable)}
       ${cellPenandatanganHTML(s.id, ttdNip, ttdNama, editable)}
@@ -1029,7 +1029,7 @@ function attachEditableListeners(scope) {
       const tr = pg.closest('tr[data-surat-id]');
       if (tr) snapshotAdminDraft(tr.dataset.suratId);
     });
-    obs.observe(pg, { attributes: true, attributeFilter: ['data-nips', 'data-nip'] });
+    obs.observe(pg, { attributes: true, attributeFilter: ['data-nips', 'data-nip', 'data-roles', 'data-bertugas'] });
   });
 }
 
@@ -1149,10 +1149,11 @@ function applyAdminDraftToRow(suratId) {
   const pegCell = row.querySelector('[data-field="pegawai_multi"]');
   if (pegCell && Array.isArray(v.pegawai_nip) && v.pegawai_nip.length) {
     if (window.apaPegawai) {
-      window.apaPegawai.renderCell(pegCell, v.pegawai_nip, v.pegawai_list || []);
+      window.apaPegawai.renderCell(pegCell, v.pegawai_nip, v.pegawai_list || [], v.bertugas_sebagai || []);
     } else {
       pegCell.dataset.nips = JSON.stringify(v.pegawai_nip);
       pegCell.dataset.names = JSON.stringify(v.pegawai_list || []);
+      if (v.bertugas_sebagai) pegCell.dataset.roles = JSON.stringify(v.bertugas_sebagai);
     }
   }
   // Penandatangan single
@@ -1564,9 +1565,10 @@ function cellDateRangeHTML(id, field, isoMulai, isoSelesai, editable, waktuTextC
 
 
 
-function cellPegawaiMultiHTML(id, nips, names, editable) {
+function cellPegawaiMultiHTML(id, nips, names, editable, roles) {
   nips = Array.isArray(nips) ? nips : [];
   names = Array.isArray(names) ? names : [];
+  roles = Array.isArray(roles) ? roles : [];
 
   if (!editable) {
     if (!names.length) {
@@ -1580,6 +1582,7 @@ function cellPegawaiMultiHTML(id, nips, names, editable) {
           <span class="apa-pg-badge-terlampir" title="Klik untuk melihat petugas terlampir"
             data-nips='${escAttr(JSON.stringify(nips))}'
             data-names='${escAttr(JSON.stringify(names))}'
+            data-roles='${escAttr(JSON.stringify(roles))}'
             onclick="event.stopPropagation(); window.apaPegawai.openPreview(this)">
             Terlampir
             <span class="count-pill">${names.length}</span>
@@ -1610,6 +1613,7 @@ function cellPegawaiMultiHTML(id, nips, names, editable) {
       tabindex="0"
       data-nips='${escAttr(JSON.stringify(nips))}'
       data-names='${escAttr(JSON.stringify(names))}'
+      data-roles='${escAttr(JSON.stringify(roles))}'
       onclick="openAc(this, false)">
       <div class="apa-pg-cell-wrapper">
         ${contentHtml}
@@ -2670,11 +2674,12 @@ function collectRowFields(suratId) {
   };
   const getMulti = (field) => {
     const el = row.querySelector(`[data-field="${field}"]`);
-    if (!el) return { nips: [], names: [] };
-    let nips = [], names = [];
+    if (!el) return { nips: [], names: [], roles: [] };
+    let nips = [], names = [], roles = [];
     try { nips  = JSON.parse(el.dataset.nips  || '[]'); } catch(_) {}
     try { names = JSON.parse(el.dataset.names || '[]'); } catch(_) {}
-    return { nips, names };
+    try { roles = JSON.parse(el.dataset.roles || el.dataset.bertugas || '[]'); } catch(_) {}
+    return { nips, names, roles };
   };
   const getSingle = (field) => {
     const el = row.querySelector(`[data-field="${field}"]`);
@@ -2709,6 +2714,9 @@ function collectRowFields(suratId) {
     tujuan:            get('tujuan'),
     pegawai_nip:       peg.nips,
     pegawai_list:      peg.names,
+    bertugas_sebagai:  (Array.isArray(peg.roles) && peg.roles.some(Boolean))
+                         ? peg.roles
+                         : ((sOrig && Array.isArray(sOrig.bertugas_sebagai) && sOrig.bertugas_sebagai.some(Boolean)) ? sOrig.bertugas_sebagai : null),
     menimbang_custom:  get('menimbang_custom') || (sOrig && sOrig.menimbang_custom) || '',
     alat_angkutan:     get('alat_angkutan'),
     pembebanan:        get('pembebanan'),

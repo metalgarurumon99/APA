@@ -79,6 +79,7 @@
     terlampirTab: 'all', // 'all' | 'pegawai' | 'mitra'
     selectedNips: [],
     selectedNames: [],
+    selectedRolesMap: {},
     mainFiltered: [],
     terlampirFiltered: [],
     focusIdx: -1,
@@ -161,7 +162,16 @@
           </div>
         </div>
 
-        <div id="apa-pg-terlampir-list" class="apa-pg-list" style="max-height: 220px;"></div>
+        <div id="apa-pg-terlampir-list" class="apa-pg-list" style="max-height: 180px;"></div>
+
+        <!-- PANEL PERAN / ROLE (OPSIONAL - Opsi A) -->
+        <div id="apa-pg-roles-container" class="apa-pg-roles-container" style="display: none;">
+          <div class="apa-pg-roles-header">
+            <span class="apa-pg-roles-title">📋 Peran Petugas (Opsional)</span>
+            <span class="apa-pg-roles-sub">Bisa diisi atau dikosongkan</span>
+          </div>
+          <div id="apa-pg-roles-list" class="apa-pg-roles-list"></div>
+        </div>
 
         <div class="apa-pg-footer">
           <span id="apa-pg-terlampir-count" class="apa-pg-footer-count">0 Petugas Terpilih</span>
@@ -181,8 +191,8 @@
   function positionPopup(popup, targetEl) {
     if (!targetEl) return;
     const rect = targetEl.getBoundingClientRect();
-    const popW = 340;
-    const popH = popup.offsetHeight || 360;
+    const popW = 360;
+    const popH = popup.offsetHeight || 380;
     const pad = 8;
 
     let left = rect.left;
@@ -261,13 +271,21 @@
   }
 
   // ── Render Tampilan Sel di Tabel ─────────────────────────────
-  function renderCellUI(cellEl, nips, names) {
+  function renderCellUI(cellEl, nips, names, roles) {
     if (!cellEl) return;
     nips = Array.isArray(nips) ? nips : [];
     names = Array.isArray(names) ? names : [];
+    roles = Array.isArray(roles) ? roles : [];
 
     cellEl.dataset.nips = JSON.stringify(nips);
     cellEl.dataset.names = JSON.stringify(names);
+    if (roles && roles.length && roles.some(r => r && String(r).trim().length > 0)) {
+      cellEl.dataset.roles = JSON.stringify(roles);
+      cellEl.dataset.bertugas = JSON.stringify(roles);
+    } else {
+      delete cellEl.dataset.roles;
+      delete cellEl.dataset.bertugas;
+    }
     if (nips.length === 1) {
       cellEl.dataset.nip = nips[0];
       cellEl.dataset.nama = names[0] || nips[0];
@@ -493,6 +511,49 @@
     if (countEl) {
       countEl.textContent = state.selectedNips.length + ' Petugas Terpilih';
     }
+    renderRolesPanel();
+  }
+
+  function renderRolesPanel() {
+    if (!popupEl) return;
+    const container = popupEl.querySelector('#apa-pg-roles-container');
+    const listEl = popupEl.querySelector('#apa-pg-roles-list');
+    if (!container || !listEl) return;
+
+    if (state.selectedNips.length >= 2) {
+      container.style.display = 'block';
+      listEl.innerHTML = state.selectedNips.map((nip, idx) => {
+        const name = state.selectedNames[idx] || nip;
+        const roleVal = (state.selectedRolesMap[nip] || '').replace(/"/g, '&quot;');
+        const isRo = state.isReadOnly;
+        return `
+          <div class="apa-pg-role-row">
+            <span class="apa-pg-role-num">${idx + 1}.</span>
+            <span class="apa-pg-role-name" title="${name.replace(/"/g, '&quot;')}">${name}</span>
+            <input type="text"
+                   class="apa-pg-role-input"
+                   data-nip="${nip}"
+                   value="${roleVal}"
+                   placeholder="Peran (opsional)"
+                   ${isRo ? 'readonly disabled' : ''}>
+          </div>
+        `;
+      }).join('');
+
+      if (!state.isReadOnly) {
+        listEl.querySelectorAll('.apa-pg-role-input').forEach(input => {
+          input.addEventListener('input', function () {
+            const n = this.dataset.nip;
+            if (n) state.selectedRolesMap[n] = this.value;
+          });
+          input.addEventListener('keydown', function (e) {
+            e.stopPropagation();
+          });
+        });
+      }
+    } else {
+      container.style.display = 'none';
+    }
   }
 
   // ── Switch View (Main vs Terlampir) ──────────────────────────
@@ -524,7 +585,11 @@
   function commitSelection() {
     if (!state.cellEl) return;
 
-    renderCellUI(state.cellEl, state.selectedNips, state.selectedNames);
+    const rolesArr = state.selectedNips.map(nip => (state.selectedRolesMap[nip] || '').trim());
+    const hasAnyRole = rolesArr.some(r => r.length > 0);
+    const finalRoles = hasAnyRole ? rolesArr : [];
+
+    renderCellUI(state.cellEl, state.selectedNips, state.selectedNames, finalRoles);
 
     state.cellEl.dispatchEvent(new Event('input', { bubbles: true }));
     state.cellEl.dispatchEvent(new Event('change', { bubbles: true }));
@@ -533,6 +598,7 @@
       state.onSelectCallback({
         nips: state.selectedNips,
         names: state.selectedNames,
+        roles: finalRoles,
         isTerlampir: state.selectedNips.length > 1
       });
     }
@@ -543,12 +609,14 @@
   function clearSelection() {
     state.selectedNips = [];
     state.selectedNames = [];
+    state.selectedRolesMap = {};
     commitSelection();
   }
 
   function pickSinglePerson(nip, nama) {
     state.selectedNips = [nip];
     state.selectedNames = [nama];
+    state.selectedRolesMap = {};
     commitSelection();
   }
 
@@ -574,8 +642,10 @@
 
     let existingNips = [];
     let existingNames = [];
+    let existingRoles = [];
     try { existingNips = JSON.parse(cellEl.dataset.nips || '[]'); } catch (_) {}
     try { existingNames = JSON.parse(cellEl.dataset.names || '[]'); } catch (_) {}
+    try { existingRoles = JSON.parse(cellEl.dataset.roles || cellEl.dataset.bertugas || '[]'); } catch (_) {}
 
     if (!existingNips.length && cellEl.dataset.nip) {
       existingNips = [cellEl.dataset.nip];
@@ -584,6 +654,12 @@
 
     state.selectedNips = [...existingNips];
     state.selectedNames = [...existingNames];
+    state.selectedRolesMap = {};
+    existingNips.forEach((nip, idx) => {
+      if (existingRoles[idx] != null) {
+        state.selectedRolesMap[nip] = String(existingRoles[idx]);
+      }
+    });
 
     // Reset input pencarian
     const mainSearch = popupEl.querySelector('#apa-pg-main-search');
@@ -738,11 +814,13 @@
         if (idx >= 0) {
           state.selectedNips.splice(idx, 1);
           state.selectedNames.splice(idx, 1);
+          delete state.selectedRolesMap[nip];
           checkItem.classList.remove('checked');
           checkItem.querySelector('.apa-pg-checkbox').textContent = '';
         } else {
           state.selectedNips.push(nip);
           state.selectedNames.push(nama);
+          if (!state.selectedRolesMap[nip]) state.selectedRolesMap[nip] = '';
           checkItem.classList.add('checked');
           checkItem.querySelector('.apa-pg-checkbox').textContent = '✓';
         }
