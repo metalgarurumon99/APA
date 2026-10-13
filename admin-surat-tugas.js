@@ -261,9 +261,13 @@ function fmtWaktu(mulai, selesai) {
 }
 
 function badgeHTML(status) {
-  const m = { menunggu:['menunggu','⏳ Menunggu'], selesai:['selesai','✅ Selesai'] };
-  const [cls, lbl] = m[status] || ['menunggu', status];
-  return `<span class="badge ${cls}"><span class="badge-dot"></span>${lbl}</span>`;
+  if (status === 'selesai') {
+    return `<span class="badge selesai"><img src="Assets/checked.png" class="badge-status-icon" alt="">Selesai</span>`;
+  }
+  if (status === 'menunggu') {
+    return `<span class="badge menunggu"><img src="Assets/hour-glass.png" class="badge-status-icon" alt="">Menunggu</span>`;
+  }
+  return `<span class="badge menunggu">${esc(status || '—')}</span>`;
 }
 
 function normalizeStatusKepegawaian(p) {

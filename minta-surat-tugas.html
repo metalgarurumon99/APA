@@ -58,10 +58,12 @@
   table.list-table tbody tr:last-child{border-bottom:none}
   table.list-table tbody tr:hover{background:#fafaf8}
   table.list-table tbody td{padding:11px 14px;font-size:13px;color:var(--text);vertical-align:middle}
-  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600;white-space:nowrap}
-  .badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600;white-space:nowrap}
+  .badge-status-icon{width:11px;height:11px;object-fit:contain;display:inline-block;flex-shrink:0;vertical-align:middle}
   .badge.menunggu{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+  .badge.menunggu .badge-status-icon{filter:invert(30%) sepia(88%) saturate(1000%) hue-rotate(10deg)}
   .badge.selesai{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+  .badge.selesai .badge-status-icon{filter:invert(28%) sepia(83%) saturate(600%) hue-rotate(120deg) brightness(90%)}
   .badge.draft{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1}
   .btn-sm{padding:4px 10px;background:transparent;border:1px solid var(--border2);border-radius:5px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:600;color:var(--navy);cursor:pointer;transition:all .2s}
   .btn-sm:hover{background:var(--gold-light);border-color:var(--gold)}
@@ -491,7 +493,11 @@ async function loadSurat(){
   }
 }
 function updateStats(){document.getElementById('st-total').textContent=allSurat.length;document.getElementById('st-menunggu').textContent=allSurat.filter(s=>s.status==='menunggu').length;document.getElementById('st-selesai').textContent=allSurat.filter(s=>s.status==='selesai').length;}
-function badgeHTML(status){const m={menunggu:['menunggu','Menunggu'],selesai:['selesai','Selesai']};const[cls,lbl]=m[status]||['draft',esc(status)||'Draft'];return`<span class="badge ${cls}"><span class="badge-dot"></span>${lbl}</span>`;}
+function badgeHTML(status){
+  if (status === 'selesai') return `<span class="badge selesai"><img src="Assets/checked.png" class="badge-status-icon" alt="">Selesai</span>`;
+  if (status === 'menunggu') return `<span class="badge menunggu"><img src="Assets/hour-glass.png" class="badge-status-icon" alt="">Menunggu</span>`;
+  return `<span class="badge draft">${esc(status)||'Draft'}</span>`;
+}
 function renderTable(data){document.getElementById('table-count').textContent=`${data.length} surat`;if(!data.length){document.getElementById('table-area').innerHTML='<div class="table-empty"><div class="table-empty-icon">\ud83d\udced</div><div class="table-empty-text">Belum ada surat tugas.</div></div>';return;}data.forEach(s=>{suratMap[s.id]=s;});const r=data.map(s=>`<tr><td style="max-width:220px;white-space:normal;word-break:break-word;line-height:1.5">${esc(s.perihal)||'\u2014'}</td><td style="white-space:nowrap;font-size:12px">${esc(fmtWaktu(s.tanggal_berangkat,s.tanggal_kembali))}</td><td>${esc(s.tujuan)||'\u2014'}</td><td><span style="font-size:11px;color:var(--muted)">${(s.pegawai_list||[]).length} orang</span></td><td>${badgeHTML(s.status)}</td><td><button class="btn-sm" onclick="showDetail(${JSON.stringify(s.id)})">Detail</button></td></tr>`).join('');document.getElementById('table-area').innerHTML=`<table class="list-table"><thead><tr><th>Perihal</th><th>Waktu Pelaksanaan</th><th>Tujuan</th><th>Pegawai</th><th>Status</th><th></th></tr></thead><tbody>${r}</tbody></table>`;}
 function sortValueSurat(s,col){
   if(col==='no')return suratOrderMap[s.id]||0;
