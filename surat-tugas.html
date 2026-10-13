@@ -162,6 +162,8 @@
   .btn-save-edit.loading::after{content:'';position:absolute;top:50%;left:50%;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;transform:translate(-50%,-50%);animation:spin .7s linear infinite}
   .btn-cancel-edit{background:transparent;color:var(--muted);border:1.5px solid var(--border2);border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
   .btn-cancel-edit:hover{background:#fef2f2;color:var(--red);border-color:#fecaca}
+  .btn-duplicate{background:#f8fafc;color:var(--navy);border:1.5px solid var(--border2);border-radius:6px;padding:5px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+  .btn-duplicate:hover{background:#e2e8f0;border-color:var(--navy)}
 
   /* MODIFIER .btn-icon — bikin tombol jadi square compact (logo-only).
      Diapply ke btn-edit-row, btn-preview, btn-download di kolom Aksi
@@ -170,8 +172,10 @@
   .btn-approve .btn-action-icon,
   .btn-save-edit .btn-action-icon{filter:brightness(0) invert(1)}
   .btn-edit-row.btn-icon,
+  .btn-edit-role.btn-icon,
   .btn-preview.btn-icon,
   .btn-download.btn-icon,
+  .btn-duplicate.btn-icon,
   .btn-cancel-edit.btn-icon{
     width:30px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;
     font-size:14px;gap:0;
@@ -350,7 +354,7 @@
   .col-mak           { width:125px }  /* ter-wrap 2 baris seimbang: 054.01.GG.2910.BMA. / 006.054.A.524119 */
   .col-ttd           { width:104px }  /* ter-wrap 2 baris: 'Frida Irian S.' / 'Ompusunggu' & 'Syayu Hanana' / 'Yohana Stefani' */
   .col-status        { width:100px;text-align:center }
-  .col-aksi          { width:135px;text-align:center }
+  .col-aksi          { width:155px;text-align:center }
   .col-pengaju       { width:155px }
 
   /* Styling isi kolom pengaju — read-only, text-wrap, rata kiri */
@@ -883,7 +887,7 @@
         <span class="search-icon-compact">
           <img src="Assets/search.png" alt="Cari">
         </span>
-        <input class="search-input-compact" type="text" id="search-input" placeholder="Cari perihal atau tujuan..." oninput="filterTable({ resetPage: true })">
+        <input class="search-input-compact" type="text" id="search-input" placeholder="Cari no surat, perihal, tujuan, nama, POK..." oninput="filterTable({ resetPage: true })">
       </div>
 
       <div class="stats-cards-group">

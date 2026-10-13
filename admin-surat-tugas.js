@@ -173,7 +173,7 @@ function tipeTemplateUrl(tipe) {
 
 let SESSION = null;
 let allSurat = [];                // descending by created_at (untuk display di table)
-const SURAT_PAGE_SIZE = 100;
+const SURAT_PAGE_SIZE = 50;
 let suratPage = 1;
 let filteredSurat = [];
 let suratMap = {};                // id → object
@@ -565,8 +565,6 @@ async function addNewSurat() {
     const inserted = await res.json();
     const newId = Array.isArray(inserted) && inserted.length ? inserted[0].id : null;
 
-    showPageAlert('✅ Baris baru ditambahkan. Lengkapi data lalu klik Selesai.', 'success');
-
     // Reload tabel — pakai pattern dirty-preserve yg sama dgn submitApprove
     // supaya edit di baris menunggu lain (kalau ada) tidak hilang.
     const dirtySnapshot = captureMenungguDirty(null);
@@ -599,6 +597,81 @@ async function addNewSurat() {
   }
 }
 
+/**
+ * Duplikat surat tugas yang sudah ada menjadi surat tugas baru berstatus "menunggu".
+ */
+async function duplicateSuratTugas(id) {
+  if (!SESSION || !SESSION.id) {
+    showPageAlert('Sesi tidak valid. Silakan refresh halaman.', 'error');
+    return;
+  }
+  const s = suratMap[id];
+  if (!s) return;
+
+  const cur = collectRowFields(id);
+  const todayIso = todayISO();
+
+  const payload = {
+    user_id:                SESSION.id,
+    perihal:                (cur ? cur.perihal : s.perihal) || '',
+    tanggal_surat:          todayIso,
+    tanggal_berangkat:      (cur ? cur.tanggal_berangkat : s.tanggal_berangkat) || todayIso,
+    tanggal_kembali:        (cur ? cur.tanggal_kembali : s.tanggal_kembali) || null,
+    waktu_pelaksanaan_text: (cur ? cur.waktu_pelaksanaan_text : s.waktu_pelaksanaan_text) || '',
+    tujuan:                 (cur ? cur.tujuan : s.tujuan) || '',
+    pegawai_nip:            (cur && cur.pegawai_nip && cur.pegawai_nip.length) ? cur.pegawai_nip : (Array.isArray(s.pegawai_nip) ? [...s.pegawai_nip] : []),
+    pegawai_list:           (cur && cur.pegawai_list && cur.pegawai_list.length) ? cur.pegawai_list : (Array.isArray(s.pegawai_list) ? [...s.pegawai_list] : []),
+    pegawai_bertugas:       s.pegawai_bertugas || null,
+    alat_angkutan:          (cur ? cur.alat_angkutan : s.alat_angkutan) || '',
+    pembebanan:             (cur ? cur.pembebanan : s.pembebanan) || '',
+    menimbang_custom:       (cur ? cur.menimbang_custom : s.menimbang_custom) || '',
+    penandatangan_nama:     (cur ? cur.penandatangan_nama : s.penandatangan_nama) || '',
+    penandatangan_nip:      (cur ? cur.penandatangan_nip : s.penandatangan_nip) || '',
+    tipe:                   (cur ? cur.tipe : s.tipe) || 'surat_tugas',
+    nomor_surat:            '', // nomor surat baru kosong untuk diisi
+    status:                 'menunggu', // selalu menunggu untuk hasil duplikat
+    created_at:             new Date().toISOString(),
+  };
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas`, {
+      method: 'POST',
+      headers: { ...H, 'Prefer': 'return=representation' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try { const j = await res.json(); msg = j.message || j.hint || msg; } catch(_) {}
+      throw new Error(msg);
+    }
+    const inserted = await res.json();
+    const newId = Array.isArray(inserted) && inserted.length ? inserted[0].id : null;
+
+    const dirtySnapshot = captureMenungguDirty(null);
+    await loadSurat({ resetPage: true });
+    reapplyMenungguDirty(dirtySnapshot);
+
+    if (newId != null) {
+      setTimeout(() => {
+        const newRow = document.querySelector(`tr[data-surat-id="${newId}"]`);
+        if (newRow) {
+          newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          newRow.classList.add('row-focused');
+          setTimeout(() => newRow.classList.remove('row-focused'), 2000);
+          const firstCell = newRow.querySelector('.xls-cell[data-field="perihal"], .xls-cell, .pg-input');
+          if (firstCell) {
+            firstCell.focus();
+            if (firstCell.select) try { firstCell.select(); } catch(_) {}
+          }
+        }
+      }, 50);
+    }
+  } catch(e) {
+    showPageAlert(`Gagal menduplikat surat tugas: ${e.message}`, 'error');
+  }
+}
+window.duplicateSuratTugas = duplicateSuratTugas;
+
 function setFilterStatus(status) {
   const sel = document.getElementById('filter-status');
   if (sel) sel.value = status;
@@ -621,18 +694,32 @@ function updateStats() {
 
 function filterTable(options = {}) {
   const resetPage = !!options.resetPage;
-  const q  = document.getElementById('search-input').value.toLowerCase();
+  const q  = (document.getElementById('search-input').value || '').toLowerCase().trim();
   const st = document.getElementById('filter-status').value;
   let f = allSurat;
-  if (q)  f = f.filter(s =>
-    (s.perihal || '').toLowerCase().includes(q) ||
-    (s.tujuan || '').toLowerCase().includes(q) ||
-    (s.alat_angkutan || '').toLowerCase().includes(q) ||
-    (s.nomor_surat || '').toLowerCase().includes(q) ||
-    (s.pembebanan || '').toLowerCase().includes(q) ||
-    (s.penandatangan_nama || '').toLowerCase().includes(q) ||
-    (getPengajuNama(s) || '').toLowerCase().includes(q)
-  );
+  if (q)  f = f.filter(s => {
+    const noSurat = String(s.nomor_surat || '').toLowerCase();
+    const perihal = String(s.perihal || '').toLowerCase();
+    const tujuan  = String(s.tujuan || '').toLowerCase();
+    const pok     = String(s.pembebanan || '').toLowerCase();
+    const pegList = Array.isArray(s.pegawai_list) ? s.pegawai_list.join(' ').toLowerCase() : '';
+    const pegNip  = Array.isArray(s.pegawai_nip)  ? s.pegawai_nip.join(' ').toLowerCase()  : '';
+    const ttd     = String(s.penandatangan_nama || '').toLowerCase();
+    const ttdNip  = String(s.penandatangan_nip || '').toLowerCase();
+    const pengaju = (getPengajuNama(s) || '').toLowerCase();
+    const alat    = String(s.alat_angkutan || '').toLowerCase();
+
+    return noSurat.includes(q) ||
+           perihal.includes(q) ||
+           tujuan.includes(q) ||
+           pok.includes(q) ||
+           pegList.includes(q) ||
+           pegNip.includes(q) ||
+           ttd.includes(q) ||
+           ttdNip.includes(q) ||
+           pengaju.includes(q) ||
+           alat.includes(q);
+  });
   if (st) f = f.filter(s => s.status === st);
   f = sortData(f);
   filteredSurat = f;
@@ -832,11 +919,14 @@ function renderRowHTML(s) {
   const pegNames = Array.isArray(s.pegawai_list) ? s.pegawai_list : [];
 
   let aksi;
+  const btnDuplicate = `<button class="btn-duplicate btn-icon" onclick="duplicateSuratTugas(${s.id})" title="Duplikat surat tugas"><img src="Assets/copy.png" class="btn-action-icon" alt="Duplikat"></button>`;
+
   if (isMenunggu) {
     // Tombol utama "Selesai" tetap pakai label — eye-catching karena ini
     // aksi paling penting di row status menunggu.
     aksi = `
-      <button class="btn-approve" onclick="openApprove(${s.id})"><img src="Assets/checked.png" class="btn-action-icon" alt=""> Selesai</button>`;
+      <button class="btn-approve" onclick="openApprove(${s.id})"><img src="Assets/checked.png" class="btn-action-icon" alt=""> Selesai</button>
+      ${btnDuplicate}`;
   } else if (isSelesai) {
     if (isEditing) {
       // Mode edit aktif — Simpan (label) & Batal (logo only).
@@ -851,11 +941,12 @@ function renderRowHTML(s) {
                            && Array.isArray(s.pegawai_list)
                            && s.pegawai_list.length >= 2;
       const btnEditRole = showEditRole
-        ? `<button class="btn-edit-row btn-icon" onclick="openEditBertugas(${s.id})" title="Edit role per pegawai" style="background:#5b3a8a;color:#fff;border-color:#5b3a8a"><img src="Assets/writing.png" class="btn-action-icon" style="filter:brightness(0) invert(1)" alt="Edit Role"></button>`
+        ? `<button class="btn-edit-role btn-icon" onclick="openEditBertugas(${s.id})" title="Edit role per pegawai" style="background:#5b3a8a;color:#fff;border-color:#5b3a8a"><img src="Assets/writing.png" class="btn-action-icon" style="filter:brightness(0) invert(1)" alt="Edit Role"></button>`
         : '';
       aksi = `
         <button class="btn-edit-row btn-icon" onclick="enableRowEdit(${s.id})" title="Edit field surat ini"><img src="Assets/edit.png" class="btn-action-icon" alt="Edit"></button>
         ${btnEditRole}
+        ${btnDuplicate}
         <button class="btn-preview btn-icon" onclick="openPreview(${s.id})" title="Preview surat"><img src="Assets/preview.png" class="btn-action-icon" alt="Preview"></button>
         <button class="btn-download btn-icon" onclick="downloadSuratTugas(${s.id})" title="Download .docx"><img src="Assets/export.png" class="btn-action-icon" alt="Download"></button>`;
     }
