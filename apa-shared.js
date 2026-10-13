@@ -70,6 +70,15 @@
     /* Variants ukuran */
     input[type="checkbox"].ck-sm{ width:14px;height:14px;border-radius:4px }
     input[type="checkbox"].ck-lg{ width:20px;height:20px;border-radius:6px }
+
+    /* ── Status badges (global) ─────────────────────────────────── */
+    .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600;white-space:nowrap}
+    .badge-status-icon{width:11px;height:11px;object-fit:contain;display:inline-block;flex-shrink:0;vertical-align:middle}
+    .badge.menunggu{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+    .badge.menunggu .badge-status-icon{filter:invert(30%) sepia(88%) saturate(1000%) hue-rotate(10deg)}
+    .badge.selesai{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+    .badge.selesai .badge-status-icon{filter:invert(28%) sepia(83%) saturate(600%) hue-rotate(120deg) brightness(90%)}
+    .badge.draft{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1}
     `;
     var ctrlStyle = document.createElement('style');
     ctrlStyle.id = 'apa-controls-css';
@@ -223,5 +232,74 @@
   window.BULAN_ABBR = [
     'jan','feb','mar','apr','mei','jun','jul','agu','sep','okt','nov','des'
   ];
+
+  // ─── Format & Parse Tanggal Indonesia ──────────────────────────
+  function parseISODate(str) {
+    if (!str) return null;
+    const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return null;
+    const d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return isNaN(d) ? null : d;
+  }
+
+  function toISODate(d) {
+    if (!d || !(d instanceof Date) || isNaN(d)) return '';
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function todayISO() {
+    return toISODate(new Date());
+  }
+
+  function fmtTgl(str) {
+    if (!str) return '';
+    const d = parseISODate(str);
+    if (!d) return '';
+    return `${d.getDate()} ${window.BULAN[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  function fmtWaktu(mulai, selesai) {
+    if (!mulai) return '—';
+    if (!selesai || selesai === mulai) return fmtTgl(mulai);
+    const a = parseISODate(mulai), b = parseISODate(selesai);
+    if (!a || !b) return fmtTgl(mulai);
+    if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) {
+      return `${a.getDate()} s.d. ${b.getDate()} ${window.BULAN[b.getMonth()]} ${b.getFullYear()}`;
+    }
+    if (a.getFullYear() === b.getFullYear()) {
+      return `${a.getDate()} ${window.BULAN[a.getMonth()]} s.d. ${b.getDate()} ${window.BULAN[b.getMonth()]} ${b.getFullYear()}`;
+    }
+    return `${fmtTgl(mulai)} s.d. ${fmtTgl(selesai)}`;
+  }
+
+  window.parseISODate = parseISODate;
+  window.toISODate = toISODate;
+  window.todayISO = todayISO;
+  window.fmtTgl = fmtTgl;
+  window.fmtTanggal = fmtTgl;
+  window.fmtWaktu = fmtWaktu;
+
+  window.apaDate = {
+    parseISODate,
+    toISODate,
+    todayISO,
+    fmtTgl,
+    fmtTanggal: fmtTgl,
+    fmtWaktu
+  };
+
+  // ─── Status Badge HTML ─────────────────────────────────────────
+  function badgeHTML(status) {
+    const s = String(status || '').toLowerCase().trim();
+    if (s === 'selesai') {
+      return `<span class="badge selesai"><img src="Assets/checked.png" class="badge-status-icon" alt="">Selesai</span>`;
+    }
+    if (s === 'menunggu') {
+      return `<span class="badge menunggu"><img src="Assets/hour-glass.png" class="badge-status-icon" alt="">Menunggu</span>`;
+    }
+    return `<span class="badge draft">${esc(status || 'Draft')}</span>`;
+  }
+  window.badgeHTML = badgeHTML;
+  window.apaBadgeHTML = badgeHTML;
 
 })();

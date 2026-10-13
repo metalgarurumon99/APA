@@ -458,7 +458,7 @@ function restoreActiveTab(){
   } catch(_) {}
   switchTab(tab);
 }
-function fmtWaktu(mulai,selesai){if(!mulai)return'\u2014';const a=new Date(mulai+'T00:00:00');if(!selesai||selesai===mulai){return`${a.getDate()} ${BULAN[a.getMonth()]} ${a.getFullYear()}`;}const b=new Date(selesai+'T00:00:00');if(a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear()){return`${a.getDate()} s.d. ${b.getDate()} ${BULAN[b.getMonth()]} ${b.getFullYear()}`;}if(a.getFullYear()===b.getFullYear()){return`${a.getDate()} ${BULAN[a.getMonth()]} s.d. ${b.getDate()} ${BULAN[b.getMonth()]} ${b.getFullYear()}`;}return`${a.getDate()} ${BULAN[a.getMonth()]} ${a.getFullYear()} s.d. ${b.getDate()} ${BULAN[b.getMonth()]} ${b.getFullYear()}`;}
+// fmtWaktu di-load dari apa-shared.js
 async function loadPegawai(){
   try{
     const res=await fetch(`${SUPABASE_URL}/rest/v1/data_pegawai?select=*&order=nama.asc`,{headers:H});
@@ -493,11 +493,7 @@ async function loadSurat(){
   }
 }
 function updateStats(){document.getElementById('st-total').textContent=allSurat.length;document.getElementById('st-menunggu').textContent=allSurat.filter(s=>s.status==='menunggu').length;document.getElementById('st-selesai').textContent=allSurat.filter(s=>s.status==='selesai').length;}
-function badgeHTML(status){
-  if (status === 'selesai') return `<span class="badge selesai"><img src="Assets/checked.png" class="badge-status-icon" alt="">Selesai</span>`;
-  if (status === 'menunggu') return `<span class="badge menunggu"><img src="Assets/hour-glass.png" class="badge-status-icon" alt="">Menunggu</span>`;
-  return `<span class="badge draft">${esc(status)||'Draft'}</span>`;
-}
+// fmtWaktu & badgeHTML di-load secara global dari apa-shared.js
 function renderTable(data){document.getElementById('table-count').textContent=`${data.length} surat`;if(!data.length){document.getElementById('table-area').innerHTML='<div class="table-empty"><div class="table-empty-icon">\ud83d\udced</div><div class="table-empty-text">Belum ada surat tugas.</div></div>';return;}data.forEach(s=>{suratMap[s.id]=s;});const r=data.map(s=>`<tr><td style="max-width:220px;white-space:normal;word-break:break-word;line-height:1.5">${esc(s.perihal)||'\u2014'}</td><td style="white-space:nowrap;font-size:12px">${esc(fmtWaktu(s.tanggal_berangkat,s.tanggal_kembali))}</td><td>${esc(s.tujuan)||'\u2014'}</td><td><span style="font-size:11px;color:var(--muted)">${(s.pegawai_list||[]).length} orang</span></td><td>${badgeHTML(s.status)}</td><td><button class="btn-sm" onclick="showDetail(${JSON.stringify(s.id)})">Detail</button></td></tr>`).join('');document.getElementById('table-area').innerHTML=`<table class="list-table"><thead><tr><th>Perihal</th><th>Waktu Pelaksanaan</th><th>Tujuan</th><th>Pegawai</th><th>Status</th><th></th></tr></thead><tbody>${r}</tbody></table>`;}
 function sortValueSurat(s,col){
   if(col==='no')return suratOrderMap[s.id]||0;

@@ -228,47 +228,45 @@ function saveApproveDefaults(d) {
 ═══════════════════════════════════════════════════════════════════════ */
 // `esc` dari apa-shared.js. `escAttr` adalah alias `esc` (juga shared).
 
-function fmtTgl(str) {
+// ─── Format Tanggal & Badge Status (Global dari apa-shared.js) ──────────────
+const fmtTgl = window.fmtTgl || function(str) {
   if (!str) return '';
   const d = parseISODate(str);
   if (!d) return '';
-  return `${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-function parseISODate(str) {
+  return `${d.getDate()} ${(window.BULAN||[])[d.getMonth()]||''} ${d.getFullYear()}`;
+};
+const parseISODate = window.parseISODate || function(str) {
   if (!str) return null;
   const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return null;
   const d = new Date(+m[1], +m[2]-1, +m[3]);
   return isNaN(d) ? null : d;
-}
-function toISODate(d) {
+};
+const toISODate = window.toISODate || function(d) {
   if (!d) return '';
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function todayISO() { return toISODate(new Date()); }
-
-function fmtWaktu(mulai, selesai) {
+};
+const todayISO = window.todayISO || function() { return toISODate(new Date()); };
+const fmtWaktu = window.fmtWaktu || function(mulai, selesai) {
   if (!mulai) return '';
   if (!selesai || selesai === mulai) return fmtTgl(mulai);
   const a = parseISODate(mulai), b = parseISODate(selesai);
   if (!a || !b) return fmtTgl(mulai);
   if (a.getMonth()===b.getMonth() && a.getFullYear()===b.getFullYear())
-    return `${a.getDate()} s.d. ${b.getDate()} ${BULAN[b.getMonth()]} ${b.getFullYear()}`;
+    return `${a.getDate()} s.d. ${b.getDate()} ${(window.BULAN||[])[b.getMonth()]||''} ${b.getFullYear()}`;
   if (a.getFullYear()===b.getFullYear())
-    return `${a.getDate()} ${BULAN[a.getMonth()]} s.d. ${b.getDate()} ${BULAN[b.getMonth()]} ${b.getFullYear()}`;
+    return `${a.getDate()} ${(window.BULAN||[])[a.getMonth()]||''} s.d. ${b.getDate()} ${(window.BULAN||[])[b.getMonth()]||''} ${b.getFullYear()}`;
   return `${fmtTgl(mulai)} s.d. ${fmtTgl(selesai)}`;
-}
-
-function badgeHTML(status) {
+};
+const badgeHTML = window.badgeHTML || function(status) {
   if (status === 'selesai') {
     return `<span class="badge selesai"><img src="Assets/checked.png" class="badge-status-icon" alt="">Selesai</span>`;
   }
   if (status === 'menunggu') {
     return `<span class="badge menunggu"><img src="Assets/hour-glass.png" class="badge-status-icon" alt="">Menunggu</span>`;
   }
-  return `<span class="badge menunggu">${esc(status || '—')}</span>`;
-}
+  return `<span class="badge draft">${esc(status || '—')}</span>`;
+};
 
 function normalizeStatusKepegawaian(p) {
   return String(p && (p.status_kepegawaian || p.status_pegawai || '') || 'aktif').trim().toLowerCase();
