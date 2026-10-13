@@ -1835,11 +1835,16 @@ function openMakAc(inp) {
 }
 
 function closeMakAc() {
-  document.getElementById('mak-ac-popup').classList.remove('open');
+  const popup = document.getElementById('mak-ac-popup');
+  if (popup) popup.classList.remove('open');
+  const inpToRestore = makACState.inputEl;
   makACState.cellEl = null;
   makACState.inputEl = null;
   makACState.filtered = [];
   makACState.focusIdx = -1;
+  if (inpToRestore && typeof inpToRestore.focus === 'function') {
+    inpToRestore.focus();
+  }
 }
 
 function makAcFilter(q) {
@@ -2025,9 +2030,13 @@ function filterAlatOptions(q) {
 function closeAlatDropdown() {
   const popup = document.getElementById('alat-popup');
   if (popup) popup.classList.remove('open');
-  if (alatState.cellEl) {
-    alatState.cellEl.classList.remove('active');
+  const cellToRestore = alatState.cellEl;
+  if (cellToRestore) {
+    cellToRestore.classList.remove('active');
     alatState.cellEl = null;
+    if (typeof cellToRestore.focus === 'function') {
+      cellToRestore.focus();
+    }
   }
   alatState.focusIdx = -1;
   alatState.query = '';
@@ -2539,20 +2548,73 @@ function navFocusCell(grid, r, c) {
   if (parentRow) parentRow.classList.add('row-focused');
 }
 
+let lastActiveGridCell = null;
+document.addEventListener('focusin', (e) => {
+  const cell = (e.target && e.target.closest) ? e.target.closest('.xls-cell, .pg-cell, .alat-cell, .tp-cell, .ro-text, .ro-ttd') : null;
+  if (cell) {
+    lastActiveGridCell = cell;
+    const row = cell.closest('tr');
+    if (row) {
+      document.querySelectorAll('tr.row-focused').forEach(tr => tr.classList.remove('row-focused'));
+      row.classList.add('row-focused');
+    }
+  }
+});
+
 /* ════════════════════════════════════════════════════════════════════
    GLOBAL KEYDOWN — Tab/Enter (navigasi linear) + Arrow (navigasi grid)
-   + Delete/Backspace (batalkan pilihan) + Escape (tutup popup/modal)
+   + Delete/Backspace (batalkan pilihan) + Escape (tutup popup/modal & fokus sel)
 ═══════════════════════════════════════════════════════════════════════ */
 document.addEventListener('keydown', (e) => {
 
-  if (window.apaCalendar && window.apaCalendar.isOpen() && e.key !== 'Escape') return;
-  if (window.apaPegawai && window.apaPegawai.isOpen() && e.key !== 'Escape') return;
+  if (window.apaCalendar && window.apaCalendar.isOpen && window.apaCalendar.isOpen() && e.key !== 'Escape') return;
+  if (window.apaPegawai && window.apaPegawai.isOpen && window.apaPegawai.isOpen() && e.key !== 'Escape') return;
 
-  /* ── Escape ─────────────────────────────────────────────────────── */
+  /* ── Escape: tutup popup/modal & pastikan sel tetap terpilih dan terfokus ── */
   if (e.key === 'Escape') {
+    e.preventDefault();
+    let cellToFocus = null;
+
+    // 1) Cek popup yang sedang terbuka untuk ambil elemen pemantiknya
+    if (window.apaCalendar && window.apaCalendar.isOpen && window.apaCalendar.isOpen()) {
+      cellToFocus = (window.apaCalendar.getTarget && window.apaCalendar.getTarget()) || null;
+    } else if (window.apaPegawai && window.apaPegawai.isOpen && window.apaPegawai.isOpen()) {
+      cellToFocus = (window.apaPegawai.getCell && window.apaPegawai.getCell()) || null;
+    } else if (alatState && alatState.cellEl) {
+      cellToFocus = alatState.cellEl;
+    } else if (makACState && makACState.inputEl) {
+      cellToFocus = makACState.inputEl;
+    }
+
+    // 2) Jika tidak ada popup, gunakan target aktif saat ini atau lastActiveGridCell
+    if (!cellToFocus) {
+      cellToFocus = (e.target && e.target.closest) ? e.target.closest('.xls-cell, .pg-cell, .alat-cell, .tp-cell, .ro-text, .ro-ttd') : null;
+    }
+    if (!cellToFocus && lastActiveGridCell && document.body.contains(lastActiveGridCell)) {
+      cellToFocus = lastActiveGridCell;
+    }
+
     closeAllPopups();
-    ['modal-approve','modal-preview'].forEach(closeModal);
-    document.querySelectorAll('tr.row-focused').forEach(tr => tr.classList.remove('row-focused'));
+    ['modal-approve','modal-preview','modal-bulk-approve','modal-edit-bertugas'].forEach(closeModal);
+
+    // 3) Kembalikan fokus dan highlight baris aktif
+    if (cellToFocus) {
+      cellToFocus.focus();
+      const parentRow = cellToFocus.closest('tr');
+      document.querySelectorAll('tr.row-focused').forEach(tr => tr.classList.remove('row-focused'));
+      if (parentRow) parentRow.classList.add('row-focused');
+      lastActiveGridCell = cellToFocus;
+    } else {
+      const row = document.querySelector('tr.row-focused') || document.querySelector('tr[data-surat-id]');
+      if (row) {
+        const firstCell = row.querySelector('.xls-cell, .pg-cell, .alat-cell, .ro-text');
+        if (firstCell) {
+          firstCell.focus();
+          row.classList.add('row-focused');
+          lastActiveGridCell = firstCell;
+        }
+      }
+    }
     return;
   }
 

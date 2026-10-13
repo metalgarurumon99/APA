@@ -621,8 +621,12 @@
   function closePopup() {
     if (!popupEl) return;
     popupEl.classList.remove('open');
+    const cellToRestore = state.cellEl;
     state.cellEl = null;
     state.focusIdx = -1;
+    if (cellToRestore && typeof cellToRestore.focus === 'function') {
+      cellToRestore.focus();
+    }
   }
 
   // ── Event Wiring ─────────────────────────────────────────────
@@ -825,6 +829,9 @@
     open: openPopup,
     openPreview: openPreview,
     close: closePopup,
+    getCell: function () {
+      return state.cellEl;
+    },
     isOpen: function () {
       return !!(popupEl && popupEl.classList.contains('open'));
     },

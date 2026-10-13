@@ -634,10 +634,14 @@
   function closePopup() {
     if (!popupEl) return;
     popupEl.classList.remove('open');
+    const elToRestore = state.targetEl;
     state.targetEl = null;
     state.lastClickedDate = '';
     state.minDate = '';
     state.maxDate = '';
+    if (elToRestore && typeof elToRestore.focus === 'function') {
+      elToRestore.focus();
+    }
   }
 
   // ── Buka Kalender ────────────────────────────────────────────
@@ -962,6 +966,9 @@
   return {
     open: openPopup,
     close: closePopup,
+    getTarget: function () {
+      return state.targetEl;
+    },
     isOpen: function () {
       return !!(popupEl && popupEl.classList.contains('open'));
     },
