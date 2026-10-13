@@ -2862,7 +2862,7 @@ function showPageAlert(msg, type='error') {
 /* ════════════════════════════════════════════════════════════════════
    APPROVE
 ═══════════════════════════════════════════════════════════════════════ */
-function openApprove(id) {
+async function openApprove(id) {
   selectedId = id;
   const s = suratMap[id]; if (!s) return;
   const values = collectRowFields(id);
@@ -2875,84 +2875,70 @@ function openApprove(id) {
     return;
   }
 
-  const ttdJabatan = lookupJabatan(values.penandatangan_nip, values.tanggal_surat);
-  const nomorFull  = buildNomorSuratFull(values.nomor_surat, values.tanggal_surat);
+  const jabatan = lookupJabatan(values.penandatangan_nip, values.tanggal_surat);
+  const waktuPelaksanaanText = values.waktu_pelaksanaan_text && values.waktu_pelaksanaan_text.length
+    ? values.waktu_pelaksanaan_text
+    : null;
 
-  // Info badge tipe — kalau tipe ada visum, tampilkan reminder agar admin
-  // tahu nanti perlu input jumlah responden saat preview/download.
-  const tipeBadge = tipeHasVisum(values.tipe)
-    ? `${esc(tipeLabel(values.tipe))} <span style="display:inline-block;margin-left:6px;background:rgba(200,168,75,.18);color:#7a5c10;border:1px solid rgba(200,168,75,.4);border-radius:100px;padding:1px 7px;font-size:10px;font-weight:600;letter-spacing:.3px">📋 VISUM</span>`
-    : esc(tipeLabel(values.tipe));
+  // Pertahankan bertugas_sebagai jika sudah pernah ada
+  const bertugas = (tipeHasLampiran(values.tipe) && values.pegawai_list.length >= 2)
+    ? (Array.isArray(s.bertugas_sebagai) && s.bertugas_sebagai.some(Boolean) ? s.bertugas_sebagai : null)
+    : null;
 
-  // Helper untuk render row dengan styling "empty" kalau value kosong.
-  // Konsisten visual di seluruh preview — UI lebih clean.
-  const row = (label, val, opts) => {
-    opts = opts || {};
-    const isEmpty = !val || (typeof val === 'string' && !val.trim());
-    const display = isEmpty ? '—' : val;
-    return `<div class="approve-preview-row"><strong>${label}</strong><span class="${isEmpty ? 'empty' : ''}"${opts.style ? ' style="' + opts.style + '"' : ''}>${opts.html ? display : esc(display)}</span></div>`;
+  const payload = {
+    status: 'selesai',
+    nomor_surat:           values.nomor_surat,
+    tanggal_surat:         values.tanggal_surat,
+    tanggal_berangkat:     values.tanggal_berangkat,
+    tanggal_kembali:       values.tanggal_kembali || null,
+    waktu_pelaksanaan_text: waktuPelaksanaanText,
+    perihal:               values.perihal,
+    tujuan:                values.tujuan,
+    pegawai_nip:           values.pegawai_nip,
+    pegawai_list:          values.pegawai_list,
+    menimbang_custom:      values.menimbang_custom,
+    alat_angkutan:         values.alat_angkutan,
+    pembebanan:            values.pembebanan,
+    tempat_terbit:         values.tempat_terbit,
+    penandatangan_nama:    values.penandatangan_nama,
+    penandatangan_nip:     values.penandatangan_nip,
+    penandatangan_jabatan: jabatan || '',
+    tipe:                  values.tipe,
+    bertugas_sebagai:      bertugas,
+    jumlah_responden:      s.jumlah_responden || null,
   };
 
-  document.getElementById('approve-preview').innerHTML = `
-    ${row('Nomor', nomorFull, { style: 'font-family:ui-monospace,monospace;font-size:11.5px' })}
-    ${row('Tgl Surat', fmtTgl(values.tanggal_surat))}
-    ${row('Waktu', fmtWaktu(values.tanggal_berangkat, values.tanggal_kembali))}
-    ${row('Perihal', values.perihal)}
-    ${row('Tujuan', values.tujuan)}
-    ${row('Pegawai', values.pegawai_list.join(', '))}
-    ${row('Menimbang', values.menimbang_custom)}
-    ${row('Alat Angkutan', values.alat_angkutan)}
-    ${row('POK', values.pembebanan)}
-    <div class="approve-preview-row"><strong>Penandatangan</strong><span>
-      ${esc(values.penandatangan_nama)}<br>
-      <em style="color:var(--muted);font-style:italic;font-size:11px">${ttdJabatan ? esc(ttdJabatan) : '<span style="color:var(--red)">⚠ Jabatan tidak ditemukan di riwayat</span>'}</em><br>
-      <span style="color:var(--muted);font-size:11px">NIP. ${esc(values.penandatangan_nip)}</span>
-    </span></div>
-    ${row('Tipe Surat', tipeBadge, { html: true })}
-  `;
-  // Catatan: input "Waktu Pelaksanaan Kustom" di modal Approve dihapus
-  // (#3). Sekarang admin set multi-range langsung di tabel via toggle
-  // "+ multi-range" di kolom Waktu Pelaksanaan. waktu_pelaksanaan_text
-  // sudah ter-collect di values via collectRow().
-
-  // ─── Toggle & render section "Bertugas Sebagai" ──────────────────
-  // Section muncul HANYA kalau:
-  //   1. Tipe surat punya lampiran (T2/T3V), DAN
-  //   2. Jumlah pegawai >= 2 (kalau cuma 1 orang, tidak butuh role pembeda)
-  // Kondisi 2 disengaja — tabel lampiran 1-baris tidak butuh kolom
-  // "bertugas" karena tidak ada apa-apa untuk dibedakan.
-  const showBertugas = tipeHasLampiran(values.tipe) && values.pegawai_list.length >= 2;
-  const bertugasRow  = document.getElementById('approve-bertugas-row');
-  if (bertugasRow) bertugasRow.style.display = showBertugas ? '' : 'none';
-  if (showBertugas) {
-    // Pre-fill dari nilai yg sudah ada di DB (kalau surat ini sebelumnya
-    // pernah disetujui & sudah punya bertugas_sebagai), atau dari draft
-    // sebelumnya kalau admin batal lalu buka modal lagi. Default: array kosong.
-    const existing = Array.isArray(s.bertugas_sebagai) ? s.bertugas_sebagai : [];
-    renderBertugasList(
-      'approve-bertugas-list',
-      values.pegawai_list,
-      existing,
-      'inp-bertugas-row'
-    );
-    // Reset quick-fill input setiap kali modal dibuka
-    const quick = document.getElementById('inp-bertugas-quick');
-    if (quick) quick.value = '';
+  const rowEl = document.querySelector(`tr[data-surat-id="${id}"]`);
+  const btn = rowEl ? rowEl.querySelector('.btn-approve') : null;
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('loading');
   }
 
-  // #2: Toggle section "Jumlah Responden" — hanya muncul untuk tipe visum.
-  // Pre-fill dari kolom DB surat_tugas.jumlah_responden (kalau sebelumnya
-  // pernah di-set). Kosong = pakai default 7 baris saat render.
-  const showResponden = tipeHasVisum(values.tipe);
-  const respondenRow  = document.getElementById('approve-responden-row');
-  if (respondenRow) respondenRow.style.display = showResponden ? '' : 'none';
-  const respondenInp = document.getElementById('inp-jumlah-responden');
-  if (respondenInp) {
-    respondenInp.value = (s.jumlah_responden != null) ? String(s.jumlah_responden) : '';
-  }
+  try {
+    await patchSuratTugas(id, payload);
 
-  document.getElementById('approve-alert').className = 'alert';
-  openModal('modal-approve');
+    // Auto-save defaults
+    const newDefaults = {};
+    if (values.alat_angkutan)       newDefaults.alat_angkutan = values.alat_angkutan;
+    if (values.pembebanan)          newDefaults.pembebanan    = values.pembebanan;
+    if (values.penandatangan_nip)   newDefaults.ttd_nip       = values.penandatangan_nip;
+    if (values.penandatangan_nama)  newDefaults.ttd_nama      = values.penandatangan_nama;
+    saveApproveDefaults({ ...loadApproveDefaults(), ...newDefaults });
+
+    clearAdminDraft(id);
+    const dirtySnapshot = captureMenungguDirty(id);
+    await loadSurat();
+    reapplyMenungguDirty(dirtySnapshot);
+    loadMAKSuggestions();
+  } catch(e) {
+    showPageAlert(`Gagal menandai selesai: ${e.message}`, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════
