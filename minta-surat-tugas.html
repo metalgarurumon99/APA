@@ -417,6 +417,7 @@
 <script src="apa-shared.js"></script>
 <script src="apa-calendar.js"></script>
 <script src="apa-pegawai.js"></script>
+<script src="apa-grid-nav.js"></script>
 
 
 
@@ -820,149 +821,43 @@ function closeAc() {
   }
 }
 
-/* ══ ARROW NAVIGATION (grid antar sel) ══ */
-const NAV_FIELDS=['perihal','waktu','tujuan','pegawai_multi','pembebanan','status'];
-function buildNavGrid(){
-  const trs=Array.from(document.querySelectorAll('#bulk-tbody tr'));
-  return trs.map(row=>{
-    return NAV_FIELDS.map(field=>{
-      let el=row.querySelector(`input.xls-cell[data-col-field="${field}"], textarea.xls-cell[data-col-field="${field}"]`);
-      if(el)return el;
-      const pgCell=row.querySelector(`.pg-cell[data-col-field="${field}"]`);
-      if(pgCell)return pgCell.querySelector('.pg-input')||pgCell;
-      const ro=row.querySelector(`.ro-text[data-col-field="${field}"]`);
-      if(ro)return ro;
-      return null;
-    });
+function closeAllPopups(){
+  if (window.apaCalendar) window.apaCalendar.close();
+  if (window.apaPegawai) window.apaPegawai.close();
+}
+
+/* ══ ARROW NAVIGATION GRID (Diinisialisasi via apa-grid-nav.js) ══ */
+const NAV_FIELDS = ['perihal', 'waktu', 'tujuan', 'pegawai_multi', 'pembebanan', 'status'];
+
+if (window.apaGridNav) {
+  window.apaGridNav.init({
+    rowSelector: '#bulk-tbody tr',
+    fields: NAV_FIELDS,
+    onClearCell: function(cellTarget, field, tr) {
+      if (cellTarget.classList.contains('pg-cell')) {
+        cellTarget.dataset.nips = '[]';
+        cellTarget.dataset.names = '[]';
+        delete cellTarget.dataset.nip;
+        delete cellTarget.dataset.nama;
+        if (window.apaPegawai) {
+          window.apaPegawai.renderCell(cellTarget, [], []);
+        }
+        snapshotDraft();
+      }
+    },
+    onOpenCell: function(cellTarget, field, tr) {
+      if (cellTarget.classList.contains('pg-cell')) {
+        openAc(cellTarget, false);
+      }
+    },
+    onClosePopups: function() {
+      closeAllPopups();
+    },
+    closeModals: function() {
+      closeDetailModal();
+    }
   });
 }
-function findInGrid(grid,target){
-  for(let r=0;r<grid.length;r++){
-    for(let c=0;c<grid[r].length;c++){
-      const el=grid[r][c];
-      if(!el)continue;
-      if(el===target)return{r,c};
-      if(target.classList&&target.classList.contains('pg-input')){
-        const parentPg=target.closest('.pg-cell');
-        if(parentPg&&el===parentPg)return{r,c};
-      }
-    }
-  }
-  return null;
-}
-function navFocusCell(grid,r,c){
-  r=Math.max(0,Math.min(r,grid.length-1));
-  c=Math.max(0,Math.min(c,NAV_FIELDS.length-1));
-  let el=grid[r][c];
-  if(!el){
-    for(let cc=c+1;cc<grid[r].length;cc++){if(grid[r][cc]){el=grid[r][cc];break;}}
-  }
-  if(!el){
-    for(let cc=c-1;cc>=0;cc--){if(grid[r][cc]){el=grid[r][cc];break;}}
-  }
-  if(!el)return;
-  el.focus({preventScroll:true});
-  el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
-  if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){try{el.select();}catch(_){}}
-  if(el.classList&&el.classList.contains('ro-text'))selectReadonlyCell(el);
-  document.querySelectorAll('tr.row-focused').forEach(tr=>tr.classList.remove('row-focused'));
-  const parentRow=el.closest('tr');
-  if(parentRow)parentRow.classList.add('row-focused');
-}
-function moveCellFocus(currentEl,direction){
-  const allCells=Array.from(document.querySelectorAll('#bulk-tbody tr[data-row-id] .xls-cell, #bulk-tbody tr[data-row-id] .pg-input'));
-  const idx=allCells.indexOf(currentEl);
-  if(idx<0)return;
-  const next=allCells[idx+direction];
-  if(next){
-    next.focus();
-    if(next.tagName==='INPUT'&&next.type==='text')next.select();
-  }
-}
-function selectReadonlyCell(target){
-  try{
-    const range=document.createRange();
-    range.selectNodeContents(target);
-    const sel=window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }catch(_){}
-}
-function closeAllPopups(){closeCal();closeAc();}
-
-/* ══ GLOBAL KEYDOWN (Tab linear + Arrow grid) ══ */
-document.addEventListener('keydown',(e)=>{
-  /* ── Tugas #2 — Calendar popup keyboard nav ──
-     Saat cal-popup terbuka, arrow keys navigasi tanggal & Enter pilih.
-     Letakkan di atas semua handler lain agar arrow tidak konflik dgn
-     navigasi grid tabel. */
-  if (window.apaCalendar && window.apaCalendar.isOpen() && e.key !== 'Escape') return;
-  if (window.apaPegawai && window.apaPegawai.isOpen() && e.key !== 'Escape') return;
-
-  if(e.key==='Escape'){
-    closeAllPopups();
-    document.querySelectorAll('tr.row-focused').forEach(tr=>tr.classList.remove('row-focused'));
-    closeDetailModal();
-    return;
-  }
-  const target=e.target;
-  const isXlsCell=target.classList&&target.classList.contains('xls-cell');
-  const isPgInput=target.classList&&target.classList.contains('pg-input');
-  const isReadonly=target.classList&&target.classList.contains('ro-text');
-  if(!isXlsCell&&!isPgInput&&!isReadonly)return;
-  const isTextarea=target.tagName==='TEXTAREA';
-
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
-    if(e.altKey&&e.key==='ArrowDown')return;
-    if(isPgInput&&document.getElementById('ac-popup').classList.contains('open')){
-      if(e.key==='ArrowUp'||e.key==='ArrowDown')return;
-    }
-    const grid=buildNavGrid();
-    const pos=findInGrid(grid,target);
-    if(!pos)return;
-    const{r,c}=pos;
-    if(e.key==='ArrowUp'){
-      if(r>0){e.preventDefault();closeAllPopups();navFocusCell(grid,r-1,c);}
-      return;
-    }
-    if(e.key==='ArrowDown'){
-      if(r<grid.length-1){e.preventDefault();closeAllPopups();navFocusCell(grid,r+1,c);}
-      return;
-    }
-    if(e.key==='ArrowLeft'){
-      const atStart=isReadonly||(target.selectionStart===0&&target.selectionEnd===0);
-      if(atStart){
-        if(c>0){e.preventDefault();closeAllPopups();navFocusCell(grid,r,c-1);}
-        else if(r>0){e.preventDefault();closeAllPopups();navFocusCell(grid,r-1,NAV_FIELDS.length-1);}
-      }
-      return;
-    }
-    if(e.key==='ArrowRight'){
-      const len=(target.value||'').length;
-      const atEnd=isReadonly||(target.selectionStart===len&&target.selectionEnd===len);
-      if(atEnd){
-        if(c<NAV_FIELDS.length-1){e.preventDefault();closeAllPopups();navFocusCell(grid,r,c+1);}
-        else if(r<grid.length-1){e.preventDefault();closeAllPopups();navFocusCell(grid,r+1,0);}
-      }
-      return;
-    }
-  }
-  // Readonly mengikuti Tab default browser; textarea memakai Enter untuk pindah sel.
-  if(isReadonly)return;
-
-  if(e.key==='Enter'&&isTextarea&&isXlsCell){
-    if(e.altKey)return;
-    e.preventDefault();
-    closeAllPopups();
-    moveCellFocus(target,1);
-    return;
-  }
-
-  if(e.key==='Tab'){
-    e.preventDefault();
-    moveCellFocus(target,e.shiftKey?-1:1);
-  }
-});
 
 /* ══ CLOSE POPUP saat klik di luar ══ */
 document.addEventListener('focus',(e)=>{

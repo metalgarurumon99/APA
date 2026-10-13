@@ -2430,11 +2430,8 @@ function clearTipe(cellEl) {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   ARROW NAVIGATION GRID — navigasi Excel-like antar sel
-   Mendukung: editable (input/textarea/pg-input) + readonly (ro-text/ro-ttd)
+   ARROW NAVIGATION GRID — Diinisialisasi via apa-grid-nav.js
 ═══════════════════════════════════════════════════════════════════════ */
-
-// Urutan kolom navigasi (kiri → kanan, sesuai urutan visual tabel)
 const NAV_FIELDS = [
   'nomor_surat',
   'tanggal_surat',
@@ -2447,374 +2444,47 @@ const NAV_FIELDS = [
   'penandatangan',
 ];
 
-/**
- * Bangun grid 2D: grid[rowIdx][colIdx] = focusable HTMLElement | null
- * Baris: sesuai urutan tampilan tabel (descending created_at)
- * Kolom: sesuai NAV_FIELDS
- */
-function buildNavGrid() {
-  const rows = Array.from(document.querySelectorAll('tr[data-surat-id]'));
-  return rows.map(row => {
-    return NAV_FIELDS.map(field => {
-      // 1) Editable input atau textarea
-      let el = row.querySelector(
-        `input.xls-cell[data-col-field="${field}"],
-         textarea.xls-cell[data-col-field="${field}"]`
-      );
-      if (el) return el;
-
-      // 2) Editable pg-cell (Nama / Penandatangan)
-      const pgCell = row.querySelector(`.pg-cell[data-col-field="${field}"]`);
-      if (pgCell) return pgCell;
-
-      // 3) Editable alat-cell
-      const alatCell = row.querySelector(`.alat-cell[data-col-field="${field}"]`);
-      if (alatCell) return alatCell;
-
-      // 4) Editable tp-cell (tipe) → kembalikan tp-input di dalamnya
-      const tpCell = row.querySelector(`.tp-cell[data-col-field="${field}"]`);
-      if (tpCell) {
-        return tpCell.querySelector('.tp-input') || tpCell;
+if (window.apaGridNav) {
+  window.apaGridNav.init({
+    rowSelector: 'tr[data-surat-id]',
+    fields: NAV_FIELDS,
+    onClearCell: function(cellTarget, field, tr) {
+      if (cellTarget.classList.contains('alat-cell')) {
+        setAlatCellValue(cellTarget, '');
+        if (tr && tr.dataset.suratId) snapshotAdminDraft(tr.dataset.suratId);
+      } else if (cellTarget.classList.contains('pg-cell')) {
+        cellTarget.dataset.nips = '[]';
+        cellTarget.dataset.names = '[]';
+        delete cellTarget.dataset.nip;
+        delete cellTarget.dataset.nama;
+        if (window.apaPegawai) {
+          window.apaPegawai.renderCell(cellTarget, [], []);
+        }
+        if (tr && tr.dataset.suratId) snapshotAdminDraft(tr.dataset.suratId);
       }
-
-      // 5) Readonly div (ro-text atau ro-ttd)
-      el = row.querySelector(`[data-col-field="${field}"]`);
-      return el || null;
-    });
+    },
+    onOpenCell: function(cellTarget, field, tr) {
+      if (cellTarget.classList.contains('pg-cell')) {
+        const isSingle = cellTarget.classList.contains('single') || cellTarget.dataset.field === 'penandatangan';
+        openAc(cellTarget, isSingle);
+      } else if (cellTarget.classList.contains('alat-cell')) {
+        openAlatDropdown(cellTarget);
+      }
+    },
+    onClosePopups: function() {
+      closeAllPopups();
+    },
+    closeModals: function() {
+      ['modal-approve','modal-preview','modal-bulk-approve','modal-edit-bertugas'].forEach(closeModal);
+    },
+    getActivePopupCell: function() {
+      if (typeof alatState !== 'undefined' && alatState && alatState.cellEl) return alatState.cellEl;
+      if (typeof makACState !== 'undefined' && makACState && makACState.inputEl) return makACState.inputEl;
+      return null;
+    }
   });
 }
 
-/**
- * Cari posisi elemen dalam grid.
- * Jika elemen adalah anak dari sel, cari container selnya di grid.
- */
-function findInGrid(grid, target) {
-  for (let r = 0; r < grid.length; r++) {
-    for (let c = 0; c < grid[r].length; c++) {
-      const el = grid[r][c];
-      if (!el) continue;
-      if (el === target || (el.contains && el.contains(target))) return { r, c };
-      // pg-input → cek apakah parent pg-cell ada di grid
-      if (target.classList && target.classList.contains('pg-input')) {
-        const parentPg = target.closest('.pg-cell');
-        if (parentPg && el === parentPg) return { r, c };
-      }
-      // tp-input → cek apakah parent tp-cell ada di grid
-      if (target.classList && target.classList.contains('tp-input')) {
-        const parentTp = target.closest('.tp-cell');
-        if (parentTp && el === parentTp) return { r, c };
-      }
-    }
-  }
-  return null;
-}
-
-/**
- * Fokus ke sel di posisi [r][c] dengan scroll smooth.
- * Jika sel di kolom c null, coba geser ke kolom terdekat yang ada.
- */
-function navFocusCell(grid, r, c) {
-  r = Math.max(0, Math.min(r, grid.length - 1));
-  c = Math.max(0, Math.min(c, NAV_FIELDS.length - 1));
-
-  let el = grid[r][c];
-  // Fallback: geser kanan kalau null
-  if (!el) {
-    for (let cc = c + 1; cc < grid[r].length; cc++) {
-      if (grid[r][cc]) { el = grid[r][cc]; break; }
-    }
-  }
-  // Fallback: geser kiri
-  if (!el) {
-    for (let cc = c - 1; cc >= 0; cc--) {
-      if (grid[r][cc]) { el = grid[r][cc]; break; }
-    }
-  }
-  if (!el) return;
-
-  el.focus({ preventScroll: true });
-  el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
-
-  // Select teks jika input/textarea
-  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-    try { el.select(); } catch(_) {}
-  }
-
-  // Highlight baris aktif
-  document.querySelectorAll('tr.row-focused').forEach(tr => tr.classList.remove('row-focused'));
-  const parentRow = el.closest('tr');
-  if (parentRow) parentRow.classList.add('row-focused');
-}
-
-let lastActiveGridCell = null;
-document.addEventListener('focusin', (e) => {
-  const cell = (e.target && e.target.closest) ? e.target.closest('.xls-cell, .pg-cell, .alat-cell, .tp-cell, .ro-text, .ro-ttd') : null;
-  if (cell) {
-    lastActiveGridCell = cell;
-    const row = cell.closest('tr');
-    if (row) {
-      document.querySelectorAll('tr.row-focused').forEach(tr => tr.classList.remove('row-focused'));
-      row.classList.add('row-focused');
-    }
-  }
-});
-
-/* ════════════════════════════════════════════════════════════════════
-   GLOBAL KEYDOWN — Tab/Enter (navigasi linear) + Arrow (navigasi grid)
-   + Delete/Backspace (batalkan pilihan) + Escape (tutup popup/modal & fokus sel)
-═══════════════════════════════════════════════════════════════════════ */
-document.addEventListener('keydown', (e) => {
-
-  if (window.apaCalendar && window.apaCalendar.isOpen && window.apaCalendar.isOpen() && e.key !== 'Escape') return;
-  if (window.apaPegawai && window.apaPegawai.isOpen && window.apaPegawai.isOpen() && e.key !== 'Escape') return;
-
-  /* ── Escape: tutup popup/modal & pastikan sel tetap terpilih dan terfokus ── */
-  if (e.key === 'Escape') {
-    e.preventDefault();
-    let cellToFocus = null;
-
-    // 1) Cek popup yang sedang terbuka untuk ambil elemen pemantiknya
-    if (window.apaCalendar && window.apaCalendar.isOpen && window.apaCalendar.isOpen()) {
-      cellToFocus = (window.apaCalendar.getTarget && window.apaCalendar.getTarget()) || null;
-    } else if (window.apaPegawai && window.apaPegawai.isOpen && window.apaPegawai.isOpen()) {
-      cellToFocus = (window.apaPegawai.getCell && window.apaPegawai.getCell()) || null;
-    } else if (alatState && alatState.cellEl) {
-      cellToFocus = alatState.cellEl;
-    } else if (makACState && makACState.inputEl) {
-      cellToFocus = makACState.inputEl;
-    }
-
-    // 2) Jika tidak ada popup, gunakan target aktif saat ini atau lastActiveGridCell
-    if (!cellToFocus) {
-      cellToFocus = (e.target && e.target.closest) ? e.target.closest('.xls-cell, .pg-cell, .alat-cell, .tp-cell, .ro-text, .ro-ttd') : null;
-    }
-    if (!cellToFocus && lastActiveGridCell && document.body.contains(lastActiveGridCell)) {
-      cellToFocus = lastActiveGridCell;
-    }
-
-    closeAllPopups();
-    ['modal-approve','modal-preview','modal-bulk-approve','modal-edit-bertugas'].forEach(closeModal);
-
-    // 3) Kembalikan fokus dan highlight baris aktif
-    if (cellToFocus) {
-      cellToFocus.focus();
-      const parentRow = cellToFocus.closest('tr');
-      document.querySelectorAll('tr.row-focused').forEach(tr => tr.classList.remove('row-focused'));
-      if (parentRow) parentRow.classList.add('row-focused');
-      lastActiveGridCell = cellToFocus;
-    } else {
-      const row = document.querySelector('tr.row-focused') || document.querySelector('tr[data-surat-id]');
-      if (row) {
-        const firstCell = row.querySelector('.xls-cell, .pg-cell, .alat-cell, .ro-text');
-        if (firstCell) {
-          firstCell.focus();
-          row.classList.add('row-focused');
-          lastActiveGridCell = firstCell;
-        }
-      }
-    }
-    return;
-  }
-
-  const target = e.target;
-  const cellTarget = (target.classList && (
-    target.classList.contains('xls-cell') ||
-    target.classList.contains('pg-cell') ||
-    target.classList.contains('alat-cell') ||
-    target.classList.contains('tp-cell') ||
-    target.classList.contains('ro-text') ||
-    target.classList.contains('ro-ttd')
-  )) ? target : (target.closest ? target.closest('.xls-cell, .pg-cell, .alat-cell, .tp-cell, .ro-text, .ro-ttd') : null);
-
-  if (!cellTarget) return;
-
-  const isXlsCell  = cellTarget.classList.contains('xls-cell');
-  const isPgCell   = cellTarget.classList.contains('pg-cell');
-  const isAlatCell = cellTarget.classList.contains('alat-cell');
-  const isTpInput  = cellTarget.classList.contains('tp-input');
-  const isRoText   = cellTarget.classList.contains('ro-text') || cellTarget.classList.contains('ro-ttd');
-
-  const isTextarea = cellTarget.tagName === 'TEXTAREA';
-  const isReadonly = isRoText;
-
-  /* ── Shortcut Pembatalan Pilihan (Delete / Backspace di sel non-teks) ── */
-  if (!isReadonly && (e.key === 'Delete' || e.key === 'Backspace')) {
-    if (isAlatCell) {
-      e.preventDefault();
-      setAlatCellValue(cellTarget, '');
-      const tr = cellTarget.closest('tr[data-surat-id]');
-      if (tr) snapshotAdminDraft(tr.dataset.suratId);
-      return;
-    }
-    if (isPgCell) {
-      e.preventDefault();
-      cellTarget.dataset.nips = '[]';
-      cellTarget.dataset.names = '[]';
-      delete cellTarget.dataset.nip;
-      delete cellTarget.dataset.nama;
-      if (window.apaPegawai) {
-        window.apaPegawai.renderCell(cellTarget, [], []);
-      }
-      const tr = cellTarget.closest('tr[data-surat-id]');
-      if (tr) snapshotAdminDraft(tr.dataset.suratId);
-      return;
-    }
-  }
-
-  /* ── Enter / Space pada sel dropdown (Pegawai / Alat Angkutan) ── */
-  if (!isReadonly && (e.key === 'Enter' || e.key === ' ')) {
-    if (isPgCell) {
-      e.preventDefault();
-      const isSingle = cellTarget.classList.contains('single') || cellTarget.dataset.field === 'penandatangan';
-      openAc(cellTarget, isSingle);
-      return;
-    }
-    if (isAlatCell) {
-      e.preventDefault();
-      openAlatDropdown(cellTarget);
-      return;
-    }
-  }
-
-  /* ── Arrow keys: navigasi grid ──────────────────────────────────── */
-  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
-
-    // Alt+ArrowDown di date cell = buka kalender, jangan intercept
-    if (e.altKey && e.key === 'ArrowDown') return;
-
-    // ArrowUp/Down di MAK typeahead = biarkan onMAKKeydown handle navigate item
-    if (cellTarget.classList && cellTarget.classList.contains('mak-input') &&
-        document.getElementById('mak-ac-popup') && document.getElementById('mak-ac-popup').classList.contains('open')) {
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') return;
-    }
-
-    // ArrowUp/Down di Tipe autocomplete = biarkan handler onTpKeydown handle navigate item
-    if (isTpInput && document.getElementById('tp-ac-popup') && document.getElementById('tp-ac-popup').classList.contains('open')) {
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') return;
-    }
-
-    const grid = buildNavGrid();
-    const pos  = findInGrid(grid, cellTarget);
-    if (!pos) return;
-
-    const { r, c } = pos;
-
-    if (e.key === 'ArrowUp') {
-      if (r > 0) {
-        e.preventDefault();
-        closeAllPopups();
-        navFocusCell(grid, r - 1, c);
-      }
-      return;
-    }
-
-    if (e.key === 'ArrowDown') {
-      if (r < grid.length - 1) {
-        e.preventDefault();
-        closeAllPopups();
-        navFocusCell(grid, r + 1, c);
-      }
-      return;
-    }
-
-    if (e.key === 'ArrowLeft') {
-      // Readonly / pg-cell / alat-cell: selalu pindah kolom
-      // Editable text input: pindah kolom hanya jika kursor di posisi paling kiri (0)
-      const cursorAtStart = isReadonly || isPgCell || isAlatCell || (
-        target.selectionStart === 0 && target.selectionEnd === 0
-      );
-      if (cursorAtStart) {
-        if (c > 0) {
-          // Pindah kiri dalam baris yang sama
-          e.preventDefault();
-          closeAllPopups();
-          navFocusCell(grid, r, c - 1);
-        } else if (r > 0) {
-          // Sudah di kolom pertama → wrap ke kolom terakhir baris sebelumnya
-          e.preventDefault();
-          closeAllPopups();
-          navFocusCell(grid, r - 1, NAV_FIELDS.length - 1);
-        }
-      }
-      return;
-    }
-
-    if (e.key === 'ArrowRight') {
-      // Readonly / pg-cell / alat-cell: selalu pindah kolom
-      // Editable text input: pindah kolom hanya jika kursor di posisi paling kanan (akhir teks)
-      const valLen = (target.value || '').length;
-      const cursorAtEnd = isReadonly || isPgCell || isAlatCell || (
-        target.selectionStart === valLen && target.selectionEnd === valLen
-      );
-      if (cursorAtEnd) {
-        if (c < NAV_FIELDS.length - 1) {
-          // Pindah kanan dalam baris yang sama
-          e.preventDefault();
-          closeAllPopups();
-          navFocusCell(grid, r, c + 1);
-        } else if (r < grid.length - 1) {
-          // Sudah di kolom terakhir → wrap ke kolom pertama baris berikutnya
-          e.preventDefault();
-          closeAllPopups();
-          navFocusCell(grid, r + 1, 0);
-        }
-      }
-      return;
-    }
-  }
-
-  /* ── Tab: navigasi linear (hanya untuk sel editable) ─────────────
-     ENTER di textarea: plain Enter = pindah ke sel berikutnya (Tab),
-     Alt+Enter = newline.
-     ENTER di input single-line: no-op                                  */
-  if (isReadonly) return; // readonly: biarkan Tab default browser
-
-  // Enter di textarea.xls-cell
-  if (e.key === 'Enter' && isTextarea && isXlsCell) {
-    if (e.altKey) {
-      // Alt+Enter: izinkan newline default browser — jangan intercept
-      return;
-    }
-    // Plain Enter (tanpa Alt/Ctrl/Shift): pindah ke sel berikutnya
-    e.preventDefault();
-    closeAllPopups();
-    moveCellFocus(cellTarget, 1);
-    return;
-  }
-
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    moveCellFocus(cellTarget, e.shiftKey ? -1 : 1);
-  }
-});
-
-/**
- * Navigasi linear Tab/Enter di sel editable.
- * Meliputi semua xls-cell, pg-cell, alat-cell di baris menunggu & editing.
- */
-function moveCellFocus(currentEl, direction) {
-  const targetCell = (currentEl && currentEl.closest)
-    ? currentEl.closest('.xls-cell, .pg-cell, .alat-cell, .tp-cell, .ro-text, .ro-ttd') || currentEl
-    : currentEl;
-  const allCells = Array.from(document.querySelectorAll(
-    'tr:is([data-status="menunggu"], [data-editing="1"]) .xls-cell, ' +
-    'tr:is([data-status="menunggu"], [data-editing="1"]) .pg-cell, ' +
-    'tr:is([data-status="menunggu"], [data-editing="1"]) .alat-cell, ' +
-    'tr:is([data-status="menunggu"], [data-editing="1"]) .tp-cell'
-  ));
-  let idx = allCells.indexOf(targetCell);
-  if (idx < 0) {
-    idx = allCells.findIndex(c => c.contains(targetCell));
-  }
-  if (idx < 0) return;
-  const next = allCells[idx + direction];
-  if (next) {
-    next.focus();
-    if (next.tagName === 'INPUT' && next.type === 'text') {
-      try { next.select(); } catch(_) {}
-    }
-  }
-}
 
 /* ════════════════════════════════════════════════════════════════════
    CLOSE POPUPS saat klik di luar
