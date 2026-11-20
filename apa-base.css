@@ -1,0 +1,48 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   APA BASE STYLESHEET — Sistem Automasi Pekerjaan Administrasi (APA)
+   BPS Kabupaten Raja Ampat
+   Token desain dasar, layout shell global, dan animasi bersama lintas halaman.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --apa-blue: #1685f8;
+  --apa-blue-dark: #0a2a62;
+  --apa-blue-soft: #edf6ff;
+  --apa-navy: #0d2340;
+  --apa-navy2: #163358;
+  --apa-gold: #c8a84b;
+  --apa-ink: #13233f;
+  --apa-muted: #5d7392;
+  --apa-border: #d6e9fc;
+  --apa-success: #10b981;
+  --apa-warning: #f59e0b;
+  --apa-danger: #ef4444;
+  --apa-sidebar-w: 264px;
+  --apa-topbar-h: 64px;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: var(--apa-sidebar-w);
+  min-width: 0;
+  transition: margin-left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body.sidebar-hidden .main-content {
+  margin-left: 0 !important;
+}
+
+@keyframes apaPopIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@media (max-width: 992px) {
+  .main-content {
+    margin-left: 0 !important;
+  }
+}

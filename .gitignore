@@ -1,0 +1,13 @@
+.DS_Store
+Thumbs.db
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+Referensi Code/
+Referensi Desain/
+.playwright-mcp/
+Tabel/*.csv
+Tabel/mitra_rows.sql
+Tabel/seed_pegawai_local.sql

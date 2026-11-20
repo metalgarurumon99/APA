@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="Assets/ART logo.svg">
+<title>Surat Tugas - Sistem Automasi Pekerjaan Administrasi (APA)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<!-- APA Global Components: Topbar, Sidebar & Calendar -->
+<link rel="stylesheet" href="topbar.css">
+<script src="topbar.js"></script>
+<link rel="stylesheet" href="sidebar.css">
+<script src="sidebar.js"></script>
+<link rel="stylesheet" href="apa-calendar.css">
+<link rel="stylesheet" href="apa-pegawai.css">
+
+<!-- Library: save blob untuk download + template-based docx generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha384-PlRSzpewlarQuj5alIadXwjNUX+2eNMKwr0f07ShWYLy8B6TjEbm7ZlcN/ScSbwy" crossorigin="anonymous"></script>
+
+<!-- docxtemplater — template-based generation (engine utama generate surat).
+     Library ini expose global sebagai window.docxtemplater (lowercase).
+     Lihat https://docxtemplater.com/docs/get-started-browser/ -->
+<script src="https://unpkg.com/docxtemplater@3.68.5/build/docxtemplater.js" integrity="sha384-iFfWkkwxgayOORmVuUa4qEjdYyil2iKW0E2D1CgOQvaVkeKHJO1I8jc3OOhsRrX5" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/pizzip@3.2.0/dist/pizzip.js" integrity="sha384-EKMdeygnsgFUPocowqWjGXhnzFAiDXk3KuOx8g8lsB5/JNEQYTWaADHxmioDiFU8" crossorigin="anonymous"></script>
+
+<link rel="stylesheet" href="apa-base.css">
+<link rel="stylesheet" href="surat-tugas.css">
+
+  <!-- Supabase JS Client & Global Config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js" integrity="sha384-rwykjmWNwVxboyFmvK9OXN0wj9hnMHA2aAHtits54DuACyCq0M2PrSNxhRb+hvXT" crossorigin="anonymous"></script>
+  <script src="supabase-config.js"></script>
+
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- Sidebar dimount terpadu oleh sidebar.js -->
+  <aside class="sidebar apa-sidebar" id="appSidebar"></aside>
+  <main class="main-content">
+    <div class="page-header fade-in">
+      <div>
+        <div class="page-eyebrow">Administrasi</div>
+        <h1 class="page-title">Surat <em>Tugas</em></h1>
+        <p class="page-desc">Kelola dan setujui surat tugas.</p>
+      </div>
+    </div>
+
+    <div id="page-alert" class="alert"><span id="page-alert-icon"></span><span id="page-alert-text"></span></div>
+
+    <!-- DASHBOARD BAR: Search di Kiri + Card-Card Kecil Modern (Sekaligus Filter) Sejajar -->
+    <div class="dashboard-bar fade-in" style="animation-delay:.08s">
+      <!-- Field Search kecil di sebelah kiri dengan icon Assets/search.png -->
+      <div class="search-wrap-compact">
+        <span class="search-icon-compact">
+          <img src="Assets/search.png" alt="Cari">
+        </span>
+        <input class="search-input-compact" type="text" id="search-input" oninput="filterTable({ resetPage: true })">
+      </div>
+
+      <div class="stats-cards-group">
+        <!-- Card 1: Total -->
+        <div class="stat-card active" data-status="" onclick="setFilterStatus('')" title="Tampilkan semua surat tugas">
+          <div class="stat-card-icon stat-icon-blue">
+            <img src="Assets/paper.png" alt="Total">
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-title">Total Surat</div>
+            <div class="stat-card-sub"><span id="st-total">—</span> Surat</div>
+          </div>
+          <span class="stat-card-arrow">›</span>
+        </div>
+
+        <!-- Card 2: Menunggu -->
+        <div class="stat-card" data-status="menunggu" onclick="setFilterStatus('menunggu')" title="Saring: Menunggu Persetujuan">
+          <div class="stat-card-icon stat-icon-amber">
+            <img src="Assets/hour-glass.png" alt="Menunggu">
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-title">Menunggu</div>
+            <div class="stat-card-sub"><span id="st-menunggu">—</span> Surat</div>
+          </div>
+          <span class="stat-card-arrow">›</span>
+        </div>
+
+        <!-- Card 3: Selesai -->
+        <div class="stat-card" data-status="selesai" onclick="setFilterStatus('selesai')" title="Saring: Selesai / Disetujui">
+          <div class="stat-card-icon stat-icon-green">
+            <img src="Assets/checked.png" alt="Selesai">
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-title">Selesai</div>
+            <div class="stat-card-sub"><span id="st-selesai">—</span> Surat</div>
+          </div>
+          <span class="stat-card-arrow">›</span>
+        </div>
+      </div>
+
+      <!-- Hidden select for backward compatibility with filterTable() -->
+      <select id="filter-status" style="display:none" onchange="filterTable({ resetPage: true })">
+        <option value="">Semua Status</option>
+        <option value="menunggu">Menunggu Persetujuan</option>
+        <option value="selesai">Selesai</option>
+      </select>
+    </div>
+
+    <div class="table-wrap fade-in" style="animation-delay:.12s">
+      <div class="table-head">
+        <span class="table-head-title">Daftar Surat Tugas</span>
+        <span class="table-head-count" id="table-count">Memuat...</span>
+        <!-- Tombol Aksi Icon-Only dari folder Assets -->
+        <div class="table-head-actions">
+          <button class="btn-table-head" onclick="addNewSurat()" title="Tambah Surat Tugas Baru">
+            <img src="Assets/add.png" alt="Tambah">
+          </button>
+          <button class="btn-table-head" onclick="exportSuratToExcel()" title="Export Excel (.xlsx)">
+            <img src="Assets/export.png" alt="Export">
+          </button>
+          <button class="btn-table-head" onclick="document.getElementById('inp-import-excel').click()" title="Import Excel (.xlsx)">
+            <img src="Assets/import.png" alt="Import">
+          </button>
+          <input type="file" id="inp-import-excel" accept=".xlsx,.xls" style="display:none" onchange="importSuratFromExcel(this)">
+          <button class="btn-table-head btn-table-head-gold" id="btn-bulk-download" onclick="bulkDownloadSelected()" disabled title="Download Dokumen Terpilih (.docx)">
+            <img src="Assets/paper.png" alt="Download">
+            <span class="btn-badge" id="bulk-dl-badge" style="display:none">0</span>
+          </button>
+          <button class="btn-table-head btn-table-head-success" id="btn-bulk-approve" onclick="openBulkApprove()" disabled title="Selesai Surat Terpilih">
+            <img src="Assets/checked.png" alt="Selesai">
+            <span class="btn-badge" id="bulk-ap-badge" style="display:none">0</span>
+          </button>
+        </div>
+      </div>
+      <div class="table-scroll-top" id="table-scroll-top" aria-hidden="true">
+        <div class="table-scroll-top-inner" id="table-scroll-top-inner"></div>
+      </div>
+      <div class="table-sticky-cols" id="table-sticky-cols"></div>
+      <div class="table-scroll" id="table-area">
+        <table class="list-table">
+          <thead><tr>
+            <th class="col-no">No</th>
+            <th class="col-nomor-surat">Nomor Surat</th>
+            <th class="col-tgl-surat">Tanggal Surat</th>
+            <th class="col-waktu">Waktu Pelaksanaan</th>
+            <th class="col-perihal">Perihal</th>
+            <th class="col-tujuan">Tempat Tujuan</th>
+            <th class="col-nama">Nama</th>
+            <th class="col-alat">Alat Angkutan</th>
+            <th class="col-mak">POK</th>
+            <th class="col-ttd">Penandatangan</th>
+            <th class="col-aksi">Aksi</th>
+            <th class="col-status">Status</th>
+          </tr></thead>
+          <tbody><tr><td colspan="12"><div style="padding:16px;display:flex;flex-direction:column;gap:8px">
+            <div class="skel" style="height:44px;border-radius:6px"></div>
+            <div class="skel" style="height:44px;border-radius:6px"></div>
+            <div class="skel" style="height:44px;border-radius:6px"></div>
+          </div></td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination" id="table-pagination" hidden></div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     POPUPS (calendar, autocomplete, alat angkutan dropdown)
+═════════════════════════════════════════════════════════════ -->
+<!-- cal-popup di-inject otomatis oleh apa-calendar.js -->
+
+<div class="ac-popup" id="ac-popup">
+  <div class="ac-hint" id="ac-hint">
+    <span>↑↓ navigasi · <kbd>Enter</kbd> pilih · <kbd>Esc</kbd> tutup</span>
+    <span id="ac-count"></span>
+  </div>
+  <div class="ac-list" id="ac-list"></div>
+</div>
+
+<!-- POPUP TYPEAHEAD POK (MAK PEMBEBANAN) -->
+<div class="mak-ac-popup" id="mak-ac-popup">
+  <div class="mak-ac-header">
+    <span>↑↓ navigasi · <kbd>Enter</kbd> pilih · <kbd>Esc</kbd> tutup</span>
+    <span id="mak-ac-count"></span>
+  </div>
+  <div class="mak-ac-list" id="mak-ac-list"></div>
+</div>
+
+<!-- POPUP DROPDOWN ALAT ANGKUTAN (single-select 4 pilihan dengan search) -->
+<div class="alat-popup" id="alat-popup">
+  <div class="alat-popup-header">
+    <div class="alat-search-box">
+      <span class="alat-search-icon">🔍</span>
+      <input type="text" class="alat-popup-search" id="alat-popup-search" placeholder="Cari alat angkutan..." autocomplete="off">
+    </div>
+    <button type="button" class="alat-popup-clear" onclick="clearAlatSelection()" title="Kosongkan pilihan">Hapus</button>
+  </div>
+  <div class="alat-popup-list" id="alat-popup-list"></div>
+</div>
+
+<!-- MODAL PREVIEW IMPORT SURAT TUGAS -->
+<div class="modal-overlay" id="modal-import-surat" style="display:none" onclick="if(event.target===this)closeSuratImportModal()">
+  <div class="modal modal-wide">
+    <div class="modal-header detail">
+      <span class="modal-title">Preview <em>Import Surat Tugas</em></span>
+      <button class="modal-close" onclick="closeSuratImportModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-preview-panel">
+        Cek hasil baca Excel sebelum data disimpan. Kolom <strong>Lamanya Tugas</strong> diabaikan,
+        <strong>Tujuan / Tugas</strong> dibaca sebagai perihal, dan <strong>Program</strong> + <strong>MAK Pembebanan</strong>
+        digabung menjadi POK.
+      </div>
+      <div class="import-preview-stats">
+        <div class="import-stat"><div class="import-stat-label">Baris Dibaca</div><div class="import-stat-value" id="surat-import-total">0</div></div>
+        <div class="import-stat"><div class="import-stat-label">Siap Import</div><div class="import-stat-value" id="surat-import-ready">0</div></div>
+        <div class="import-stat"><div class="import-stat-label">Warning</div><div class="import-stat-value" id="surat-import-warn">0</div></div>
+        <div class="import-stat"><div class="import-stat-label">File</div><div class="import-stat-value" id="surat-import-file" style="font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.35">-</div></div>
+      </div>
+      <div class="import-preview-table-wrap">
+        <table class="import-preview-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>No</th>
+              <th>Nomor</th>
+              <th>Tanggal Surat</th>
+              <th>Waktu Pelaksanaan</th>
+              <th>Perihal</th>
+              <th>Nama</th>
+              <th>POK</th>
+              <th>Penandatangan</th>
+              <th>Catatan</th>
+            </tr>
+          </thead>
+          <tbody id="surat-import-preview-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeSuratImportModal()">Batal</button>
+      <button class="btn-primary" id="btn-surat-import-submit" onclick="submitSuratImport()" disabled>Terapkan Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PREVIEW DOCX -->
+<div class="modal-overlay" id="modal-preview" style="display:none" onclick="if(event.target===this)closeModal('modal-preview')">
+  <div class="modal-preview">
+    <div class="modal-header detail">
+      <span class="modal-title">👁 Preview <em>Surat Tugas</em></span>
+      <button class="modal-close" onclick="closeModal('modal-preview')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="preview-container" id="preview-container">
+        <div class="preview-loading"><div class="preview-loading-spin"></div><div>Memuat dokumen...</div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('modal-preview')">Tutup</button>
+      <button class="btn-preview" id="btn-open-in-word" onclick="openInWordForPrint()" title="Buka di Microsoft Word desktop, lalu Ctrl+P untuk print">📄 Buka di Word & Print</button>
+      <button class="btn-download" id="btn-preview-download" onclick="downloadFromPreview()">📥 Download .docx</button>
+    </div>
+  </div>
+</div>
+
+<!-- (#2 refactor) Modal `modal-visum-prompt` dihapus.
+     Jumlah responden visum sekarang persistent di kolom DB
+     surat_tugas.jumlah_responden — di-input admin saat approve. -->
+
+<!-- DRAFT SAVED TOAST — floating indicator saat draft tersimpan otomatis -->
+<div id="draft-saved-toast">📝 Draft tersimpan</div>
+
+<!-- MODAL BULK APPROVE — konfirmasi sebelum menyetujui banyak surat sekaligus -->
+<div class="modal-overlay" id="modal-bulk-approve" style="display:none" onclick="if(event.target===this)closeModal('modal-bulk-approve')">
+  <div class="modal modal-wide">
+    <div class="modal-header approve">
+      <span class="modal-title"><img src="Assets/checked.png" class="btn-action-icon" style="filter:brightness(0) invert(1);margin-right:6px" alt=""> Selesai <em>Surat Terpilih</em></span>
+      <button class="modal-close" onclick="closeModal('modal-bulk-approve')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert info show" style="margin-bottom:0;border-radius:8px">
+        <span>ℹ️</span>
+        <span style="font-size:12px;line-height:1.55">
+          Surat akan diselesaikan menggunakan nilai yang sudah terisi di tabel.
+          <strong>Bertugas Sebagai</strong> dan <strong>Jumlah Responden</strong> tidak diisi di sini — gunakan tombol
+          <em>Edit Role</em> / buka modal Selesai individual setelah proses selesai.
+        </span>
+      </div>
+
+      <!-- List surat yang akan disetujui — diisi JS -->
+      <div id="bulk-approve-list" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;padding-right:4px"></div>
+
+      <!-- Progress indicator — muncul saat proses berjalan -->
+      <div id="bulk-approve-progress" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:12.5px;color:var(--navy)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:16px;height:16px;border:2px solid rgba(13,35,64,.2);border-top-color:var(--navy);border-radius:50%;animation:spinFull .7s linear infinite;flex-shrink:0"></div>
+          <span id="bulk-approve-progress-text">Memproses...</span>
+        </div>
+        <div style="margin-top:8px;background:var(--border);border-radius:4px;height:5px;overflow:hidden">
+          <div id="bulk-approve-bar" style="height:100%;background:#1a7a4a;border-radius:4px;transition:width .3s ease;width:0%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" id="btn-bulk-approve-cancel" onclick="closeModal('modal-bulk-approve')">Batal</button>
+      <button class="btn-primary" id="btn-bulk-approve-submit" onclick="submitBulkApprove()" style="background:#1a7a4a">
+        <img src="Assets/checked.png" class="btn-action-icon" style="filter:brightness(0) invert(1);margin-right:6px" alt=""> Selesai Semua (<span id="bulk-approve-count">0</span>)
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="apa-shared.js"></script>
+<script src="apa-calendar.js"></script>
+<script src="apa-pegawai.js"></script>
+<script src="apa-grid-nav.js"></script>
+
+
+
+
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     LOGIC — di file terpisah agar mudah di-maintain
+═════════════════════════════════════════════════════════════ -->
+<script src="st-lookups.js"></script>
+<script src="st-excel.js"></script>
+<script src="st-bulk.js"></script>
+<script src="st-docx.js"></script>
+<script src="admin-surat-tugas.js?v=20261120-p3"></script>
+</body>
+</html>
