@@ -28,9 +28,7 @@ let riwayatGelar = [];
 let riwayatGelarByNip = new Map();
 let userMap = {};
 
-let currentPreviewSurat = null;
-let _previewBlob = null;
-let _previewUploadedPath = null;
+// currentPreviewSurat, _previewBlob, _previewUploadedPath sudah dideklarasikan di st-lookups.js
 let editingSuratId = null;
 let rowIdCounter = 0;
 let _loadSuratSeq = 0;
@@ -1549,7 +1547,9 @@ async function init() {
   if (window.APATopbar && typeof window.APATopbar.renderUser === 'function') window.APATopbar.renderUser(SESSION);
   if (window.APASidebar && typeof window.APASidebar.renderUser === 'function') window.APASidebar.renderUser(SESSION);
 
-  await Promise.all([loadReferenceData(), loadSurat()]);
+  // Muat data referensi (pegawai, mitra, riwayat HR) di background agar tidak memblokir render awal tabel
+  loadReferenceData();
+  await loadSurat();
   addRows(1);
   restoreDraft();
 }
