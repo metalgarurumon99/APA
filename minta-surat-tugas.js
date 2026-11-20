@@ -1251,7 +1251,6 @@ function duplicateDraftRow(btn) {
   const newTr = document.querySelector('#bulk-tbody tr[data-row-id]');
   fillDraftRow(newTr, src);
   snapshotDraft();
-  showPageAlert('📋 Baris draft berhasil diduplikat.', 'info');
 }
 
 function duplicateSubmittedSurat(id) {
@@ -1262,7 +1261,6 @@ function duplicateSubmittedSurat(id) {
   fillDraftRow(newTr, s);
   snapshotDraft();
   newTr?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  showPageAlert('📋 Surat tugas diduplikat ke baris draft baru. Silakan sesuaikan lalu klik Kirim.', 'info');
 }
 
 function addRows(n) {
