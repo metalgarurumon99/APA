@@ -78,7 +78,7 @@
                 },
                 {
                     key: 'minta-surat-tugas',
-                    label: 'Minta Surat Tugas',
+                    label: 'Surat Tugas',
                     url: 'minta-surat-tugas.html',
                     icon: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -90,31 +90,43 @@
             ];
 
             const isAdmin = this.currentUser && (
-                this.currentUser.role === 'admin' || 
+                this.currentUser.role === 'admin' ||
                 (Array.isArray(this.currentUser.roles) && this.currentUser.roles.includes('admin'))
             );
 
             if (isAdmin) {
                 items.push({
-                    key: 'surat-tugas',
-                    label: 'Surat Tugas',
-                    url: 'surat-tugas.html',
+                    type: 'group',
+                    key: 'kelola',
+                    label: 'Kelola',
                     icon: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 11l3 3L22 4"></path>
-                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                    </svg>`
-                });
-
-                items.push({
-                    key: 'users',
-                    label: 'Manajemen Pengguna',
-                    url: 'users.html',
-                    icon: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>`
+                        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                    </svg>`,
+                    children: [
+                        {
+                            key: 'surat-tugas',
+                            label: 'Surat Tugas',
+                            url: 'surat-tugas.html',
+                            icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 11l3 3L22 4"></path>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>`
+                        },
+                        {
+                            key: 'users',
+                            label: 'Manajemen Pengguna',
+                            url: 'users.html',
+                            icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>`
+                        }
+                    ]
                 });
             }
 
@@ -130,6 +142,17 @@
             });
 
             return items;
+        },
+
+        isGroupExpanded: function (groupKey, children) {
+            const hasActiveChild = Array.isArray(children) && children.some(c => c.key === this.activeMenuKey);
+            if (hasActiveChild) return true;
+            try {
+                const saved = localStorage.getItem(`apa_sidebar_group_${groupKey}`);
+                if (saved === 'true') return true;
+                if (saved === 'false') return false;
+            } catch {}
+            return false;
         },
 
         // Ambil sesi user saat ini
@@ -239,15 +262,43 @@
                         </button>
                     </div>
 
-                    ${otherItems.map(item => `
-                        <a href="${item.url}" 
-                           class="nav-item ${this.activeMenuKey === item.key ? 'active' : ''}" 
-                           data-key="${item.key}"
-                           ${item.action ? `data-action="${item.action}"` : ''}>
-                            ${item.icon}
-                            <span>${item.label}</span>
-                        </a>
-                    `).join('')}
+                    ${otherItems.map(item => {
+                        if (item.type === 'group') {
+                            const expanded = this.isGroupExpanded(item.key, item.children);
+                            const hasActiveChild = (item.children || []).some(c => c.key === this.activeMenuKey);
+                            return `
+                                <div class="nav-group ${expanded ? 'open' : ''}" data-group="${item.key}">
+                                    <button type="button" class="nav-item nav-group-toggle ${hasActiveChild ? 'has-active' : ''}"
+                                        data-group-toggle="${item.key}" aria-expanded="${expanded ? 'true' : 'false'}">
+                                        ${item.icon}
+                                        <span>${item.label}</span>
+                                        <svg class="nav-group-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </button>
+                                    <div class="nav-group-children">
+                                        ${(item.children || []).map(child => `
+                                            <a href="${child.url}"
+                                               class="nav-item nav-sub-item ${this.activeMenuKey === child.key ? 'active' : ''}"
+                                               data-key="${child.key}">
+                                                ${child.icon}
+                                                <span>${child.label}</span>
+                                            </a>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        return `
+                            <a href="${item.url}"
+                               class="nav-item ${this.activeMenuKey === item.key ? 'active' : ''}"
+                               data-key="${item.key}"
+                               ${item.action ? `data-action="${item.action}"` : ''}>
+                                ${item.icon}
+                                <span>${item.label}</span>
+                            </a>
+                        `;
+                    }).join('')}
                 </nav>
             `;
 
@@ -375,10 +426,22 @@
                 });
             }
 
-            // Delegasi Klik Nav Items
-            const nav = document.getElementById('apaSideNav');
-            if (nav) {
-                nav.addEventListener('click', (e) => {
+            // Delegasi Klik Nav Items & Group Toggle (dipasang di sidebarEl agar tahan remount)
+            const sidebarEl = document.getElementById('appSidebar') || document.querySelector('.apa-sidebar');
+            if (sidebarEl) {
+                sidebarEl.addEventListener('click', (e) => {
+                    const groupToggle = e.target.closest('[data-group-toggle]');
+                    if (groupToggle) {
+                        e.preventDefault();
+                        const groupEl = groupToggle.closest('.nav-group');
+                        if (!groupEl) return;
+                        const isOpen = groupEl.classList.toggle('open');
+                        groupToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                        const groupKey = groupToggle.dataset.groupToggle;
+                        try { localStorage.setItem(`apa_sidebar_group_${groupKey}`, String(isOpen)); } catch {}
+                        return;
+                    }
+
                     const navItem = e.target.closest('.nav-item');
                     if (!navItem) return;
 

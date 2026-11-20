@@ -4,24 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="Assets/ART logo.svg">
-<title>Minta Surat Tugas - Sistem Automasi Pekerjaan Administrasi (APA)</title>
+<title>Surat Tugas - Sistem Automasi Pekerjaan Administrasi (APA)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
-<!-- APA Global Components: Base, Topbar & Sidebar -->
-<link rel="stylesheet" href="apa-base.css">
+<!-- APA Global Components: Topbar, Sidebar, Calendar & Pegawai -->
 <link rel="stylesheet" href="topbar.css">
 <script src="topbar.js"></script>
 <link rel="stylesheet" href="sidebar.css">
 <script src="sidebar.js"></script>
 <link rel="stylesheet" href="apa-calendar.css">
 <link rel="stylesheet" href="apa-pegawai.css">
+
+<!-- Library DOCX (pinned + SRI SHA-384, sama dengan halaman Admin Surat Tugas) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha384-PlRSzpewlarQuj5alIadXwjNUX+2eNMKwr0f07ShWYLy8B6TjEbm7ZlcN/ScSbwy" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/docxtemplater@3.68.5/build/docxtemplater.js" integrity="sha384-iFfWkkwxgayOORmVuUa4qEjdYyil2iKW0E2D1CgOQvaVkeKHJO1I8jc3OOhsRrX5" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/pizzip@3.2.0/dist/pizzip.js" integrity="sha384-EKMdeygnsgFUPocowqWjGXhnzFAiDXk3KuOx8g8lsB5/JNEQYTWaADHxmioDiFU8" crossorigin="anonymous"></script>
+
+<link rel="stylesheet" href="apa-base.css">
+<link rel="stylesheet" href="surat-tugas.css">
 <link rel="stylesheet" href="minta-surat-tugas.css">
 
-  <!-- Supabase JS Client & Global Config -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js" integrity="sha384-rwykjmWNwVxboyFmvK9OXN0wj9hnMHA2aAHtits54DuACyCq0M2PrSNxhRb+hvXT" crossorigin="anonymous"></script>
-  <script src="supabase-config.js"></script>
-
+<!-- Supabase JS Client & Global Config -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js" integrity="sha384-rwykjmWNwVxboyFmvK9OXN0wj9hnMHA2aAHtits54DuACyCq0M2PrSNxhRb+hvXT" crossorigin="anonymous"></script>
+<script src="supabase-config.js"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -31,137 +37,215 @@
     <div class="page-header fade-in">
       <div>
         <div class="page-eyebrow">Layanan Pegawai</div>
-        <h1 class="page-title">Minta Surat <em>Tugas</em></h1>
-        <p class="page-desc">Buat pengajuan baru dan pantau seluruh surat tugas yang pernah Anda kirim dalam satu tabel.</p>
+        <h1 class="page-title">Surat <em>Tugas</em></h1>
+        <p class="page-desc">Kelola dan ajukan surat tugas.</p>
       </div>
-    </div>
-    
-    <div class="stats-row fade-in" style="animation-delay:.08s;margin-bottom:20px">
-      <div class="stat-pill"><div class="stat-pill-icon" style="background:#e8f0fe">📋</div><div><div class="stat-pill-num" id="st-total">—</div><div class="stat-pill-label">Total</div></div></div>
-      <div class="stat-pill"><div class="stat-pill-icon" style="background:#fef3c7">⏳</div><div><div class="stat-pill-num" id="st-menunggu">—</div><div class="stat-pill-label">Menunggu</div></div></div>
-      <div class="stat-pill"><div class="stat-pill-icon" style="background:#ecfdf5">✅</div><div><div class="stat-pill-num" id="st-selesai">—</div><div class="stat-pill-label">Selesai</div></div></div>
     </div>
 
-    <div class="tabs fade-in" style="display:flex;margin-bottom:24px;animation-delay:.05s">
-      <div class="tab active" onclick="switchTab('list')">Daftar Surat <span class="tab-count" id="tc-list">0</span></div>
-      <div class="tab" onclick="switchTab('bulk')">&#10022; Minta Surat Tugas <span class="tab-count" id="tc-bulk">0</span></div>
-    </div>
-    <div class="view-panel" id="panel-list">
-      <div class="filter-bar">
-        <div class="search-wrap">
-          <span class="search-icon">&#128269;</span>
-          <input class="search-input" type="text" id="search-input" placeholder="Cari perihal atau tujuan..." oninput="filterTable()">
-        </div>
-        <select class="filter-select" id="filter-status" onchange="filterTable()">
-          <option value="">Semua Status</option>
-          <option value="menunggu">Menunggu</option>
-          <option value="selesai">Selesai</option>
-        </select>
-      </div>
-      <div class="table-wrap">
-        <div class="table-head">
-          <span class="table-head-title">Daftar Surat Tugas</span>
-          <span class="table-head-count" id="table-count">Memuat...</span>
-        </div>
-        <div id="table-area">
-          <table class="list-table"><thead><tr><th>Perihal</th><th>Waktu Pelaksanaan</th><th>Tujuan</th><th>Pegawai</th><th>Status</th><th></th></tr></thead>
-          <tbody><tr><td colspan="6"><div style="padding:14px;display:flex;flex-direction:column;gap:8px">
-            <div class="skel" style="height:36px;border-radius:5px"></div>
-            <div class="skel" style="height:36px;border-radius:5px"></div>
-            <div class="skel" style="height:36px;border-radius:5px"></div>
-          </div></td></tr></tbody></table>
-        </div>
-      </div>
-    </div>
-    <div class="view-panel active" id="panel-bulk">
-      <div class="alert info show" style="margin-bottom:16px">
-        <span>&#128161;</span>
-        <span>Isi tabel langsung di bawah. Support <strong>copy-paste dari Excel</strong> (Tab-separated). Centang baris yang ingin dikirim lalu klik <strong>"Kirim yang Dipilih"</strong>.</span>
-      </div>
-      <div class="hint-bar">
-        <span>&#9000;&#65039;</span>
-        <span>
-          <strong>Mode Excel:</strong>
-          <kbd>Tab</kbd> = pindah sel &middot;
-          <kbd>Shift</kbd>+<kbd>Tab</kbd> = ke kiri &middot;
-          <kbd>&#8593;</kbd> <kbd>&#8595;</kbd> <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> = navigasi antar sel &middot;
-          Tanggal: ketik bebas (<em>2/1/26</em>, <em>02-01-2026</em>, <em>2 jan 2026</em>) atau <kbd>Alt</kbd>+<kbd>&#8595;</kbd> untuk popup &middot;
-          Pegawai: ketik nama lalu <kbd>Enter</kbd> / klik dari saran.
+    <div id="page-alert" class="alert"><span id="page-alert-icon"></span><span id="page-alert-text"></span></div>
+
+    <!-- DASHBOARD BAR: Search di Kiri + 3 Card Filter Sejajar (sama dengan Admin Surat Tugas) -->
+    <div class="dashboard-bar fade-in" style="animation-delay:.08s">
+      <div class="search-wrap-compact">
+        <span class="search-icon-compact">
+          <img src="Assets/search.png" alt="Cari">
         </span>
+        <input class="search-input-compact" type="text" id="search-input" placeholder="Cari perihal, tujuan, pegawai, POK..." oninput="filterTable({ resetPage: true })">
       </div>
-      <div id="bulk-alert" class="alert"><span id="bulk-alert-icon"></span><span id="bulk-alert-text"></span></div>
-      <div class="bulk-toolbar">
-        <div class="bulk-toolbar-left">
-          <label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:500;color:var(--navy);user-select:none;padding:7px 12px;background:var(--white);border:1.5px solid var(--border2);border-radius:7px;transition:border-color .2s" onmouseenter="this.style.borderColor='var(--navy)'" onmouseleave="this.style.borderColor='var(--border2)'">
-            <input type="checkbox" id="check-all" onclick="toggleCheckAll(this.checked)" style="width:15px;height:15px;accent-color:var(--navy);cursor:pointer">
-            Pilih Semua
-          </label>
-          <div class="selected-pill zero" id="selected-pill">0 dipilih</div>
+
+      <div class="stats-cards-group">
+        <div class="stat-card active" data-status="" onclick="setFilterStatus('')" title="Tampilkan semua surat tugas">
+          <div class="stat-card-icon stat-icon-blue">
+            <img src="Assets/paper.png" alt="Total">
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-title">Total Surat</div>
+            <div class="stat-card-sub"><span id="st-total">—</span> Surat</div>
+          </div>
+          <span class="stat-card-arrow">›</span>
         </div>
-        <div class="bulk-toolbar-right">
-          <button class="btn-outline" onclick="addRows(5)">&#65291; 5 Baris</button>
-          <button class="btn-outline" onclick="addRows(1)">&#65291; 1 Baris</button>
-          <button class="btn-primary" id="btn-send" onclick="submitChecked()" disabled>
-            <span id="btn-send-text">Kirim yang Dipilih (0)</span>
+
+        <div class="stat-card" data-status="menunggu" onclick="setFilterStatus('menunggu')" title="Saring: Menunggu Persetujuan">
+          <div class="stat-card-icon stat-icon-amber">
+            <img src="Assets/hour-glass.png" alt="Menunggu">
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-title">Menunggu</div>
+            <div class="stat-card-sub"><span id="st-menunggu">—</span> Surat</div>
+          </div>
+          <span class="stat-card-arrow">›</span>
+        </div>
+
+        <div class="stat-card" data-status="selesai" onclick="setFilterStatus('selesai')" title="Saring: Selesai / Disetujui">
+          <div class="stat-card-icon stat-icon-green">
+            <img src="Assets/checked.png" alt="Selesai">
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-title">Selesai</div>
+            <div class="stat-card-sub"><span id="st-selesai">—</span> Surat</div>
+          </div>
+          <span class="stat-card-arrow">›</span>
+        </div>
+      </div>
+
+      <select id="filter-status" style="display:none" onchange="filterTable({ resetPage: true })">
+        <option value="">Semua Status</option>
+        <option value="menunggu">Menunggu Persetujuan</option>
+        <option value="selesai">Selesai</option>
+      </select>
+    </div>
+
+    <div class="table-wrap fade-in" style="animation-delay:.12s">
+      <div class="table-head">
+        <span class="table-head-title">Daftar Surat Tugas</span>
+        <span class="table-head-count" id="table-count">Memuat...</span>
+        <!-- Seluruh Tombol Aksi di Pojok Kanan Header Tabel -->
+        <div class="table-head-actions">
+          <button class="btn-table-head" onclick="addRows(1)" title="Tambah 1 Baris Pengajuan">
+            <img src="Assets/add.png" alt="Tambah 1 Baris">
+          </button>
+          <button class="btn-table-head btn-table-head-text" onclick="addRows(5)" title="Tambah 5 Baris Pengajuan">+5</button>
+          <button class="btn-table-head" onclick="exportSuratToExcel()" title="Export Excel (.xlsx)">
+            <img src="Assets/export.png" alt="Export">
+          </button>
+          <button class="btn-table-head" onclick="document.getElementById('inp-import-excel').click()" title="Import Excel (.xlsx)">
+            <img src="Assets/import.png" alt="Import">
+          </button>
+          <input type="file" id="inp-import-excel" accept=".xlsx,.xls" style="display:none" onchange="importSuratFromExcel(this)">
+          <button class="btn-table-head btn-table-head-gold" id="btn-bulk-download" onclick="bulkDownloadSelected()" disabled title="Download Dokumen Terpilih (.docx)">
+            <img src="Assets/paper.png" alt="Download">
+            <span class="btn-badge" id="bulk-dl-badge" style="display:none">0</span>
+          </button>
+          <button class="btn-table-head btn-table-head-success" id="btn-send" onclick="submitChecked()" disabled title="Kirim Pengajuan Terpilih">
+            <img src="Assets/checked.png" alt="Kirim">
+            <span class="btn-badge" id="bulk-send-badge" style="display:none">0</span>
           </button>
         </div>
       </div>
-      <div class="bulk-table-outer">
-        <div class="table-scroll-top" id="bulk-scroll-top" aria-hidden="true">
-          <div class="table-scroll-top-inner" id="bulk-scroll-top-inner"></div>
-        </div>
-        <div class="table-scroll" id="bulk-table-scroll">
-          <table class="xls-table">
-            <thead>
-              <tr>
-                <th class="col-check">&#10003;</th>
-                <th class="col-no sortable sorted" onclick="setSuratSort('no')">No <span class="sort-arrow">▾</span></th>
-                <th class="col-perihal sortable" onclick="setSuratSort('perihal')">Perihal * <span class="sort-arrow">↕</span></th>
-                <th class="col-waktu sortable" onclick="setSuratSort('waktu')">Waktu Pelaksanaan <span class="sort-arrow">↕</span></th>
-                <th class="col-tujuan sortable" onclick="setSuratSort('tujuan')">Tempat Tujuan <span class="sort-arrow">↕</span></th>
-                <th class="col-nama sortable" onclick="setSuratSort('pegawai')">Nama Pegawai * <span class="sort-arrow">↕</span></th>
-                <th class="col-pok sortable" onclick="setSuratSort('pembebanan')">POK <span style="font-weight:400;color:var(--muted);font-size:10px">(opsional)</span><span class="sort-arrow">↕</span></th>
-                <th class="col-status sortable" onclick="setSuratSort('status')">Status <span class="sort-arrow">↕</span></th>
-                <th class="col-aksi">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="bulk-tbody"></tbody>
-          </table>
-        </div>
-        <div class="add-row-bar" style="display:none">
-          <span style="font-size:11px;color:var(--muted)" id="row-count-label">0 baris</span>
-        </div>
-        <div class="action-bar" style="display:none">
-          <div class="action-bar-info"><strong id="ab-checked">0</strong> surat dipilih &nbsp;&middot;&nbsp; <strong id="ab-total">0</strong> total baris</div>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          </div>
-        </div>
+      <div class="table-scroll-top" id="table-scroll-top" aria-hidden="true">
+        <div class="table-scroll-top-inner" id="table-scroll-top-inner"></div>
       </div>
+      <div class="table-sticky-cols" id="table-sticky-cols"></div>
+      <div class="table-scroll" id="table-area">
+        <table class="list-table mst-table">
+          <thead>
+            <tr>
+              <th class="col-check col-check-dual">
+                <div class="th-check-inner">
+                  <input type="checkbox" id="bulk-send-master" class="ck-success" title="Pilih semua baris draft untuk dikirim" onchange="toggleCheckAll(this.checked)">
+                  <input type="checkbox" id="bulk-dl-master" class="ck-gold" title="Pilih semua surat selesai untuk di-download" onchange="toggleBulkDownloadAll(this.checked)">
+                </div>
+              </th>
+              <th class="col-no sortable sorted" onclick="setSuratSort('no')">No <span class="sort-arrow">▾</span></th>
+              <th class="col-perihal sortable" onclick="setSuratSort('perihal')">Perihal <span class="sort-arrow">↕</span></th>
+              <th class="col-waktu sortable" onclick="setSuratSort('waktu')">Waktu Pelaksanaan <span class="sort-arrow">↕</span></th>
+              <th class="col-tujuan sortable" onclick="setSuratSort('tujuan')">Tempat Tujuan <span class="sort-arrow">↕</span></th>
+              <th class="col-nama sortable" onclick="setSuratSort('pegawai')">Nama Pegawai <span class="sort-arrow">↕</span></th>
+              <th class="col-mak sortable" onclick="setSuratSort('pembebanan')">POK <span class="sort-arrow">↕</span></th>
+              <th class="col-status sortable" onclick="setSuratSort('status')">Status <span class="sort-arrow">↕</span></th>
+              <th class="col-aksi">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="bulk-tbody">
+            <tr><td colspan="9"><div style="padding:16px;display:flex;flex-direction:column;gap:8px">
+              <div class="skel" style="height:44px;border-radius:6px"></div>
+              <div class="skel" style="height:44px;border-radius:6px"></div>
+              <div class="skel" style="height:44px;border-radius:6px"></div>
+            </div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-pagination" id="table-pagination" hidden></div>
     </div>
   </main>
 </div>
 
-<!-- cal-popup di-inject otomatis oleh apa-calendar.js -->
+<!-- POPUP TYPEAHEAD POK (MAK PEMBEBANAN) -->
+<div class="mak-ac-popup" id="mak-ac-popup">
+  <div class="mak-ac-header">
+    <span>↑↓ navigasi · <kbd>Enter</kbd> pilih · <kbd>Esc</kbd> tutup</span>
+    <span id="mak-ac-count"></span>
+  </div>
+  <div class="mak-ac-list" id="mak-ac-list"></div>
+</div>
 
-<!-- apa-calendar & apa-pegawai popups di-inject otomatis -->
-
-<div class="modal-overlay" id="detail-modal" style="display:none" onclick="if(event.target===this)closeDetailModal()">
-  <div class="modal">
-    <div class="modal-header"><span class="modal-title">Detail Surat Tugas</span><button class="modal-close" onclick="closeDetailModal()">&#10005;</button></div>
-    <div class="modal-body" id="modal-body"></div>
-    <div class="modal-footer"><button class="btn-modal-close" onclick="closeDetailModal()">Tutup</button></div>
+<!-- MODAL PREVIEW IMPORT SURAT TUGAS -->
+<div class="modal-overlay" id="modal-import-surat" style="display:none" onclick="if(event.target===this)closeSuratImportModal()">
+  <div class="modal modal-wide">
+    <div class="modal-header detail">
+      <span class="modal-title">Preview <em>Import Surat Tugas</em></span>
+      <button class="modal-close" onclick="closeSuratImportModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-preview-panel">
+        Cek hasil baca Excel sebelum data disimpan. Kolom <strong>Lamanya Tugas</strong> diabaikan,
+        <strong>Tujuan / Tugas</strong> dibaca sebagai perihal, dan <strong>Program</strong> + <strong>MAK Pembebanan</strong>
+        digabung menjadi POK.
+      </div>
+      <div class="import-preview-stats">
+        <div class="import-stat"><div class="import-stat-label">Baris Dibaca</div><div class="import-stat-value" id="surat-import-total">0</div></div>
+        <div class="import-stat"><div class="import-stat-label">Siap Import</div><div class="import-stat-value" id="surat-import-ready">0</div></div>
+        <div class="import-stat"><div class="import-stat-label">Warning</div><div class="import-stat-value" id="surat-import-warn">0</div></div>
+        <div class="import-stat"><div class="import-stat-label">File</div><div class="import-stat-value" id="surat-import-file" style="font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.35">-</div></div>
+      </div>
+      <div class="import-preview-table-wrap">
+        <table class="import-preview-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>No</th>
+              <th>Nomor</th>
+              <th>Tanggal Surat</th>
+              <th>Waktu Pelaksanaan</th>
+              <th>Perihal</th>
+              <th>Nama</th>
+              <th>POK</th>
+              <th>Penandatangan</th>
+              <th>Catatan</th>
+            </tr>
+          </thead>
+          <tbody id="surat-import-preview-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeSuratImportModal()">Batal</button>
+      <button class="btn-primary" id="btn-surat-import-submit" onclick="submitSuratImport()" disabled>Terapkan Import</button>
+    </div>
   </div>
 </div>
+
+<!-- MODAL PREVIEW DOCX -->
+<div class="modal-overlay" id="modal-preview" style="display:none" onclick="if(event.target===this)closeModal('modal-preview')">
+  <div class="modal-preview">
+    <div class="modal-header detail">
+      <span class="modal-title">👁 Preview <em>Surat Tugas</em></span>
+      <button class="modal-close" onclick="closeModal('modal-preview')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="preview-container" id="preview-container">
+        <div class="preview-loading"><div class="preview-loading-spin"></div><div>Memuat dokumen...</div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('modal-preview')">Tutup</button>
+      <button class="btn-preview" id="btn-open-in-word" onclick="openInWordForPrint()" title="Buka di Microsoft Word desktop, lalu Ctrl+P untuk print">📄 Buka di Word &amp; Print</button>
+      <button class="btn-download" id="btn-preview-download" onclick="downloadFromPreview()">📥 Download .docx</button>
+    </div>
+  </div>
+</div>
+
+<div id="draft-saved-toast">📝 Draft tersimpan</div>
 
 <script src="config.js"></script>
 <script src="apa-shared.js"></script>
 <script src="apa-calendar.js"></script>
 <script src="apa-pegawai.js"></script>
 <script src="apa-grid-nav.js"></script>
-
-
-
-
+<script src="st-lookups.js"></script>
+<script src="st-excel.js"></script>
+<script src="st-bulk.js"></script>
+<script src="st-docx.js"></script>
 <script src="minta-surat-tugas.js"></script>
 </body>
 </html>

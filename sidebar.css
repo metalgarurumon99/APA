@@ -182,6 +182,60 @@ body.sidebar-hidden .apa-floating-toggle-btn {
     font-weight: 700;
 }
 
+/* Kelompok Menu Expandable (Kelola) */
+.apa-sidebar .nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.apa-sidebar .nav-group-toggle {
+    justify-content: flex-start;
+}
+
+.apa-sidebar .nav-group-toggle.has-active {
+    color: var(--sb-blue-dark);
+    font-weight: 700;
+}
+
+.apa-sidebar .nav-group-chevron {
+    margin-left: auto;
+    transition: transform 0.2s ease !important;
+    color: var(--sb-muted);
+}
+
+.apa-sidebar .nav-group.open .nav-group-chevron {
+    transform: rotate(180deg);
+}
+
+.apa-sidebar .nav-group-toggle:hover .nav-group-chevron {
+    transform: none;
+    color: var(--sb-blue);
+}
+
+.apa-sidebar .nav-group.open .nav-group-toggle:hover .nav-group-chevron {
+    transform: rotate(180deg);
+}
+
+.apa-sidebar .nav-group-children {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    padding-left: 14px;
+    margin-left: 16px;
+    border-left: 1.5px solid var(--sb-border);
+}
+
+.apa-sidebar .nav-group.open .nav-group-children {
+    display: flex;
+}
+
+.apa-sidebar .nav-sub-item {
+    padding: 9px 12px;
+    font-size: 0.85rem;
+    border-radius: 10px;
+}
+
 /* Mobile Bar Header */
 .apa-mobile-topbar {
     display: none;
