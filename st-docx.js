@@ -720,7 +720,7 @@ async function buildTemplateData(data, opts) {
     //   Pakai array supaya scope `r` di dalamnya bisa di-reference.
     // ─────────────────────────────────────────────────────────────────
     visum:                 flags.has_visum
-                             ? [{ r: Array(calcVisumLoopCount(jumlahResponden)).fill({}) }]
+                             ? [{ r: [{}] }]
                              : [],
   };
 }

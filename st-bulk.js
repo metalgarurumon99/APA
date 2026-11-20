@@ -211,64 +211,77 @@ async function submitBulkApprove() {
   if (progressEl) progressEl.style.display = '';
 
   let success = 0;
+  let completed = 0;
+  let defaultsSaved = false;
   const failures = [];
+  const CONCURRENCY = 4;
 
-  for (let i = 0; i < ids.length; i++) {
-    const id = ids[i];
-    const pct = Math.round(((i) / ids.length) * 100);
-    if (progressBar)  progressBar.style.width  = pct + '%';
-    if (progressText) progressText.textContent = `Memproses ${i + 1} / ${ids.length}…`;
+  // Siapkan pekerjaan dari DOM sebelum worker berjalan paralel
+  const tasks = ids.map(id => ({ id, values: collectRowFields(id) }));
+  let cursor = 0;
 
-    const values = collectRowFields(id);
-    if (!values) { failures.push(`#${id}: data tidak ditemukan`); continue; }
-
-    const jabatan = lookupJabatan(values.penandatangan_nip, values.tanggal_surat);
-    const waktuText = values.waktu_pelaksanaan_text && values.waktu_pelaksanaan_text.trim()
-      ? values.waktu_pelaksanaan_text : null;
-
-    const payload = {
-      status:                'selesai',
-      nomor_surat:           values.nomor_surat,
-      tanggal_surat:         values.tanggal_surat,
-      tanggal_berangkat:     values.tanggal_berangkat,
-      tanggal_kembali:       values.tanggal_kembali || null,
-      waktu_pelaksanaan_text: waktuText,
-      perihal:               values.perihal,
-      tujuan:                values.tujuan,
-      pegawai_nip:           values.pegawai_nip,
-      pegawai_list:          values.pegawai_list,
-      menimbang_custom:      values.menimbang_custom,
-      alat_angkutan:         values.alat_angkutan,
-      pembebanan:            values.pembebanan,
-      tempat_terbit:         values.tempat_terbit,
-      penandatangan_nama:    values.penandatangan_nama,
-      penandatangan_nip:     values.penandatangan_nip,
-      penandatangan_jabatan: jabatan || '',
-      tipe:                  values.tipe,
-      // bertugas_sebagai & jumlah_responden: sengaja NULL di bulk approve.
-      // Admin bisa isi setelah via tombol Edit Role / approve individual.
-      bertugas_sebagai:      null,
-      jumlah_responden:      null,
-    };
-
-    try {
-      await patchSuratTugas(id, payload);
-      clearAdminDraft(id);
-      // Auto-save defaults dari surat pertama yang berhasil
-      if (success === 0) {
-        const nd = {};
-        if (values.alat_angkutan)     nd.alat_angkutan = values.alat_angkutan;
-        if (values.pembebanan)        nd.pembebanan    = values.pembebanan;
-        if (values.penandatangan_nip) nd.ttd_nip       = values.penandatangan_nip;
-        if (values.penandatangan_nama)nd.ttd_nama      = values.penandatangan_nama;
-        saveApproveDefaults({ ...loadApproveDefaults(), ...nd });
+  async function worker() {
+    while (cursor < tasks.length) {
+      const { id, values } = tasks[cursor++];
+      if (!values) {
+        failures.push(`#${id}: data tidak ditemukan`);
+        completed++;
+        continue;
       }
-      success++;
-    } catch(e) {
-      const s = suratMap[id];
-      failures.push(`${(s && s.perihal) || '#' + id}: ${e.message}`);
+
+      const jabatan = lookupJabatan(values.penandatangan_nip, values.tanggal_surat);
+      const waktuText = values.waktu_pelaksanaan_text && values.waktu_pelaksanaan_text.trim()
+        ? values.waktu_pelaksanaan_text : null;
+
+      const payload = {
+        status:                'selesai',
+        nomor_surat:           values.nomor_surat,
+        tanggal_surat:         values.tanggal_surat,
+        tanggal_berangkat:     values.tanggal_berangkat,
+        tanggal_kembali:       values.tanggal_kembali || null,
+        waktu_pelaksanaan_text: waktuText,
+        perihal:               values.perihal,
+        tujuan:                values.tujuan,
+        pegawai_nip:           values.pegawai_nip,
+        pegawai_list:          values.pegawai_list,
+        menimbang_custom:      values.menimbang_custom,
+        alat_angkutan:         values.alat_angkutan,
+        pembebanan:            values.pembebanan,
+        tempat_terbit:         values.tempat_terbit,
+        penandatangan_nama:    values.penandatangan_nama,
+        penandatangan_nip:     values.penandatangan_nip,
+        penandatangan_jabatan: jabatan || '',
+        tipe:                  values.tipe,
+        bertugas_sebagai:      values.bertugas_sebagai || null,
+      };
+
+      try {
+        await patchSuratTugas(id, payload);
+        clearAdminDraft(id);
+        replaceRowInPlace(id, payload);
+        if (!defaultsSaved) {
+          defaultsSaved = true;
+          const nd = {};
+          if (values.alat_angkutan)     nd.alat_angkutan = values.alat_angkutan;
+          if (values.pembebanan)        nd.pembebanan    = values.pembebanan;
+          if (values.penandatangan_nip) nd.ttd_nip       = values.penandatangan_nip;
+          if (values.penandatangan_nama)nd.ttd_nama      = values.penandatangan_nama;
+          saveApproveDefaults({ ...loadApproveDefaults(), ...nd });
+        }
+        success++;
+      } catch(e) {
+        const s = suratMap[id];
+        failures.push(`${(s && s.perihal) || '#' + id}: ${e.message}`);
+      } finally {
+        completed++;
+        const pct = Math.round((completed / ids.length) * 100);
+        if (progressBar)  progressBar.style.width  = pct + '%';
+        if (progressText) progressText.textContent = `Memproses ${completed} / ${ids.length}…`;
+      }
     }
   }
+
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, tasks.length) }, () => worker()));
 
   // Selesai — pastikan tombol Batal & Submit kembali aktif
   if (cancelBtn) cancelBtn.disabled = false;
@@ -284,13 +297,8 @@ async function submitBulkApprove() {
     console.warn('[APA Bulk Approve] failures:', failures);
   }
 
-  // Unceklis semua approve checkbox
+  // Unceklis semua approve checkbox & refresh saran MAK (tanpa full refetch!)
   document.querySelectorAll('.bulk-approve-check').forEach(c => { c.checked = false; });
-
-  // Reload data
-  const dirtySnapshot = captureMenungguDirty(null);
-  await loadSurat();
-  reapplyMenungguDirty(dirtySnapshot);
   loadMAKSuggestions();
   updateBulkApproveCounter();
 }
@@ -323,23 +331,6 @@ async function bulkDownloadSelected() {
     return;
   }
 
-  // #2 (refactor): jumlah_responden sekarang persistent di DB. Tidak
-  // perlu prompt sequentially — langsung ambil dari surat.jumlah_responden.
-  // Surat yang tidak punya value (NULL) → render pakai 7 baris default.
-  const visumOptsById = {};
-  for (let i = 0; i < ids.length; i++) {
-    const id = ids[i];
-    const surat = suratMap[id];
-    if (!surat || surat.status !== 'selesai') continue;
-    if (!tipeHasVisum(surat.tipe)) {
-      visumOptsById[id] = {};
-    } else {
-      visumOptsById[id] = {
-        jumlahResponden: (surat.jumlah_responden != null) ? surat.jumlah_responden : null
-      };
-    }
-  }
-
   for (let i = 0; i < ids.length; i++) {
     const id    = ids[i];
     const surat = suratMap[id];
@@ -353,16 +344,11 @@ async function bulkDownloadSelected() {
       continue;
     }
 
-    // (#2 refactor) — visumOptsById[id] tidak pernah null lagi setelah
-    // jumlah_responden disimpan di DB. Tidak ada lagi skip path "dibatalkan
-    // saat input visum" karena tidak ada prompt yang bisa di-cancel.
-
     try {
-      const blob = await buildSuratTugasDoc(surat, visumOptsById[id] || {});
+      const blob = await buildSuratTugasDoc(surat);
       saveAs(blob, buildFileName(surat));
       success++;
       // Jeda antar download supaya browser tidak block multi-trigger.
-      // 400ms umumnya cukup untuk Chrome/Edge/Firefox.
       if (i < ids.length - 1) {
         await new Promise(r => setTimeout(r, 400));
       }
@@ -388,13 +374,9 @@ async function bulkDownloadSelected() {
 
 async function downloadFromPreview() {
   if (!currentPreviewSurat) return;
-  // Pakai opts visum yg SAMA dengan yg dipakai untuk preview saat ini —
-  // jangan tanya ulang. Kalau modal preview di-buka ulang, opts akan
-  // di-set ulang lewat openPreview().
-  const opts = _previewVisumOpts || {};
   try {
     ensureLibrariesLoaded();
-    const blob = _previewBlob || await buildSuratTugasDoc(currentPreviewSurat, opts);
+    const blob = _previewBlob || await buildSuratTugasDoc(currentPreviewSurat);
     _previewBlob = blob;
     saveAs(blob, buildFileName(currentPreviewSurat));
     showPageAlert(`📥 Berhasil di-download: ${buildFileName(currentPreviewSurat)}`, 'success');
@@ -443,7 +425,7 @@ async function openInWordForPrint() {
       signedUrl = await getPreviewSignedUrl(_previewUploadedPath);
     } else {
       ensureLibrariesLoaded();
-      const blob = await buildSuratTugasDoc(currentPreviewSurat, _previewVisumOpts || {});
+      const blob = await buildSuratTugasDoc(currentPreviewSurat);
       const filename = await uploadPreviewDocx(blob, currentPreviewSurat.id);
       _previewUploadedPath = filename;
       signedUrl = await getPreviewSignedUrl(filename);

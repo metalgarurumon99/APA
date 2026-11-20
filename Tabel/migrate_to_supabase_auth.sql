@@ -536,10 +536,12 @@ BEGIN
 END;
 $$;
 
--- 4d. admin_reset_user_password (sinkron ke auth.users + public.users)
+-- 4d. admin_reset_user_password (sinkron ke auth.users + public.users + dukung p_must_change_password)
+DROP FUNCTION IF EXISTS public.admin_reset_user_password(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.admin_reset_user_password(
     p_username TEXT,
-    p_new_password TEXT
+    p_new_password TEXT,
+    p_must_change_password BOOLEAN DEFAULT TRUE
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -568,7 +570,7 @@ BEGIN
 
     UPDATE public.users
     SET password_hash = v_hash,
-        must_change_password = TRUE
+        must_change_password = COALESCE(p_must_change_password, TRUE)
     WHERE lower(username) = p_username
     RETURNING auth_user_id INTO v_auth_uid;
 
@@ -583,7 +585,7 @@ BEGIN
         WHERE id = v_auth_uid;
     END IF;
 
-    RETURN jsonb_build_object('success', true, 'message', 'Password berhasil direset. User wajib mengganti password saat login.');
+    RETURN jsonb_build_object('success', true, 'message', 'Password berhasil direset.');
 END;
 $$;
 
@@ -630,14 +632,14 @@ REVOKE ALL ON FUNCTION public.get_pegawai_profile(TEXT) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_get_all_users() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_create_user(TEXT, TEXT, TEXT, JSONB, TEXT) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_update_user_roles(TEXT, JSONB) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.admin_reset_user_password(TEXT, TEXT) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.admin_reset_user_password(TEXT, TEXT, BOOLEAN) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_delete_user(TEXT) FROM PUBLIC, anon;
 
 GRANT EXECUTE ON FUNCTION public.get_pegawai_profile(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_get_all_users() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_create_user(TEXT, TEXT, TEXT, JSONB, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_update_user_roles(TEXT, JSONB) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.admin_reset_user_password(TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_reset_user_password(TEXT, TEXT, BOOLEAN) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_delete_user(TEXT) TO authenticated;
 
 -- Cabut RPC login lama dari anon (autentikasi kini lewat Supabase Auth GoTrue)

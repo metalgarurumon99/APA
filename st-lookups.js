@@ -186,41 +186,6 @@ const PREVIEW_SIGNED_URL_TTL_SEC = Math.ceil(PREVIEW_TTL_MS / 1000);
 const _previewCleanupTimers = {};
 let _previewUploadedPath = null;
 let _previewBlob = null;
-// Opts visum yg sedang aktif untuk modal preview saat ini. Dipakai oleh
-// downloadFromPreview() dan openInWordForPrint() agar tombol-tombol di
-// modal preview pakai jumlah responden yang sama dengan preview yg sedang
-// ditampilkan, tanpa tanya ulang ke user. Reset saat modal preview ditutup.
-let _previewVisumOpts = null;
-
-/* ── Visum prompt state ──────────────────────────────────────────────
-   #2 refactor: jumlah_responden sekarang persistent di DB (kolom
-   surat_tugas.jumlah_responden — di-input admin saat approve). Tidak ada
-   lagi modal prompt on-demand di preview/download. Code lama dihapus:
-     - promptVisumResponden() / confirmVisumPrompt() helpers
-     - _visumLastInput[] / _visumPromptResolver state
-     - modal-visum-prompt HTML
-─────────────────────────────────────────────────────────────────── */
-
-/**
- * Wrapper: jalankan callback dengan opts yang sudah di-resolve.
- *
- * #2 (refactor): jumlah_responden sekarang persistent di DB (kolom
- * surat_tugas.jumlah_responden — di-input admin saat approve). Tidak ada
- * lagi prompt modal di preview/download. Function ini sekarang sekedar
- * pull value dari record surat & pass ke callback.
- *
- * @param {object}   surat    - object surat (harus include jumlah_responden field)
- * @param {Function} callback - async (opts) => any
- * @returns {Promise<any>}    - return value callback
- */
-async function withVisumOpts(surat, callback) {
-  if (!tipeHasVisum(surat && surat.tipe)) {
-    return callback({});  // tipe non-visum → opts kosong
-  }
-  // Baca jumlah_responden dari record DB. NULL = pakai default (7 baris).
-  const jr = (surat && surat.jumlah_responden != null) ? surat.jumlah_responden : null;
-  return callback({ jumlahResponden: jr });
-}
 
 async function uploadPreviewDocx(blob, suratId) {
   const filename = `${suratId}_${Date.now()}.docx`;
@@ -365,19 +330,7 @@ async function openPreview(suratId) {
 
   const reqSeq = ++_previewReqSeq;
 
-  // #2 (refactor): jumlah_responden sekarang dari DB (persistent), tidak
-  // perlu prompt modal lagi. Untuk tipe visum, baca dari surat.jumlah_responden.
-  // Untuk non-visum, opts={}.
-  const visumOpts = tipeHasVisum(surat.tipe)
-    ? { jumlahResponden: (surat.jumlah_responden != null) ? surat.jumlah_responden : null }
-    : {};
-
   currentPreviewSurat = surat;
-  // Simpan opts visum agar tombol "Download .docx" dan "Buka di Word"
-  // di modal preview ini bisa pakai jumlah responden yang sama tanpa
-  // tanya ulang. _previewVisumOpts hanya hidup selama modal preview
-  // terbuka — di-reset saat modal ditutup.
-  _previewVisumOpts = visumOpts;
   _previewBlob = null;
 
   openModal('modal-preview');
@@ -399,7 +352,7 @@ async function openPreview(suratId) {
 
   try {
     ensureLibrariesLoaded();
-    const blob = await buildSuratTugasDoc(surat, visumOpts);
+    const blob = await buildSuratTugasDoc(surat);
     if (reqSeq !== _previewReqSeq) return;
     _previewBlob = blob;
     const filename = await uploadPreviewDocx(blob, surat.id);
@@ -434,20 +387,14 @@ async function downloadSuratTugas(suratId) {
   if (surat.status !== 'selesai') {
     showPageAlert('Surat hanya bisa di-download jika sudah selesai.', 'error'); return;
   }
-  // Untuk tipe visum: minta jumlah responden dulu. User cancel → abort.
-  const result = await withVisumOpts(surat, async (opts) => {
-    try {
-      ensureLibrariesLoaded();
-      const blob = await buildSuratTugasDoc(surat, opts);
-      saveAs(blob, buildFileName(surat));
-      showPageAlert(`📥 Berhasil di-download: ${buildFileName(surat)}`, 'success');
-      return true;
-    } catch(e) {
-      console.error(e);
-      showPageAlert(`Gagal download: ${e.message}`, 'error');
-      return false;
-    }
-  });
-  // result === null artinya user cancel di prompt visum — tidak perlu alert.
+  try {
+    ensureLibrariesLoaded();
+    const blob = await buildSuratTugasDoc(surat);
+    saveAs(blob, buildFileName(surat));
+    showPageAlert(`📥 Berhasil di-download: ${buildFileName(surat)}`, 'success');
+  } catch(e) {
+    console.error(e);
+    showPageAlert(`Gagal download: ${e.message}`, 'error');
+  }
 }
 

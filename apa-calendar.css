@@ -196,7 +196,6 @@
   border-radius: 0 50% 50% 0;
 }
 
-.cal-day.cal-r1-start.cal-r1-end,
 .cal-day.cal-r1-single {
   border-radius: 50% !important;
 }
@@ -225,7 +224,6 @@
   border-radius: 0 50% 50% 0;
 }
 
-.cal-day.cal-r2-start.cal-r2-end,
 .cal-day.cal-r2-single {
   border-radius: 50% !important;
 }
@@ -238,12 +236,11 @@
 
 /* ── Year Grid ─────────────────────────────────────────── */
 .cal-year-grid {
-  display: grid;
+  display: none;
   grid-template-columns: repeat(4, 1fr);
   padding: 12px;
   gap: 6px;
   background: #ffffff;
-  display: none;
 }
 
 .cal-popup.year-mode .cal-day-names,

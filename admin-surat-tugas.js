@@ -127,18 +127,7 @@ const TIPE_TO_FLAGS = {
 // dengan tag {#r}...{/r}. Kalau user input jumlah responden ≤ VISUM_DEFAULT_ROWS,
 // loop tetap render minimal 1x → minimal 7 baris terlihat.
 // Kalau input > VISUM_DEFAULT_ROWS, loop render (input - VISUM_DEFAULT_ROWS) baris.
-const VISUM_DEFAULT_ROWS = 6;
-
-// Hitung jumlah baris yang harus di-loop (`r` array length) berdasarkan
-// jumlah responden yang user input. Defensive: input apapun (null/string/
-// negatif/desimal) di-coerce ke integer. Lihat juga buildTemplateData().
-function calcVisumLoopCount(jumlahResponden) {
-  const n = parseInt(jumlahResponden, 10);
-  if (!isFinite(n) || n <= VISUM_DEFAULT_ROWS) return 1; // minimal 1 → total 7 baris
-  return n - VISUM_DEFAULT_ROWS;
-}
-
-// Helper: apakah tipe surat ini butuh input "Jumlah Responden" untuk visum?
+// Helper: apakah tipe surat ini punya lampiran visum?
 function tipeHasVisum(tipe) {
   return tipeFlags(tipe).has_visum === true;
 }
@@ -355,22 +344,43 @@ function parseFlexRange(input) {
   if (!input) return { mulai: '', selesai: '' };
   let s = String(input).trim();
   if (!s) return { mulai: '', selesai: '' };
+
+  const resolvePair = (left, right) => {
+    const b = parseFlexDate(right);
+    let a = parseFlexDate(left);
+    // Dukung format bulan sama: "12 s.d. 15 Mei 2026" (left hanya angka hari)
+    if (!a && b && /^\d{1,2}$/.test(left)) {
+      const bm = b.match(/^(\d{4})-(\d{2})-/);
+      if (bm) {
+        const d = parseInt(left, 10), mo = parseInt(bm[2], 10), y = parseInt(bm[1], 10);
+        const dt = new Date(y, mo - 1, d);
+        if (dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d) {
+          a = `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        }
+      }
+    }
+    // Dukung format beda bulan dengan tahun hanya di kanan: "12 Mei s.d. 15 Juni 2025"
+    if (b && !/\d{4}/.test(left) && /^\d{1,2}\s+[a-zA-Z]+/.test(left)) {
+      const rightYear = b.slice(0, 4);
+      const aWithYear = parseFlexDate(`${left} ${rightYear}`);
+      if (aWithYear) a = aWithYear;
+    }
+    if (a) return { mulai: a, selesai: b || '' };
+    return null;
+  };
+
   const seps = [' s.d. ', ' sd ', ' - ', ' s/d ', ' to ', ' – ', ' — ', '~'];
   for (const sep of seps) {
     const idx = s.toLowerCase().indexOf(sep);
     if (idx > 0) {
-      const left = s.slice(0, idx).trim();
-      const right = s.slice(idx + sep.length).trim();
-      const a = parseFlexDate(left);
-      const b = parseFlexDate(right);
-      if (a) return { mulai: a, selesai: b || '' };
+      const res = resolvePair(s.slice(0, idx).trim(), s.slice(idx + sep.length).trim());
+      if (res) return res;
     }
   }
   const dashSplit = s.split(/\s+-\s+|\s+–\s+|\s+—\s+/);
   if (dashSplit.length === 2) {
-    const a = parseFlexDate(dashSplit[0]);
-    const b = parseFlexDate(dashSplit[1]);
-    if (a) return { mulai: a, selesai: b || '' };
+    const res = resolvePair(dashSplit[0].trim(), dashSplit[1].trim());
+    if (res) return res;
   }
   const single = parseFlexDate(s);
   if (single) return { mulai: single, selesai: '' };
@@ -509,7 +519,59 @@ function getPengajuNama(s) {
   return u.full_name || u.username || '';
 }
 
+// Fetch semua baris surat_tugas secara bertahap (Range 1000/page) agar tidak terpotong limit default PostgREST
+async function fetchAllSuratPaged() {
+  const PAGE_SIZE = 1000;
+  const all = [];
+  let offset = 0;
+  while (true) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas?select=*&order=created_at.asc,id.asc`, {
+      headers: {
+        ...H,
+        'Range-Unit': 'items',
+        'Range': `${offset}-${offset + PAGE_SIZE - 1}`,
+      },
+    });
+    if (res.status === 416) break; // Range Not Satisfiable (sudah di akhir)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const chunk = await res.json();
+    if (!Array.isArray(chunk) || !chunk.length) break;
+    all.push(...chunk);
+    if (chunk.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return all;
+}
+
+// Update 1 baris di memori + DOM secara in-place tanpa full refetch & tanpa rebuild seluruh tabel
+function replaceRowInPlace(id, updatedFields) {
+  const existing = suratMap[id];
+  if (!existing) return false;
+  const updated = { ...existing, ...updatedFields };
+  suratMap[id] = updated;
+  const idx = allSurat.findIndex(x => String(x.id) === String(id));
+  if (idx >= 0) allSurat[idx] = updated;
+
+  const oldRow = document.querySelector(`tr[data-surat-id="${id}"]`);
+  if (oldRow) {
+    const tbodyTmp = document.createElement('tbody');
+    tbodyTmp.innerHTML = renderRowHTML(updated);
+    const newRow = tbodyTmp.firstElementChild;
+    if (newRow) {
+      oldRow.replaceWith(newRow);
+      attachEditableListeners(newRow);
+      autoGrowAll(newRow);
+    }
+  }
+  updateStats();
+  updateBulkDownloadCounter();
+  updateBulkApproveCounter();
+  return true;
+}
+
+let _loadSuratSeq = 0;
 async function loadSurat(options = {}) {
+  const reqSeq = ++_loadSuratSeq;
   const resetPage = !!options.resetPage;
   closeAllPopups();
   document.getElementById('table-area').innerHTML = `<div style="padding:24px"><div class="skel" style="height:44px;border-radius:6px;margin-bottom:8px"></div><div class="skel" style="height:44px;border-radius:6px;margin-bottom:8px"></div><div class="skel" style="height:44px;border-radius:6px"></div></div>`;
@@ -517,9 +579,8 @@ async function loadSurat(options = {}) {
   const pager = document.getElementById('table-pagination');
   if (pager) pager.hidden = true;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas?select=*&order=created_at.asc,id.asc`, { headers: H });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const ascList = await res.json();
+    const ascList = await fetchAllSuratPaged();
+    if (reqSeq !== _loadSuratSeq) return; // Abaikan response lama jika ada request lebih baru
     suratOrderMap = {};
     ascList.forEach((s, i) => { suratOrderMap[s.id] = i + 1; });
     allSurat = ascList.slice().reverse();
@@ -529,8 +590,9 @@ async function loadSurat(options = {}) {
     updateStats();
     filterTable({ resetPage: false });
   } catch(e) {
+    if (reqSeq !== _loadSuratSeq) return;
     closeAllPopups();
-  document.getElementById('table-area').innerHTML = `<div class="table-empty"><div class="table-empty-icon">⚠️</div><div class="table-empty-text">Gagal memuat data: ${esc(e.message)}</div></div>`;
+    document.getElementById('table-area').innerHTML = `<div class="table-empty"><div class="table-empty-icon">⚠️</div><div class="table-empty-text">Gagal memuat data: ${esc(e.message)}</div></div>`;
     document.getElementById('table-count').textContent = 'Error';
     renderPagination(0);
   }
@@ -622,13 +684,18 @@ async function addNewSurat() {
 /**
  * Duplikat surat tugas yang sudah ada menjadi surat tugas baru berstatus "menunggu".
  */
+const _rowActionInFlight = new Set();
+
 async function duplicateSuratTugas(id) {
   if (!SESSION || !SESSION.id) {
     showPageAlert('Sesi tidak valid. Silakan refresh halaman.', 'error');
     return;
   }
+  const key = `dup_${id}`;
+  if (_rowActionInFlight.has(key)) return;
   const s = suratMap[id];
   if (!s) return;
+  _rowActionInFlight.add(key);
 
   const cur = collectRowFields(id);
   const todayIso = todayISO();
@@ -690,6 +757,8 @@ async function duplicateSuratTugas(id) {
     }
   } catch(e) {
     showPageAlert(`Gagal menduplikat surat tugas: ${e.message}`, 'error');
+  } finally {
+    _rowActionInFlight.delete(key);
   }
 }
 window.duplicateSuratTugas = duplicateSuratTugas;
@@ -699,16 +768,19 @@ window.duplicateSuratTugas = duplicateSuratTugas;
  * Row otomatis menjadi editable inline kembali seperti sedia kala.
  */
 async function batalSelesaiSuratTugas(id) {
+  const key = `batal_${id}`;
+  if (_rowActionInFlight.has(key)) return;
   const s = suratMap[id];
   if (!s || s.status !== 'selesai') return;
+  _rowActionInFlight.add(key);
 
   try {
     await patchSuratTugas(id, { status: 'menunggu' });
-    const dirtySnapshot = captureMenungguDirty(null);
-    await loadSurat();
-    reapplyMenungguDirty(dirtySnapshot);
+    replaceRowInPlace(id, { status: 'menunggu' });
   } catch (err) {
     showPageAlert(`Gagal membatalkan status selesai: ${err.message}`, 'error');
+  } finally {
+    _rowActionInFlight.delete(key);
   }
 }
 window.batalSelesaiSuratTugas = batalSelesaiSuratTugas;
@@ -2656,15 +2728,10 @@ function closeModal(id) {
   }
   // Reset state khusus modal preview & hentikan iframe agar tidak membebani memori
   if (id === 'modal-preview') {
-    _previewVisumOpts = null;
     _previewBlob = null;
     currentPreviewSurat = null;
     const container = document.getElementById('preview-container');
     if (container) container.innerHTML = '';
-  }
-  // Reset state edit-bertugas saat modal ditutup
-  if (id === 'modal-edit-bertugas') {
-    _editBertugasSuratId = null;
   }
 }
 
@@ -2727,7 +2794,6 @@ async function openApprove(id) {
     penandatangan_jabatan: jabatan || '',
     tipe:                  values.tipe,
     bertugas_sebagai:      bertugas,
-    jumlah_responden:      s.jumlah_responden || null,
   };
 
   const rowEl = document.querySelector(`tr[data-surat-id="${id}"]`);
@@ -2749,9 +2815,7 @@ async function openApprove(id) {
     saveApproveDefaults({ ...loadApproveDefaults(), ...newDefaults });
 
     clearAdminDraft(id);
-    const dirtySnapshot = captureMenungguDirty(id);
-    await loadSurat();
-    reapplyMenungguDirty(dirtySnapshot);
+    replaceRowInPlace(id, payload);
     loadMAKSuggestions();
   } catch(e) {
     showPageAlert(`Gagal menandai selesai: ${e.message}`, 'error');
@@ -2760,180 +2824,6 @@ async function openApprove(id) {
       btn.disabled = false;
       btn.classList.remove('loading');
     }
-  }
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   BERTUGAS SEBAGAI — UI helpers
-   ─────────────────────────────────────────────────────────────────────
-   Render list editor + apply-all/clear-all + collect values.
-   Dipakai oleh modal-approve (saat setujui) dan modal-edit-bertugas
-   (edit setelah surat selesai).
-
-   Pattern: setiap input punya id `${idPrefix}-${index}` supaya bisa
-   di-collect via for-loop. Index sesuai posisi di array pegawai.
-═══════════════════════════════════════════════════════════════════════ */
-
-/**
- * Render list pegawai dengan input "Bertugas Sebagai" di sebelahnya.
- *
- * @param {string}    containerId  ID elemen container yg akan diisi
- * @param {string[]}  pegawaiNames Array nama pegawai (urutan = index)
- * @param {string[]}  existing     Array nilai bertugas yg sudah ada
- *                                 (panjang bisa < pegawaiNames; sisanya '')
- * @param {string}    idPrefix     Prefix untuk id input. Mis. 'inp-bertugas-row'
- *                                 → input id = 'inp-bertugas-row-0', '...row-1', dst.
- */
-function renderBertugasList(containerId, pegawaiNames, existing, idPrefix) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = pegawaiNames.map((nm, i) => {
-    const val = esc(existing[i] || '');
-    return `
-      <div style="display:flex;gap:8px;align-items:center">
-        <span style="flex:0 0 28px;text-align:right;font-size:12px;color:var(--muted);font-weight:600">${i + 1}.</span>
-        <span style="flex:1;font-size:12.5px;color:var(--navy);font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(nm)}">${esc(nm)}</span>
-        <input type="text"
-               id="${idPrefix}-${i}"
-               value="${val}"
-               placeholder="Bertugas sebagai…"
-               style="flex:0 0 240px;padding:6px 9px;border:1.5px solid var(--border2);border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;outline:none">
-      </div>
-    `;
-  }).join('');
-}
-
-/**
- * Collect nilai dari list bertugas. Trim setiap value, return array dengan
- * panjang sesuai pegawaiCount.
- *
- * @param {number} pegawaiCount  Jumlah pegawai (= panjang array yg di-return)
- * @param {string} idPrefix      Prefix id input (sama dengan render*)
- * @returns {string[]}  Array string. Element kosong = '' (bukan null).
- */
-function collectBertugasValues(pegawaiCount, idPrefix) {
-  const out = [];
-  for (let i = 0; i < pegawaiCount; i++) {
-    const el = document.getElementById(`${idPrefix}-${i}`);
-    out.push(el ? String(el.value || '').trim() : '');
-  }
-  return out;
-}
-
-/** Apply nilai dari input quick ke semua field bertugas — modal Approve. */
-function bertugasApplyAll() {
-  const v = (document.getElementById('inp-bertugas-quick')?.value || '').trim();
-  document.querySelectorAll('#approve-bertugas-list input[id^="inp-bertugas-row-"]')
-    .forEach(el => { el.value = v; });
-}
-
-/** Kosongkan semua field bertugas — modal Approve. */
-function bertugasClearAll() {
-  document.querySelectorAll('#approve-bertugas-list input[id^="inp-bertugas-row-"]')
-    .forEach(el => { el.value = ''; });
-}
-
-/** Apply quick value ke semua field — modal Edit Bertugas. */
-function editBertugasApplyAll() {
-  const v = (document.getElementById('inp-edit-bertugas-quick')?.value || '').trim();
-  document.querySelectorAll('#edit-bertugas-list input[id^="inp-edit-bertugas-row-"]')
-    .forEach(el => { el.value = v; });
-}
-
-/** Kosongkan semua field — modal Edit Bertugas. */
-function editBertugasClearAll() {
-  document.querySelectorAll('#edit-bertugas-list input[id^="inp-edit-bertugas-row-"]')
-    .forEach(el => { el.value = ''; });
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   EDIT BERTUGAS — open modal & submit handler
-   ─────────────────────────────────────────────────────────────────────
-   Modal khusus untuk admin mengedit role pegawai pada surat yang sudah
-   selesai (status=selesai). Hanya field bertugas_sebagai yang di-PATCH;
-   surat lainnya tidak disentuh.
-
-   Diakses dari tombol "✏ Edit Role" di tabel (kolom Aksi). Tombol
-   tersebut hanya muncul kalau tipeHasLampiran(s.tipe) && pegawai >= 2.
-═══════════════════════════════════════════════════════════════════════ */
-let _editBertugasSuratId = null;  // surat ID yang sedang di-edit
-
-/** Buka modal Edit Bertugas untuk surat tertentu. */
-function openEditBertugas(suratId) {
-  const s = suratMap[suratId];
-  if (!s) return;
-  // Defensive: kalau dari refresh data tipe sudah berubah jadi non-lampiran
-  // atau jumlah pegawai jadi < 2, tampilkan alert dan abort.
-  if (!tipeHasLampiran(s.tipe)) {
-    showPageAlert('Tipe surat tidak punya halaman lampiran — role tidak relevan.', 'error');
-    return;
-  }
-  const pegawai = Array.isArray(s.pegawai_list) ? s.pegawai_list : [];
-  if (pegawai.length < 2) {
-    showPageAlert('Surat dengan 1 pegawai tidak butuh role bertugas.', 'error');
-    return;
-  }
-
-  _editBertugasSuratId = suratId;
-  document.getElementById('edit-bertugas-perihal').textContent = s.perihal || '—';
-  // Reset quick-fill
-  const quick = document.getElementById('inp-edit-bertugas-quick');
-  if (quick) quick.value = '';
-
-  // Render list pakai existing data
-  const existing = Array.isArray(s.bertugas_sebagai) ? s.bertugas_sebagai : [];
-  renderBertugasList(
-    'edit-bertugas-list',
-    pegawai,
-    existing,
-    'inp-edit-bertugas-row'
-  );
-
-  openModal('modal-edit-bertugas');
-}
-
-/** Submit perubahan ke DB via PATCH. Hanya kolom bertugas_sebagai. */
-async function submitEditBertugas() {
-  const id = _editBertugasSuratId;
-  if (!id) return;
-  const s = suratMap[id];
-  if (!s) return;
-
-  const pegawaiCount = Array.isArray(s.pegawai_list) ? s.pegawai_list.length : 0;
-  const arr = collectBertugasValues(pegawaiCount, 'inp-edit-bertugas-row');
-
-  // Sama logic dengan submitApprove: kalau semua kosong, kirim NULL
-  // (tidak ngotorin DB dengan array empty-strings).
-  const payload = {
-    bertugas_sebagai: arr.some(v => v.length > 0) ? arr : null,
-  };
-
-  const btn = document.getElementById('btn-edit-bertugas-submit');
-  if (btn) { btn.disabled = true; btn.classList.add('loading'); }
-
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { ...H, 'Prefer': 'return=minimal' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      let msg = `HTTP ${res.status}`;
-      try { const j = await res.json(); msg = j.message || msg; } catch(_) {}
-      throw new Error(msg);
-    }
-
-    // Update suratMap in-memory supaya tidak perlu reload semua data
-    s.bertugas_sebagai = payload.bertugas_sebagai;
-
-    closeModal('modal-edit-bertugas');
-    _editBertugasSuratId = null;
-    showPageAlert('✅ Role pegawai berhasil disimpan.', 'success');
-  } catch(e) {
-    console.error('[APA] submitEditBertugas:', e);
-    showPageAlert(`Gagal menyimpan: ${e.message}`, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.classList.remove('loading'); }
   }
 }
 
@@ -3081,113 +2971,6 @@ async function patchSuratTugas(id, payload) {
   return res;
 }
 
-async function submitApprove() {
-  const values = collectRowFields(selectedId);
-  if (!values) return;
-  const { errors, errFields } = validateApproveFields(values);
-  if (errors.length) {
-    document.getElementById('approve-alert-icon').textContent = '⚠️';
-    document.getElementById('approve-alert-text').textContent = `Lengkapi: ${errors.join(', ')}`;
-    document.getElementById('approve-alert').className = 'alert error show';
-    highlightRowFieldErrors(selectedId, errFields);
-    setTimeout(() => closeModal('modal-approve'), 1500);
-    return;
-  }
-
-  const jabatan = lookupJabatan(values.penandatangan_nip, values.tanggal_surat);
-
-  // #3: waktu_pelaksanaan_text sudah ter-collect di values via collectRow()
-  // dari toggle expand di kolom waktu (bukan lagi dari modal).
-  // Kalau kosong setelah trim, kirim NULL (fallback ke auto format dari
-  // tanggal_berangkat & tanggal_kembali saat render docx).
-  const waktuPelaksanaanText = values.waktu_pelaksanaan_text && values.waktu_pelaksanaan_text.length
-    ? values.waktu_pelaksanaan_text
-    : null;
-
-  const payload = {
-    status: 'selesai',
-    nomor_surat:           values.nomor_surat,
-    tanggal_surat:         values.tanggal_surat,
-    tanggal_berangkat:     values.tanggal_berangkat,
-    tanggal_kembali:       values.tanggal_kembali || null,
-    waktu_pelaksanaan_text: waktuPelaksanaanText,
-    perihal:               values.perihal,
-    tujuan:                values.tujuan,
-    pegawai_nip:           values.pegawai_nip,
-    pegawai_list:          values.pegawai_list,
-    menimbang_custom:      values.menimbang_custom,
-    alat_angkutan:         values.alat_angkutan,
-    pembebanan:            values.pembebanan,
-    tempat_terbit:         values.tempat_terbit,
-    penandatangan_nama:    values.penandatangan_nama,
-    penandatangan_nip:     values.penandatangan_nip,
-    penandatangan_jabatan: jabatan || '',
-    tipe:                  values.tipe,
-    // bertugas_sebagai: hanya disertakan kalau tipe ada lampiran & ≥2 pegawai
-    // (kondisi yang sama dengan show-condition di openApprove). Untuk tipe
-    // lain, NULL — biarkan engine docxtemplater lookup → string kosong.
-    // collectBertugasValues() return string[] — element kosong = '' (string).
-    // Kalau SEMUA element kosong, kita kirim NULL juga supaya tidak nyampah
-    // di DB. Cek: ada minimal 1 element non-empty?
-    bertugas_sebagai:      (tipeHasLampiran(values.tipe) && values.pegawai_list.length >= 2)
-                             ? (() => {
-                                 const arr = collectBertugasValues(values.pegawai_list.length, 'inp-bertugas-row');
-                                 return arr.some(v => v.length > 0) ? arr : null;
-                               })()
-                             : null,
-    // #2: jumlah_responden — hanya disertakan kalau tipe surat ada visum.
-    // Untuk non-visum, kirim NULL (kolom unused). Empty string → NULL juga.
-    jumlah_responden:      (tipeHasVisum(values.tipe))
-                             ? (() => {
-                                 const el = document.getElementById('inp-jumlah-responden');
-                                 const v = el ? el.value.trim() : '';
-                                 if (!v) return null;
-                                 const n = parseInt(v, 10);
-                                 return (isFinite(n) && n >= 0) ? n : null;
-                               })()
-                             : null,
-  };
-
-  const btn = document.getElementById('btn-approve-submit');
-  btn.disabled = true; btn.classList.add('loading');
-  try {
-    await patchSuratTugas(selectedId, payload);
-
-    // Auto-save defaults (alat_angkutan/POK/penandatangan) tanpa checkbox.
-    // Sebelumnya ada checkbox "Simpan default" yang dihapus dari UI —
-    // sekarang behavior-nya selalu auto-save kalau ada nilai. Admin
-    // tidak perlu mikir lagi, dan halaman pengajuan baru langsung
-    // pakai defaults yang sudah pernah dipakai sebelumnya.
-    {
-      const newDefaults = {};
-      if (values.alat_angkutan)       newDefaults.alat_angkutan = values.alat_angkutan;
-      if (values.pembebanan)          newDefaults.pembebanan    = values.pembebanan;
-      if (values.penandatangan_nip)   newDefaults.ttd_nip       = values.penandatangan_nip;
-      if (values.penandatangan_nama)  newDefaults.ttd_nama      = values.penandatangan_nama;
-      const merged = { ...loadApproveDefaults(), ...newDefaults };
-      saveApproveDefaults(merged);
-    }
-
-    closeModal('modal-approve');
-    // #8: cleanup draft surat ini setelah sukses approve.
-    clearAdminDraft(selectedId);
-    // BUG FIX (#5): preserve edit di baris menunggu lain — capture sebelum
-    // reload, re-apply sesudah render ulang.
-    const dirtySnapshot = captureMenungguDirty(selectedId);
-    await loadSurat();
-    reapplyMenungguDirty(dirtySnapshot);
-    // Refresh autocomplete POK — kalau MAK yang baru di-approve belum
-    // pernah ada di history, tambahkan ke daftar suggestion.
-    loadMAKSuggestions();
-  } catch(e) {
-    document.getElementById('approve-alert-icon').textContent = '⚠️';
-    document.getElementById('approve-alert-text').textContent = `Gagal: ${e.message}`;
-    document.getElementById('approve-alert').className = 'alert error show';
-  } finally {
-    btn.disabled = false; btn.classList.remove('loading');
-  }
-}
-
 /* ════════════════════════════════════════════════════════════════════
    EDIT ROW (untuk surat yang sudah selesai)
    ─────────────────────────────────────────────────────────────────────
@@ -3321,21 +3104,11 @@ async function saveRowEdit(id) {
   try {
     await patchSuratTugas(id, payload);
 
-    // Sukses — exit edit mode & reload data dari server agar in-memory
-    // suratMap ter-sinkron (termasuk updated_at, dll).
+    // Sukses — exit edit mode & perbarui baris secara in-place (tanpa full refetch)
     editingRowId = null;
-    showPageAlert('✅ Perubahan berhasil disimpan.', 'success');
-    // #8: cleanup draft surat ini setelah sukses save edit.
     clearAdminDraft(id);
-    // BUG FIX (#5): preserve edit di baris menunggu lain — capture sebelum
-    // reload, re-apply sesudah render ulang. (Baris yg di-edit di sini
-    // sendiri ber-status 'selesai', jadi tidak ter-include di dirty
-    // snapshot — exclude id sebagai safety net.)
-    const dirtySnapshot = captureMenungguDirty(id);
-    await loadSurat();
-    reapplyMenungguDirty(dirtySnapshot);
-    // Refresh autocomplete POK kalau MAK pembebanan diganti — sama
-    // perlakuannya dgn submitApprove.
+    replaceRowInPlace(id, payload);
+    showPageAlert('✅ Perubahan berhasil disimpan.', 'success');
     loadMAKSuggestions();
   } catch(e) {
     showPageAlert(`Gagal menyimpan: ${e.message}`, 'error');

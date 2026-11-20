@@ -31,7 +31,6 @@ const EXCEL_COLUMNS = [
   { header: 'Penandatangan',         field: 'penandatangan_nama',     importable: true,
     importMatchField: 'penandatangan_nip' /* match by nama, dapat NIP */ },
   { header: 'Tipe Surat',            field: 'tipe',                   importable: true },
-  { header: 'Jumlah Responden',      field: 'jumlah_responden',       importable: true,  isNumber: true },
   { header: 'Tempat Terbit',         field: 'tempat_terbit',          importable: true },
   // Field NON-input-able (read-only — hanya tampil di export, di-skip saat import)
   { header: 'Status',                field: 'status',                 importable: false },
@@ -227,31 +226,36 @@ function matchImportPeople(raw, matcher) {
   const exact = matcher.byKey[text.toLowerCase()] || matcher.byKey[normalizeImportPersonName(text)];
   if (exact) return { people: [exact], unmatched: [] };
 
-  const normalizedRaw = normalizeImportPersonName(text);
+  // Split per bagian terlebih dahulu agar nama tak dikenal tidak diam-diam dibuang
+  const parts = text.split(/[;\n]+|,(?=\s*[A-Z])/).map(s => s.trim()).filter(Boolean);
   const found = [];
   const seen = new Set();
-  matcher.entries.forEach(entry => {
-    if (!entry.key || entry.key.length < 4) return;
-    if (normalizedRaw.includes(entry.key)) {
-      const nip = String(pegawaiNip(entry.pegawai) || '');
-      if (nip && !seen.has(nip)) {
-        seen.add(nip);
-        found.push(entry.pegawai);
-      }
-    }
-  });
-
-  if (found.length) return { people: found, unmatched: [] };
-
-  const parts = text.split(/[;\n]+|,(?=\s*[A-Z])/).map(s => s.trim()).filter(Boolean);
-  const partMatches = [];
   const unmatched = [];
+
   parts.forEach(part => {
-    const p = matcher.byKey[part.toLowerCase()] || matcher.byKey[normalizeImportPersonName(part)];
-    if (p) partMatches.push(p);
-    else unmatched.push(part);
+    const pExact = matcher.byKey[part.toLowerCase()] || matcher.byKey[normalizeImportPersonName(part)];
+    if (pExact) {
+      const nip = String(pegawaiNip(pExact) || '');
+      if (nip && !seen.has(nip)) { seen.add(nip); found.push(pExact); }
+      return;
+    }
+    // Fallback word-boundary match pada bagian ini (mencegah "Sari" cocok dengan "Sariyanto")
+    const normPart = normalizeImportPersonName(part);
+    let matchedInPart = false;
+    matcher.entries.forEach(entry => {
+      if (!entry.key || entry.key.length < 4) return;
+      const escapedKey = entry.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`(?:^|\\s)${escapedKey}(?:\\s|$)`);
+      if (re.test(normPart)) {
+        const nip = String(pegawaiNip(entry.pegawai) || '');
+        if (nip && !seen.has(nip)) { seen.add(nip); found.push(entry.pegawai); }
+        matchedInPart = true;
+      }
+    });
+    if (!matchedInPart) unmatched.push(part);
   });
-  return { people: partMatches, unmatched: unmatched.length ? unmatched : [text] };
+
+  return { people: found, unmatched };
 }
 
 function combineProgramMak(program, mak) {
@@ -352,6 +356,10 @@ async function importSuratFromExcel(inputEl) {
   const file = inputEl.files && inputEl.files[0];
   inputEl.value = '';
   if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showPageAlert('Ukuran file Excel melebihi batas maksimal 5 MB.', 'error');
+    return;
+  }
 
   try {
     showPageAlert('Memuat library Excel...', 'info');
@@ -397,7 +405,7 @@ async function importSuratFromExcel(inputEl) {
 
       const rowWarnings = [];
       const peopleMatch = matchImportPeople(pegawaiRaw, participantMatcher);
-      if (pegawaiRaw && !peopleMatch.people.length) rowWarnings.push(`Pegawai belum match: ${peopleMatch.unmatched.join(', ')}`);
+      if (pegawaiRaw && peopleMatch.unmatched.length) rowWarnings.push(`Pegawai belum match: ${peopleMatch.unmatched.join(', ')}`);
 
       const ttdRaw = cell('penandatangan_nama');
       const ttdMatch = matchImportPeople(ttdRaw, signerMatcher);
@@ -412,8 +420,6 @@ async function importSuratFromExcel(inputEl) {
       if (!tanggalSurat) rowWarnings.push('Tanggal surat belum terbaca');
       if (waktuRaw && !tanggalBerangkat) rowWarnings.push('Waktu pelaksanaan belum terbaca sebagai tanggal');
 
-      const jrRaw = cell('jumlah_responden');
-      const jr = jrRaw ? parseInt(jrRaw, 10) : null;
       const bertugasRaw = cell('bertugas_sebagai');
       const bertugasArr = bertugasRaw ? bertugasRaw.split(',').map(s => s.trim()) : null;
       const matchedNames = peopleMatch.people.map(p => pegawaiNama(p));
@@ -438,7 +444,6 @@ async function importSuratFromExcel(inputEl) {
         penandatangan_nama: ttd ? pegawaiNama(ttd) : null,
         tempat_terbit: cell('tempat_terbit') || 'Waisai',
         tipe: cell('tipe') || null,
-        jumlah_responden: (isFinite(jr) && jr >= 0) ? jr : null,
         bertugas_sebagai: (bertugasArr && matchedNames.length >= 2 && bertugasArr.some(Boolean)) ? bertugasArr : null,
         created_at: new Date(importBaseTime + importIndex).toISOString(),
       };
@@ -478,15 +483,20 @@ async function submitSuratImport() {
     btn.textContent = 'Menyimpan...';
   }
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas`, {
-      method: 'POST',
-      headers: { ...H, 'Prefer': 'return=minimal' },
-      body: JSON.stringify(payloads),
-    });
-    if (!res.ok) {
-      let msg = `HTTP ${res.status}`;
-      try { const j = await res.json(); msg = j.message || msg; } catch(_) {}
-      throw new Error(msg);
+    // Batching per 50 baris untuk mencegah HTTP 413 pada file Excel besar
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < payloads.length; i += BATCH_SIZE) {
+      const chunk = payloads.slice(i, i + BATCH_SIZE);
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/surat_tugas`, {
+        method: 'POST',
+        headers: { ...H, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(chunk),
+      });
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try { const j = await res.json(); msg = j.message || msg; } catch(_) {}
+        throw new Error(msg);
+      }
     }
     const count = payloads.length;
     closeSuratImportModal();

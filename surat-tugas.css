@@ -691,76 +691,16 @@
     padding:14px 16px;font-size:12.5px;line-height:1.6;color:var(--text);
     margin-bottom:14px;
   }
-  .approve-preview-row{
-    display:grid;grid-template-columns:120px 1fr;gap:10px;
-    padding:6px 0;border-bottom:1px dashed var(--border);
-  }
-  .approve-preview-row:last-child{border-bottom:none}
-  .approve-preview-row strong{
-    color:var(--muted);font-weight:600;font-size:11px;
-    letter-spacing:.4px;text-transform:uppercase;padding-top:2px;
-  }
-  .approve-preview-row span{color:var(--navy);font-weight:500;word-break:break-word}
-  .approve-preview-row span.empty{color:var(--muted);font-weight:400;font-style:italic}
-
-  /* Bertugas Sebagai: quick-fill row & list per pegawai */
-  .bertugas-quick-row{
-    display:flex;gap:6px;margin-bottom:10px;align-items:center;
-    background:rgba(13,35,64,.03);padding:9px 11px;border-radius:8px;
-    border:1px dashed var(--border);
-  }
-  .form-input-quick{
-    flex:1;padding:8px 11px;border:1.5px solid var(--border2);border-radius:7px;
-    font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;outline:none;
-    background:#fff;
-  }
-  .form-input-quick:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(13,35,64,.06)}
-  .btn-quick{padding:8px 13px;font-size:12px;white-space:nowrap;border-radius:7px}
-  .bertugas-list{display:flex;flex-direction:column;gap:7px}
-  /* #2 redesign: container input Jumlah Responden — pattern sama dengan
-     .bertugas-quick-row supaya visual konsisten antar section di modal. */
-  .responden-row{
-    display:flex;gap:6px;align-items:center;
-    background:rgba(13,35,64,.03);padding:9px 11px;border-radius:8px;
-    border:1px dashed var(--border);
-  }
-
-  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .detail-field{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px 14px}
-  .detail-field.full{grid-column:1/-1}
-  .detail-field-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
-  .detail-field-val{font-size:13px;font-weight:600;color:var(--navy);line-height:1.5;word-break:break-word}
-  .detail-field-val.empty{color:var(--muted);font-weight:400;font-style:italic}
-
   .preview-container{padding:24px;min-height:100%}
-  .preview-container .docx-wrapper{background:transparent!important}
-  .preview-container .docx{background:white!important;padding:56px 72px!important;box-shadow:0 4px 20px rgba(13,35,64,.12);margin:0 auto 20px!important;max-width:720px}
   .preview-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:var(--muted);gap:14px}
   .preview-loading-spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spinFull 0.8s linear infinite}
   @keyframes spinFull{to{transform:rotate(360deg)}}
   .preview-error{padding:48px 24px;text-align:center;color:var(--red)}
   .preview-error-icon{font-size:40px;margin-bottom:12px;opacity:.5}
 
-  /* PRINT */
-  @media print {
-    @page { margin: 0; size: A4; }
-    html, body { margin:0!important;padding:0!important;background:white!important; }
-    body > * { display:none!important; }
-    body > #modal-preview { display:block!important;position:static!important;background:white!important;padding:0!important;margin:0!important;inset:auto!important; }
-    #modal-preview .modal-preview { max-width:none!important;max-height:none!important;box-shadow:none!important;border-radius:0!important;animation:none!important;margin:0!important;padding:0!important;display:block!important;overflow:visible!important;width:auto!important; }
-    #modal-preview .modal-header,#modal-preview .modal-footer { display:none!important; }
-    #modal-preview .modal-body { background:white!important;overflow:visible!important;padding:0!important;margin:0!important;display:block!important; }
-    #modal-preview .preview-container { padding:0!important;margin:0!important; }
-    #modal-preview .preview-container .docx-wrapper { background:white!important;padding:0!important;margin:0!important; }
-    #modal-preview .preview-container .docx,
-    #modal-preview .preview-container section.docx { box-shadow:none!important;margin:0!important;max-width:none!important;padding:2cm!important; }
-    #modal-preview .preview-container section.docx { page-break-after:always;page-break-inside:avoid; }
-    #modal-preview .preview-container section.docx:last-child { page-break-after:auto; }
-  }
-
   @media(max-width:768px){.main{padding:24px 16px}}
   @media(max-width:600px){
-    .detail-grid{grid-template-columns:1fr}.modal{max-width:100%}
+    .modal{max-width:100%}
   }
 
   /* Readonly cell — bisa difokus, diselect, dicopy */

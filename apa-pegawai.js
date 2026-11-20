@@ -277,6 +277,11 @@
       } catch (e) {
         console.warn('[apaPegawai] Gagal memuat mitra:', e);
       }
+      // Refresh popup jika user sudah telanjur membukanya saat fetch selesai
+      if (popupEl && popupEl.classList.contains('open')) {
+        if (state.activeView === 'terlampir') renderTerlampirList();
+        else renderMainList();
+      }
     } catch (err) {
       console.warn('[apaPegawai] Load data error:', err);
     }
@@ -367,10 +372,12 @@
       pool = pool.concat(mitraItems);
     }
 
-    state.mainFiltered = pool.filter(item => {
+    const allMatches = pool.filter(item => {
       if (!q) return true;
       return item.nama.toLowerCase().includes(q) || item.nip.toLowerCase().includes(q);
-    }).slice(0, 50);
+    });
+    const totalMatches = allMatches.length;
+    state.mainFiltered = allMatches.slice(0, 50);
 
     if (!state.mainFiltered.length) {
       listEl.innerHTML = '<div class="apa-pg-empty">Tidak ada nama yang cocok dengan "' + escHtml(q) + '".</div>';
@@ -379,7 +386,7 @@
 
     const curNip = state.selectedNips.length === 1 ? state.selectedNips[0] : '';
 
-    listEl.innerHTML = state.mainFiltered.map((item, idx) => {
+    const itemsHtml = state.mainFiltered.map((item, idx) => {
       const initials = (item.nama || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
       const isSel = curNip === item.nip;
       const isFoc = state.focusIdx === idx;
@@ -401,6 +408,11 @@
         </div>
       `;
     }).join('');
+
+    const moreHint = totalMatches > 50
+      ? `<div class="apa-pg-empty" style="padding:8px 12px;font-size:11px;">Menampilkan 50 dari ${totalMatches} hasil — ketik untuk menyaring.</div>`
+      : '';
+    listEl.innerHTML = itemsHtml + moreHint;
   }
 
   // ── Render View 2: Checklist Terlampir ───────────────────────

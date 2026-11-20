@@ -375,10 +375,13 @@
             if (notifBtn && notifPopover) {
                 notifBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const isOpen = notifPopover.classList.toggle('show');
+                    notifPopover.classList.toggle('show');
                     if (menu) {
                         menu.classList.remove('show');
-                        if (userBtn) userBtn.classList.remove('active');
+                        if (userBtn) {
+                            userBtn.classList.remove('active');
+                            userBtn.setAttribute('aria-expanded', 'false');
+                        }
                     }
                 });
             }
@@ -406,7 +409,10 @@
             document.addEventListener('click', (e) => {
                 if (menu && !menu.contains(e.target) && !userBtn?.contains(e.target)) {
                     menu.classList.remove('show');
-                    if (userBtn) userBtn.classList.remove('active');
+                    if (userBtn) {
+                        userBtn.classList.remove('active');
+                        userBtn.setAttribute('aria-expanded', 'false');
+                    }
                 }
                 if (notifPopover && !notifPopover.contains(e.target) && !notifBtn?.contains(e.target)) {
                     notifPopover.classList.remove('show');
@@ -418,7 +424,10 @@
                 if (e.key === 'Escape') {
                     if (menu) {
                         menu.classList.remove('show');
-                        if (userBtn) userBtn.classList.remove('active');
+                        if (userBtn) {
+                            userBtn.classList.remove('active');
+                            userBtn.setAttribute('aria-expanded', 'false');
+                        }
                     }
                     if (notifPopover) notifPopover.classList.remove('show');
                     this.closeLogoutModal();

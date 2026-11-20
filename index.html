@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="0; url=login.html">
     <title>Sistem Automasi Pekerjaan Administrasi (APA) - BPS Kabupaten Raja Ampat</title>
     <!-- Favicon Website -->
     <link rel="icon" type="image/svg+xml" href="Assets/ART logo.svg">
@@ -39,7 +38,16 @@
         }
     </style>
     <script>
-        window.location.replace("login.html");
+        (function () {
+            try {
+                var user = JSON.parse(localStorage.getItem('apa_user') || sessionStorage.getItem('apa_user') || 'null');
+                if (user && user.username) {
+                    window.location.replace('profile.html');
+                    return;
+                }
+            } catch (_) {}
+            window.location.replace('login.html');
+        })();
     </script>
 </head>
 <body>

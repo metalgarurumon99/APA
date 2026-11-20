@@ -142,16 +142,6 @@ body.sidebar-hidden .apa-floating-toggle-btn {
     padding-top: 0 !important;
 }
 
-.apa-sidebar .nav-section-label {
-    font-size: 0.68rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #94a3b8;
-    padding: 0 14px;
-    margin: 12px 0 4px;
-}
-
 .apa-sidebar .nav-item {
     display: flex;
     align-items: center;
@@ -191,18 +181,6 @@ body.sidebar-hidden .apa-floating-toggle-btn {
     background: var(--sb-blue-soft);
     font-weight: 700;
 }
-
-.apa-sidebar .nav-badge {
-    margin-left: auto;
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 6px;
-    background: #dbeafe;
-    color: var(--sb-blue);
-}
-
-
 
 /* Mobile Bar Header */
 .apa-mobile-topbar {
