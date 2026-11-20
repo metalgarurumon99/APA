@@ -18,16 +18,8 @@ table.list-table.mst-table {
 .mst-table .col-tujuan  { width: 155px; }
 .mst-table .col-nama    { width: 145px; }
 .mst-table .col-mak     { width: 150px; }
+.mst-table .col-aksi    { width: 165px; text-align: center; }
 .mst-table .col-status  { width: 110px; text-align: center; }
-.mst-table .col-aksi    { width: 155px; text-align: center; }
-
-/* Tombol teks compact "+5" di header tabel */
-.btn-table-head-text {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: -0.3px;
-}
 
 /* Badge draft (status belum dikirim) */
 .badge.draft {

@@ -736,15 +736,18 @@ function renderDraftRowHTML(id) {
     ${cellTextareaHTML('tujuan', '', 'Kota / instansi', 'tujuan')}
     ${cellPegawaiMultiHTML([], [], [], true)}
     ${cellMAKHTML('', true)}
-    <td class="col-status"><div class="ro-text" tabindex="0" data-col-field="status">${badgeHTML('draft')}</div></td>
     <td class="col-aksi">
       <div class="aksi-wrap">
         <button class="btn-approve" type="button" onclick="submitSingleRow(this)" title="Kirim pengajuan ini">
           <img src="Assets/checked.png" class="btn-action-icon" alt=""> Kirim
         </button>
+        <button class="btn-duplicate btn-icon" type="button" onclick="duplicateDraftRow(this)" title="Duplikat baris draft">
+          <img src="Assets/copy.png" class="btn-action-icon" alt="Duplikat">
+        </button>
         <button class="btn-batal-selesai btn-icon delete-draft-row" type="button" title="Hapus baris draft">✕</button>
       </div>
     </td>
+    <td class="col-status"><div class="ro-text" tabindex="0" data-col-field="status">${badgeHTML('draft')}</div></td>
   </tr>`;
 }
 
@@ -770,7 +773,6 @@ function renderSubmittedRowHTML(s) {
       ${cellTextareaHTML('tujuan', s.tujuan || '', 'Kota / instansi', 'tujuan')}
       ${cellPegawaiMultiHTML(nips, names, roles, true)}
       ${cellMAKHTML(s.pembebanan || '', true)}
-      <td class="col-status"><div class="ro-text" tabindex="0" data-col-field="status">${badgeHTML(s.status)}</div></td>
       <td class="col-aksi">
         <div class="aksi-wrap">
           <button class="btn-save-edit" type="button" id="btn-save-edit-${escAttr(s.id)}" onclick="saveRowEdit(${escAttr(jsArg(s.id))})" title="Simpan perubahan">
@@ -781,6 +783,7 @@ function renderSubmittedRowHTML(s) {
           </button>
         </div>
       </td>
+      <td class="col-status"><div class="ro-text" tabindex="0" data-col-field="status">${badgeHTML(s.status)}</div></td>
     </tr>`;
   }
 
@@ -797,10 +800,16 @@ function renderSubmittedRowHTML(s) {
       <button class="btn-download btn-icon" type="button" onclick="downloadSuratTugas(${escAttr(jsArg(s.id))})" title="Download dokumen (.docx)">
         <img src="Assets/paper.png" class="btn-action-icon" alt="Download">
       </button>
+      <button class="btn-duplicate btn-icon" type="button" onclick="duplicateSubmittedSurat(${escAttr(jsArg(s.id))})" title="Duplikat surat tugas">
+        <img src="Assets/copy.png" class="btn-action-icon" alt="Duplikat">
+      </button>
     `;
   } else {
     aksiHTML = `
       <button class="btn-edit-row btn-icon" type="button" onclick="enterRowEdit(${escAttr(jsArg(s.id))})" title="Edit pengajuan">✏️</button>
+      <button class="btn-duplicate btn-icon" type="button" onclick="duplicateSubmittedSurat(${escAttr(jsArg(s.id))})" title="Duplikat surat tugas">
+        <img src="Assets/copy.png" class="btn-action-icon" alt="Duplikat">
+      </button>
       <button class="btn-batal-selesai btn-icon" type="button" onclick="deleteSubmittedSurat(${escAttr(jsArg(s.id))})" title="Hapus pengajuan">🗑️</button>
     `;
   }
@@ -813,8 +822,8 @@ function renderSubmittedRowHTML(s) {
     ${roCell('tujuan', 'tujuan', s.tujuan)}
     ${cellPegawaiMultiHTML(nips, names, roles, false)}
     ${roCell('mak', 'pembebanan', s.pembebanan)}
-    <td class="col-status"><div class="ro-text" tabindex="0" data-col-field="status">${badgeHTML(s.status)}</div></td>
     <td class="col-aksi"><div class="aksi-wrap">${aksiHTML}</div></td>
+    <td class="col-status"><div class="ro-text" tabindex="0" data-col-field="status">${badgeHTML(s.status)}</div></td>
   </tr>`;
 }
 
@@ -1065,7 +1074,6 @@ if (window.apaGridNav) {
     onClosePopups: closeAllPopups,
     closeModals: function () {
       closeModal('modal-preview');
-      if (typeof closeSuratImportModal === 'function') closeSuratImportModal();
     },
   });
 }
@@ -1198,6 +1206,63 @@ function wireEditableRow(tr) {
     obs.observe(pegCell, { attributes: true, attributeFilter: ['data-nips', 'data-roles'] });
     tr._pgObserver = obs;
   }
+}
+
+function fillDraftRow(tr, src) {
+  if (!tr || !src) return;
+  const perihalEl = tr.querySelector('textarea.xls-cell[data-field="perihal"]');
+  const tujuanEl = tr.querySelector('textarea.xls-cell[data-field="tujuan"]');
+  const waktuEl = tr.querySelector('.xls-cell[data-field="waktu"]');
+  const pokEl = tr.querySelector('.xls-cell[data-field="pembebanan"]');
+  const pegCell = tr.querySelector('.pg-cell[data-field="pegawai_multi"]');
+
+  if (perihalEl) { perihalEl.value = src.perihal || ''; autoGrow(perihalEl); }
+  if (tujuanEl) { tujuanEl.value = src.tujuan || ''; autoGrow(tujuanEl); }
+  if (pokEl) { pokEl.value = src.pembebanan || ''; autoGrow(pokEl); }
+  if (waktuEl) {
+    const mulai = src.waktuMulai || src.tanggal_berangkat || '';
+    const selesai = src.waktuSelesai || src.tanggal_kembali || '';
+    const custom = src.waktuCustom || src.waktu_pelaksanaan_text || '';
+    waktuEl.dataset.isoMulai = mulai;
+    waktuEl.dataset.isoSelesai = selesai;
+    waktuEl.dataset.waktuTextCustom = custom;
+    waktuEl.value = custom || (mulai ? fmtWaktu(mulai, selesai) : '');
+    autoGrow(waktuEl);
+  }
+  const nips = Array.isArray(src.nips) ? src.nips : (Array.isArray(src.pegawai_nip) ? src.pegawai_nip : []);
+  const names = Array.isArray(src.names) ? src.names : (Array.isArray(src.pegawai_list) ? src.pegawai_list : []);
+  const roles = Array.isArray(src.roles) ? src.roles : (Array.isArray(src.bertugas_sebagai) ? src.bertugas_sebagai : []);
+  if (pegCell && nips.length) {
+    if (window.apaPegawai) {
+      window.apaPegawai.renderCell(pegCell, nips, names, roles);
+    } else {
+      pegCell.dataset.nips = JSON.stringify(nips);
+      pegCell.dataset.names = JSON.stringify(names);
+      pegCell.dataset.roles = JSON.stringify(roles);
+    }
+  }
+}
+
+function duplicateDraftRow(btn) {
+  const tr = btn?.closest('tr[data-row-id]');
+  if (!tr) return;
+  const src = collectRow(tr);
+  addRows(1);
+  const newTr = document.querySelector('#bulk-tbody tr[data-row-id]');
+  fillDraftRow(newTr, src);
+  snapshotDraft();
+  showPageAlert('📋 Baris draft berhasil diduplikat.', 'info');
+}
+
+function duplicateSubmittedSurat(id) {
+  const s = suratMap[id];
+  if (!s) return;
+  addRows(1);
+  const newTr = document.querySelector('#bulk-tbody tr[data-row-id]');
+  fillDraftRow(newTr, s);
+  snapshotDraft();
+  newTr?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showPageAlert('📋 Surat tugas diduplikat ke baris draft baru. Silakan sesuaikan lalu klik Kirim.', 'info');
 }
 
 function addRows(n) {

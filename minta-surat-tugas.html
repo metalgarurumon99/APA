@@ -50,7 +50,7 @@
         <span class="search-icon-compact">
           <img src="Assets/search.png" alt="Cari">
         </span>
-        <input class="search-input-compact" type="text" id="search-input" placeholder="Cari perihal, tujuan, pegawai, POK..." oninput="filterTable({ resetPage: true })">
+        <input class="search-input-compact" type="text" id="search-input" aria-label="Cari surat tugas" oninput="filterTable({ resetPage: true })">
       </div>
 
       <div class="stats-cards-group">
@@ -101,17 +101,9 @@
         <span class="table-head-count" id="table-count">Memuat...</span>
         <!-- Seluruh Tombol Aksi di Pojok Kanan Header Tabel -->
         <div class="table-head-actions">
-          <button class="btn-table-head" onclick="addRows(1)" title="Tambah 1 Baris Pengajuan">
-            <img src="Assets/add.png" alt="Tambah 1 Baris">
+          <button class="btn-table-head" onclick="addRows(1)" title="Tambah Baris Pengajuan">
+            <img src="Assets/add.png" alt="Tambah Baris">
           </button>
-          <button class="btn-table-head btn-table-head-text" onclick="addRows(5)" title="Tambah 5 Baris Pengajuan">+5</button>
-          <button class="btn-table-head" onclick="exportSuratToExcel()" title="Export Excel (.xlsx)">
-            <img src="Assets/export.png" alt="Export">
-          </button>
-          <button class="btn-table-head" onclick="document.getElementById('inp-import-excel').click()" title="Import Excel (.xlsx)">
-            <img src="Assets/import.png" alt="Import">
-          </button>
-          <input type="file" id="inp-import-excel" accept=".xlsx,.xls" style="display:none" onchange="importSuratFromExcel(this)">
           <button class="btn-table-head btn-table-head-gold" id="btn-bulk-download" onclick="bulkDownloadSelected()" disabled title="Download Dokumen Terpilih (.docx)">
             <img src="Assets/paper.png" alt="Download">
             <span class="btn-badge" id="bulk-dl-badge" style="display:none">0</span>
@@ -142,8 +134,8 @@
               <th class="col-tujuan sortable" onclick="setSuratSort('tujuan')">Tempat Tujuan <span class="sort-arrow">↕</span></th>
               <th class="col-nama sortable" onclick="setSuratSort('pegawai')">Nama Pegawai <span class="sort-arrow">↕</span></th>
               <th class="col-mak sortable" onclick="setSuratSort('pembebanan')">POK <span class="sort-arrow">↕</span></th>
-              <th class="col-status sortable" onclick="setSuratSort('status')">Status <span class="sort-arrow">↕</span></th>
               <th class="col-aksi">Aksi</th>
+              <th class="col-status sortable" onclick="setSuratSort('status')">Status <span class="sort-arrow">↕</span></th>
             </tr>
           </thead>
           <tbody id="bulk-tbody">
@@ -167,52 +159,6 @@
     <span id="mak-ac-count"></span>
   </div>
   <div class="mak-ac-list" id="mak-ac-list"></div>
-</div>
-
-<!-- MODAL PREVIEW IMPORT SURAT TUGAS -->
-<div class="modal-overlay" id="modal-import-surat" style="display:none" onclick="if(event.target===this)closeSuratImportModal()">
-  <div class="modal modal-wide">
-    <div class="modal-header detail">
-      <span class="modal-title">Preview <em>Import Surat Tugas</em></span>
-      <button class="modal-close" onclick="closeSuratImportModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="import-preview-panel">
-        Cek hasil baca Excel sebelum data disimpan. Kolom <strong>Lamanya Tugas</strong> diabaikan,
-        <strong>Tujuan / Tugas</strong> dibaca sebagai perihal, dan <strong>Program</strong> + <strong>MAK Pembebanan</strong>
-        digabung menjadi POK.
-      </div>
-      <div class="import-preview-stats">
-        <div class="import-stat"><div class="import-stat-label">Baris Dibaca</div><div class="import-stat-value" id="surat-import-total">0</div></div>
-        <div class="import-stat"><div class="import-stat-label">Siap Import</div><div class="import-stat-value" id="surat-import-ready">0</div></div>
-        <div class="import-stat"><div class="import-stat-label">Warning</div><div class="import-stat-value" id="surat-import-warn">0</div></div>
-        <div class="import-stat"><div class="import-stat-label">File</div><div class="import-stat-value" id="surat-import-file" style="font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.35">-</div></div>
-      </div>
-      <div class="import-preview-table-wrap">
-        <table class="import-preview-table">
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>No</th>
-              <th>Nomor</th>
-              <th>Tanggal Surat</th>
-              <th>Waktu Pelaksanaan</th>
-              <th>Perihal</th>
-              <th>Nama</th>
-              <th>POK</th>
-              <th>Penandatangan</th>
-              <th>Catatan</th>
-            </tr>
-          </thead>
-          <tbody id="surat-import-preview-body"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-outline" onclick="closeSuratImportModal()">Batal</button>
-      <button class="btn-primary" id="btn-surat-import-submit" onclick="submitSuratImport()" disabled>Terapkan Import</button>
-    </div>
-  </div>
 </div>
 
 <!-- MODAL PREVIEW DOCX -->
@@ -243,7 +189,6 @@
 <script src="apa-pegawai.js"></script>
 <script src="apa-grid-nav.js"></script>
 <script src="st-lookups.js"></script>
-<script src="st-excel.js"></script>
 <script src="st-bulk.js"></script>
 <script src="st-docx.js"></script>
 <script src="minta-surat-tugas.js"></script>
