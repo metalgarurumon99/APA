@@ -87,22 +87,9 @@ function closeModal(id) {
   }
 }
 
-let _pageAlertTimer = null;
+// Banner #page-alert dinonaktifkan; fungsi tetap dipertahankan untuk kompatibilitas modul st-*
 function showPageAlert(msg, type = 'error') {
-  const alert = document.getElementById('page-alert');
-  if (!alert) return;
-  const iconMap = { success: '✅', error: '⚠️', info: 'ℹ️' };
-  const iconEl = document.getElementById('page-alert-icon');
-  const textEl = document.getElementById('page-alert-text');
-  if (iconEl) iconEl.textContent = iconMap[type] || iconMap.error;
-  if (textEl) textEl.textContent = msg;
-  alert.className = `alert ${type} show`;
-  alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  if (_pageAlertTimer) clearTimeout(_pageAlertTimer);
-  _pageAlertTimer = setTimeout(() => {
-    alert.className = 'alert';
-    _pageAlertTimer = null;
-  }, 5500);
+  if (type === 'error' && msg) console.warn('[APA]', msg);
 }
 
 /* ════════════════════════════════════════════════════════════════════
